@@ -1,0 +1,10 @@
+# directories
+**/node_modules
+**/out
+**/cache
+broadcast/
+
+# files
+*.env
+*.log
+.DS_Store
