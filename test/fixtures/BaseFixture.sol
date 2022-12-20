@@ -44,8 +44,53 @@ contract BaseFixture is Test {
         });
         bridge = address(new BridgeDiamond(args_));
 
-        // Cut diamond
-        IDiamondCut.FacetCut[] memory cut_ = new IDiamondCut.FacetCut[](5);
+        /// @dev Cut the deposit facet alone to initialize it.
+        IDiamondCut.FacetCut[] memory depositCut_ = new IDiamondCut.FacetCut[](1);
+        // Deposit facet.
+        bytes4[] memory depositFacetSelectors_ = new bytes4[](7);
+        depositFacetSelectors_[0] = IDepositFacet.setDepositExpirationTimeout.selector;
+        depositFacetSelectors_[1] = IDepositFacet.lockDeposit.selector;
+        depositFacetSelectors_[2] = IDepositFacet.claimDeposit.selector;
+        depositFacetSelectors_[3] = IDepositFacet.reclaimDeposit.selector;
+        depositFacetSelectors_[4] = IDepositFacet.getDeposit.selector;
+        depositFacetSelectors_[5] = IDepositFacet.getPendingDeposits.selector;
+        depositFacetSelectors_[6] = IDepositFacet.getDepositExpirationTimeout.selector;
+        depositCut_[0] = IDiamondCut.FacetCut({
+            facetAddress: address(depositFacet), 
+            action: IDiamondCut.FacetCutAction.Add, 
+            functionSelectors: depositFacetSelectors_
+        });
+        vm.prank(_owner());
+        IDiamondCut(address(bridge)).diamondCut(
+            depositCut_,
+            address(depositFacet),
+            abi.encodeWithSelector(depositFacet.initialize.selector)
+        );
+
+        /// @dev Cut the withdrawal facet alone to initialize it.
+        IDiamondCut.FacetCut[] memory withdrawalCut_ = new IDiamondCut.FacetCut[](1);
+        /// Withdrawal facet.
+        bytes4[] memory withdrawalFacetSelectors_ = new bytes4[](7);
+        withdrawalFacetSelectors_[0] = IWithdrawalFacet.setWithdrawalExpirationTimeout.selector;
+        withdrawalFacetSelectors_[1] = IWithdrawalFacet.lockWithdrawal.selector;
+        withdrawalFacetSelectors_[2] = IWithdrawalFacet.claimWithdrawal.selector;
+        withdrawalFacetSelectors_[3] = IWithdrawalFacet.reclaimWithdrawal.selector;
+        withdrawalFacetSelectors_[4] = IWithdrawalFacet.getWithdrawal.selector;
+        withdrawalFacetSelectors_[5] = IWithdrawalFacet.getPendingWithdrawals.selector;
+        withdrawalFacetSelectors_[6] = IWithdrawalFacet.getWithdrawalExpirationTimeout.selector;
+        withdrawalCut_[0] = IDiamondCut.FacetCut({
+            facetAddress: address(withdrawalFacet), 
+            action: IDiamondCut.FacetCutAction.Add, 
+            functionSelectors: withdrawalFacetSelectors_
+        });
+        vm.prank(_owner());
+        IDiamondCut(address(bridge)).diamondCut(
+            withdrawalCut_,
+            address(withdrawalFacet),
+            abi.encodeWithSelector(withdrawalFacet.initialize.selector)
+        );
+
+        IDiamondCut.FacetCut[] memory cut_ = new IDiamondCut.FacetCut[](3);
 
         // Access Control facet
         bytes4[] memory accessControlFacetSelectors_ = new bytes4[](3);
@@ -58,53 +103,27 @@ contract BaseFixture is Test {
             functionSelectors: accessControlFacetSelectors_
         });
 
-        // Deposit facet
-        bytes4[] memory depositFacetSelectors_ = new bytes4[](5);
-        depositFacetSelectors_[0] = IDepositFacet.lockDeposit.selector;
-        depositFacetSelectors_[1] = IDepositFacet.claimDeposit.selector;
-        depositFacetSelectors_[2] = IDepositFacet.reclaimDeposit.selector;
-        depositFacetSelectors_[3] = IDepositFacet.getDeposit.selector;
-        depositFacetSelectors_[4] = IDepositFacet.getPendingDeposits.selector;
-        cut_[1] = IDiamondCut.FacetCut({
-            facetAddress: address(depositFacet), 
-            action: IDiamondCut.FacetCutAction.Add, 
-            functionSelectors: depositFacetSelectors_
-        });
-
         // Token Register facet
         bytes4[] memory tokenRegisterFacetSelectors_ = new bytes4[](2);
         tokenRegisterFacetSelectors_[0] = ITokenRegisterFacet.setTokenRegister.selector;
         tokenRegisterFacetSelectors_[1] = ITokenRegisterFacet.isTokenRegistered.selector;
-        cut_[2] = IDiamondCut.FacetCut({
+        cut_[1] = IDiamondCut.FacetCut({
             facetAddress: address(tokenRegisterFacet), 
             action: IDiamondCut.FacetCutAction.Add, 
             functionSelectors: tokenRegisterFacetSelectors_
-        });
-
-        // Withdrawal Register facet
-        bytes4[] memory withdrawalFacetSelectors_ = new bytes4[](5);
-        withdrawalFacetSelectors_[0] = IWithdrawalFacet.lockWithdrawal.selector;
-        withdrawalFacetSelectors_[1] = IWithdrawalFacet.claimWithdrawal.selector;
-        withdrawalFacetSelectors_[2] = IWithdrawalFacet.reclaimWithdrawal.selector;
-        withdrawalFacetSelectors_[3] = IWithdrawalFacet.getWithdrawal.selector;
-        withdrawalFacetSelectors_[4] = IWithdrawalFacet.getPendingWithdrawals.selector;
-        cut_[3] = IDiamondCut.FacetCut({
-            facetAddress: address(withdrawalFacet), 
-            action: IDiamondCut.FacetCutAction.Add, 
-            functionSelectors: withdrawalFacetSelectors_
         });
 
         // State facet
         bytes4[] memory stateFacetSelectors_ = new bytes4[](2);
         stateFacetSelectors_[0] = IStateFacet.getOrderRoot.selector;
         stateFacetSelectors_[1] = IStateFacet.setOrderRoot.selector;
-        cut_[4] = IDiamondCut.FacetCut({
+        cut_[2] = IDiamondCut.FacetCut({
             facetAddress: address(stateFacet), 
             action: IDiamondCut.FacetCutAction.Add, 
             functionSelectors: stateFacetSelectors_
         });
 
-        // Cut diamond finalize
+        /// Cut diamond finalize.
         vm.prank(_owner());
         IDiamondCut(address(bridge)).diamondCut(cut_, address(0), "");
 

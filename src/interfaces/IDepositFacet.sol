@@ -14,6 +14,7 @@ interface IDepositFacet {
 	struct DepositStorage {
 		mapping(uint256 => Deposit) deposits;
 		mapping(address => uint256) pendingDeposits;
+		uint256 depositExpirationTimeout;
 	}
 
 	/**
@@ -38,6 +39,12 @@ interface IDepositFacet {
 	 */
 	event LogReclaimDeposit(uint256 indexed lockHash);
 
+	/**
+	 * @notice Emits the new deposit expiration timeout.
+	 * @param timeout The new timeout.
+	 */
+	event LogSetDepositExpirationTimeout(uint256 timeout);
+
 	/// @dev stateless errors.
 	error InvalidDepositLockError();
 	error InvalidStarkKeyError();
@@ -46,6 +53,19 @@ interface IDepositFacet {
 	error DepositPendingError();
     error DepositNotFoundError();
 	error DepositNotExpiredError();
+
+	/**
+     * @notice Initialize deposit expiration timeout.
+     * @dev Only callable by the owner.
+     */
+    function initialize() external;
+
+	/**
+	 * @notice Sets the deposit expiration timeout.
+	 * @dev Only callable by the owner.
+	 * @param timeout_ The expiration time.
+	 */
+	function setDepositExpirationTimeout(uint256 timeout_) external;
 
 	/**
 	 * @notice Locks a deposit until the hash of the transfer is included in the Merkle Tree.
@@ -94,4 +114,10 @@ interface IDepositFacet {
 	 * @return Returns the amount of pending deposits.
 	 */
     function getPendingDeposits(address token_) external view returns (uint256);
+
+	/**
+     * @notice Gets the deposit expiration timeout.
+     * @return Returns the timeout value.
+     */
+    function getDepositExpirationTimeout() external returns(uint256);
 }

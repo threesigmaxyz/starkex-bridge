@@ -6,6 +6,7 @@ import { Constants } from "src/constants/Constants.sol";
 import { HelpersERC20 } from "src/helpers/HelpersERC20.sol";
 import { HelpersECDSA } from "src/helpers/HelpersECDSA.sol";
 import { LibState } from "src/libraries/LibState.sol";
+import { OnlyOwner } from "src/modifiers/OnlyOwner.sol";
 import { OnlyStarkExOperator } from "src/modifiers/OnlyStarkExOperator.sol";
 import { OnlyRegisteredToken } from "src/modifiers/OnlyRegisteredToken.sol";
 import { IDepositFacet } from "src/interfaces/IDepositFacet.sol";
@@ -34,7 +35,7 @@ import { IDepositFacet } from "src/interfaces/IDepositFacet.sol";
 	Fallback flow: if the App fails to complete Fig. 5 step 5 within a limited timeframe, the
 	user can reclaim the funds on the sidechain from the interoperability contract.
 */
-contract DepositFacet is OnlyRegisteredToken, OnlyStarkExOperator, IDepositFacet {
+contract DepositFacet is OnlyRegisteredToken, OnlyStarkExOperator, OnlyOwner, IDepositFacet {
 	bytes32 constant DEPOSIT_STORAGE_POSITION = keccak256("DEPOSIT_STORAGE_POSITION");
 
 	/// @dev Storage of this facet using diamond storage.
@@ -45,9 +46,20 @@ contract DepositFacet is OnlyRegisteredToken, OnlyStarkExOperator, IDepositFacet
         }
     }
 
+	/// @inheritdoc IDepositFacet
+	function initialize() external override onlyOwner {
+		setDepositExpirationTimeout(Constants.DEPOSIT_ONCHAIN_EXPIRATION_TIMEOUT);
+	}
+
 	//==============================================================================//
     //=== Write API		                                                         ===//
     //==============================================================================//
+
+	/// @inheritdoc IDepositFacet
+	function setDepositExpirationTimeout(uint256 timeout_) public override onlyOwner {
+		depositStorage().depositExpirationTimeout = timeout_;
+		emit LogSetDepositExpirationTimeout(timeout_);
+	}
 
 	/// @inheritdoc IDepositFacet
 	function lockDeposit(
@@ -75,7 +87,7 @@ contract DepositFacet is OnlyRegisteredToken, OnlyStarkExOperator, IDepositFacet
             starkKey: starkKey_,
             token: token_,
             amount: amount_,
-            expirationDate: (block.timestamp + Constants.DEPOSIT_ONCHAIN_EXPIRATION_TIMEOUT)
+            expirationDate: (block.timestamp + ds.depositExpirationTimeout)
         });
 		/// increment the pending deposit amount for the token
 		ds.pendingDeposits[token_] += amount_;
@@ -158,5 +170,10 @@ contract DepositFacet is OnlyRegisteredToken, OnlyStarkExOperator, IDepositFacet
 	/// @inheritdoc IDepositFacet
     function getPendingDeposits(address token_) external view override returns (uint256) {
 		return depositStorage().pendingDeposits[token_];
+	}
+
+	/// @inheritdoc IDepositFacet
+	function getDepositExpirationTimeout() external override returns(uint256) {
+		return depositStorage().depositExpirationTimeout;
 	}
 }

@@ -8,6 +8,7 @@ import { HelpersERC20 } from "src/helpers/HelpersERC20.sol";
 import { HelpersECDSA } from "src/helpers/HelpersECDSA.sol";
 import { LibTokenRegister } from "src/libraries/LibTokenRegister.sol";
 import { LibAccessControl } from "src/libraries/LibAccessControl.sol";
+import { OnlyOwner } from "src/modifiers/OnlyOwner.sol";
 import { OnlyStarkExOperator } from "src/modifiers/OnlyStarkExOperator.sol";
 import { OnlyRegisteredToken } from "src/modifiers/OnlyRegisteredToken.sol";
 import { IWithdrawalFacet } from "src/interfaces/IWithdrawalFacet.sol";
@@ -32,7 +33,7 @@ import { IWithdrawalFacet } from "src/interfaces/IWithdrawalFacet.sol";
     Fallback flow: if the user fails to sign within a limited time frame, the App reclaims
     the money from the interoperability contract.
 */
-contract WithdrawalFacet is OnlyRegisteredToken, OnlyStarkExOperator, IWithdrawalFacet {
+contract WithdrawalFacet is OnlyRegisteredToken, OnlyStarkExOperator, OnlyOwner, IWithdrawalFacet {
     bytes32 constant WITHDRAW_STORAGE_POSITION = keccak256("WITHDRAW_STORAGE_POSITION");
 
     /// @dev Storage of this facet using diamond storage.
@@ -43,9 +44,20 @@ contract WithdrawalFacet is OnlyRegisteredToken, OnlyStarkExOperator, IWithdrawa
         }
     }
 
+    /// @inheritdoc IWithdrawalFacet
+    function initialize() external override onlyOwner {
+		setWithdrawalExpirationTimeout(Constants.WITHDRAWAL_ONCHAIN_EXPIRATION_TIMEOUT);
+	}
+
     //==============================================================================//
     //=== Write API		                                                         ===//
     //==============================================================================//
+
+    /// @inheritdoc IWithdrawalFacet
+    function setWithdrawalExpirationTimeout(uint256 timeout_) public override onlyOwner {
+		withdrawalStorage().withdrawalExpirationTimeout = timeout_;
+		emit LogSetWithdrawalExpirationTimeout(timeout_);
+	}
 
     /// @inheritdoc IWithdrawalFacet
     function lockWithdrawal(
@@ -151,4 +163,9 @@ contract WithdrawalFacet is OnlyRegisteredToken, OnlyStarkExOperator, IWithdrawa
     function getPendingWithdrawals(address token_) external view override returns (uint256 pending_) {
         pending_ = withdrawalStorage().pendingWithdrawals[token_];
     }
+
+    /// @inheritdoc IWithdrawalFacet
+	function getWithdrawalExpirationTimeout() external override returns(uint256) {
+		return withdrawalStorage().withdrawalExpirationTimeout;
+	}
 }

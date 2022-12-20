@@ -2,7 +2,7 @@
 pragma solidity ^0.8.0;
 
 interface IWithdrawalFacet {
-    
+
     struct Withdrawal {
         uint256 starkKey;
         address token;
@@ -13,6 +13,7 @@ interface IWithdrawalFacet {
     struct WithdrawalStorage {
 		mapping(uint256 => Withdrawal) withdrawals;
 		mapping(address => uint256) pendingWithdrawals;
+        uint256 withdrawalExpirationTimeout;
 	}
 
     /**
@@ -43,6 +44,12 @@ interface IWithdrawalFacet {
      */
     event LogReclaimWithdrawal(uint256 indexed lockHash, address indexed recipient);
 
+    /**
+     * @notice Emitted when the withdrawal expiration timeout is set.
+     * @param timeout The timeout.
+     */
+    event LogSetWithdrawalExpirationTimeout(uint256 indexed timeout);
+
     error InvalidLockHashError();
     error InvalidRecipientError();
     error InvalidStarkKeyError();
@@ -51,6 +58,19 @@ interface IWithdrawalFacet {
     error WithdrawalAlreadyExistsError();
     error WithdrawalNotFoundError();
     error WithdrawalNotExpiredError();
+
+    /**
+     * @notice Initialize withdrawal expiration timeout.
+     * @dev Only callable by the owner.
+     */
+    function initialize() external;
+
+    /**
+     * @notice Sets the withdrawal expiration timeout.
+     * @dev only callable by the owner.
+     * @param timeout_ The timeout.
+     */
+    function setWithdrawalExpirationTimeout(uint256 timeout_) external;
 
     /**
      * @notice Lock funds to be withdrawn
@@ -102,4 +122,10 @@ interface IWithdrawalFacet {
      * @return pending_ The amount.
     */
     function getPendingWithdrawals(address token_) external view returns (uint256 pending_);
+
+    /**
+     * @notice Gets the withdrawal expiration timeout.
+     * @return Returns the timeout value.
+     */
+    function getWithdrawalExpirationTimeout() external returns(uint256);
 }

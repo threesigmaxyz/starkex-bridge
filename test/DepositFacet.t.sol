@@ -68,6 +68,22 @@ contract DepositFacetTest is BaseFixture {
         ITokenRegisterFacet(bridge).setTokenRegister(address(token), true);
     }
 
+    function test_deposit_initialize_ok() public {
+        assertEq(IDepositFacet(bridge).getDepositExpirationTimeout(), Constants.DEPOSIT_ONCHAIN_EXPIRATION_TIMEOUT);
+    }
+
+    function test_set_depositExpirationTimeout_ok() public {
+        uint256 newTimeout = 500;
+        vm.prank(_owner());
+        IDepositFacet(bridge).setDepositExpirationTimeout(newTimeout);
+        assertEq(IDepositFacet(bridge).getDepositExpirationTimeout(), newTimeout);
+    }
+
+    function test_set_depositExpirationTimeout_notRole() public {
+        vm.expectRevert(abi.encodeWithSelector(LibAccessControl.Unauthorized.selector));
+        IDepositFacet(bridge).setDepositExpirationTimeout(999);
+    }
+
     //==============================================================================//
     //=== lockDeposit Tests                                                      ===//
     //==============================================================================//

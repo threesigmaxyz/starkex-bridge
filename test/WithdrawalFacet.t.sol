@@ -3,11 +3,13 @@ pragma solidity ^0.8.0;
 
 import { IERC20 } from "@openzeppelin/interfaces/IERC20.sol";
 
+import { Constants }           from "src/constants/Constants.sol";
 import { WithdrawalFacet }     from "src/facets/WithdrawalFacet.sol";
 import { ECDSA }               from "src/dependencies/ecdsa/ECDSA.sol";
 import { LibDiamond }          from "src/libraries/LibDiamond.sol";
 import { ITokenRegisterFacet } from "src/interfaces/ITokenRegisterFacet.sol";
 import { IWithdrawalFacet }    from "src/interfaces/IWithdrawalFacet.sol";
+import { LibAccessControl }    from "src/libraries/LibAccessControl.sol";
 
 import { BaseFixture } from "test/fixtures/BaseFixture.sol";
 import { MockERC20 }   from "test/mocks/MockERC20.sol";
@@ -166,6 +168,22 @@ contract WithdrawalFacetTest is BaseFixture {
     //==============================================================================//
     //=== Tests                                                                  ===//
     //==============================================================================//
+
+    function test_withdrawal_initialize_ok() public {
+        assertEq(IWithdrawalFacet(bridge).getWithdrawalExpirationTimeout(), Constants.WITHDRAWAL_ONCHAIN_EXPIRATION_TIMEOUT);
+    }
+
+    function test_set_withdrawalExpirationTimeout_ok() public {
+        uint256 newTimeout = 500;
+        vm.prank(_owner());
+        IWithdrawalFacet(bridge).setWithdrawalExpirationTimeout(newTimeout);
+        assertEq(IWithdrawalFacet(bridge).getWithdrawalExpirationTimeout(), newTimeout);
+    }
+
+    function test_set_withdrawalExpirationTimeout_notRole() public {
+        vm.expectRevert(abi.encodeWithSelector(LibAccessControl.Unauthorized.selector));
+        IWithdrawalFacet(bridge).setWithdrawalExpirationTimeout(999);
+    }
 
     function test_lockWithdrawal_ok() public {
         _lockWithdrawal(STARK_KEY, address(token), 100, LOCK_HASH);
