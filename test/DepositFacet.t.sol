@@ -162,7 +162,10 @@ contract DepositFacetTest is BaseFixture {
         // and
         address interop_ = vm.addr(36);
         vm.prank(_owner());
-        IAccessControlFacet(bridge).setRole(LibAccessControl.INTEROPERABILITY_CONTRACT_ROLE, interop_);
+        IAccessControlFacet(bridge).setPendingRole(LibAccessControl.INTEROPERABILITY_CONTRACT_ROLE, interop_);
+        
+        vm.prank(interop_);
+        IAccessControlFacet(bridge).acceptRole(LibAccessControl.INTEROPERABILITY_CONTRACT_ROLE);
         // and
         vm.prank(interop_);
         IStateFacet(bridge).setOrderRoot(orderRoot_);

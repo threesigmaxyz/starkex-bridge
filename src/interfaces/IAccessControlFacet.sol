@@ -6,11 +6,17 @@ pragma solidity ^0.8.0;
 interface IAccessControlFacet {
 
     /** 
-     * @notice Sets an address to a role.
-     * @param role_  The role.
-     * @param account_ The address of the account.
+     * @notice Sets the msg.sender address to a role.
+     * @param role_ The role.
     */
-    function setRole(bytes32 role_, address account_) external;
+    function acceptRole(bytes32 role_) external;
+
+    /** 
+     * @notice Sets a pending address to a role.
+     * @param role_ The role.
+     * @param account_ The address of the pending account.
+    */
+    function setPendingRole(bytes32 role_, address account_) external;
 
     /** 
      * @notice Gets the account assigned to a role.

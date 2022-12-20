@@ -5,8 +5,11 @@ import { Pausable } from "@openzeppelin/security/Pausable.sol";
 
 import { NonblockingLzApp } from "src/dependencies/lz/NonblockingLzApp.sol";
 
+import { LibAccessControl } from "src/libraries/LibAccessControl.sol";
+
 interface IBridge {
     function setOrderRoot(uint256 orderRoot_) external;
+    function acceptRole(bytes32 role_) external;
 }
 
 contract LzReceptor is NonblockingLzApp, Pausable {
@@ -18,6 +21,10 @@ contract LzReceptor is NonblockingLzApp, Pausable {
         address bridgeAddress_
     ) NonblockingLzApp(lzEndpoint_) {
         _bridge = IBridge(bridgeAddress_);
+    }
+
+    function acceptBridgeRole() public {
+        _bridge.acceptRole(LibAccessControl.INTEROPERABILITY_CONTRACT_ROLE);
     }
 
     function _nonblockingLzReceive(

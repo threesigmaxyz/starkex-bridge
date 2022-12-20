@@ -13,6 +13,7 @@ library LibAccessControl {
 
     struct AccessControlStorage {
         mapping(bytes32 => address) roles;
+        mapping(bytes32 => address) pendingRoles;
     }
 
     /**
@@ -23,7 +24,15 @@ library LibAccessControl {
      */
     event RoleTransferred(bytes32 indexed role, address indexed previousAccount, address indexed newAccount);
 
-    error NotRoleError();
+    /**
+     * @notice Emits that a pending role was set for an account.
+     * @param role The role.
+     * @param newAccount The new account assigned.
+     */
+    event PendingRoleSet(bytes32 indexed role, address indexed newAccount);
+
+    error Unauthorized();
+    error NotPendingRoleError();
 
     /// @dev Storage of this facet using diamond storage.
     function accessControlStorage() internal pure returns (AccessControlStorage storage acs) {
@@ -34,17 +43,51 @@ library LibAccessControl {
     }
 
     /**
-     * @notice Sets a role to an account.
+     * @notice Accepts the given role.
      * @param role_ The role.
-     * @param account_ The address of the account.
      */
-    function setRole(bytes32 role_, address account_) internal {
+    function acceptRole(bytes32 role_) internal {
         AccessControlStorage storage acs = accessControlStorage();
-        
-        address prevAccount_ = acs.roles[role_];
-        acs.roles[role_] = account_;
 
-        emit RoleTransferred(role_, prevAccount_, account_);
+        if (msg.sender != acs.pendingRoles[role_]) revert NotPendingRoleError();
+
+        address prevAccount_ = acs.roles[role_];
+        acs.roles[role_] = msg.sender;
+        
+        acs.pendingRoles[role_] = address(0);
+
+        emit RoleTransferred(role_, prevAccount_, msg.sender);
+    }
+
+    /**
+     * @notice Sets the role to a pending account.
+     * @param role_ The role.
+     * @param account_ The address of the pending account.
+     */
+    function setPendingRole(bytes32 role_, address account_) internal {
+        accessControlStorage().pendingRoles[role_] = account_;
+        emit PendingRoleSet(role_, account_);
+    }
+
+    /** 
+     * @notice Gets the account assigned to a role.
+     * @param role_ The role.
+     * @return The address.
+    */
+    function getRole(bytes32 role_) internal view returns (address) {
+        return accessControlStorage().roles[role_];
+    }
+
+    /**
+     * @notice Initializes all roles.
+     * @param accounts_ The accounts to set the roles.
+     */
+    function initializeRoles(address[4] memory accounts_) internal {
+        AccessControlStorage storage acs = accessControlStorage();
+        acs.roles[OWNER_ROLE] = accounts_[0];
+        acs.roles[STARKEX_OPERATOR_ROLE] = accounts_[1];
+        acs.roles[INTEROPERABILITY_CONTRACT_ROLE] = accounts_[2];
+        acs.roles[TOKEN_ADMIN_ROLE] = accounts_[3];
     }
 
     /** 
@@ -52,6 +95,6 @@ library LibAccessControl {
      * @param role_ The role.
     */
     function onlyRole(bytes32 role_) internal view {
-        if (msg.sender != accessControlStorage().roles[role_]) revert NotRoleError();
+        if (msg.sender != accessControlStorage().roles[role_]) revert Unauthorized();
     }
 }

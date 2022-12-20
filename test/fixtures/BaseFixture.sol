@@ -46,9 +46,10 @@ contract BaseFixture is Test {
         IDiamondCut.FacetCut[] memory cut_ = new IDiamondCut.FacetCut[](5);
 
         // Access Control facet
-        bytes4[] memory accessControlFacetSelectors_ = new bytes4[](2);
-        accessControlFacetSelectors_[0] = IAccessControlFacet.setRole.selector;
-        accessControlFacetSelectors_[1] = IAccessControlFacet.getRole.selector;
+        bytes4[] memory accessControlFacetSelectors_ = new bytes4[](3);
+        accessControlFacetSelectors_[0] = IAccessControlFacet.acceptRole.selector;
+        accessControlFacetSelectors_[1] = IAccessControlFacet.setPendingRole.selector;
+        accessControlFacetSelectors_[2] = IAccessControlFacet.getRole.selector;
         cut_[0] = IDiamondCut.FacetCut({
             facetAddress: address(accessControlFacet), 
             action: IDiamondCut.FacetCutAction.Add, 

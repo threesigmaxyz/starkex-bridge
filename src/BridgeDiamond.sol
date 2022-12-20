@@ -22,17 +22,23 @@ contract BridgeDiamond {
     error EtherReceivedError();
     
     constructor(ConstructorArgs memory args_) {
-        if (args_.owner == address(0)) revert ZeroAddressAccountError();
-        if (args_.starkExOperator == address(0)) revert ZeroAddressAccountError();
-        if (args_.interoperabilityContract == address(0)) revert ZeroAddressAccountError();
-        if (args_.tokenAdmin == address(0)) revert ZeroAddressAccountError();
+        if (
+            args_.owner == address(0) ||
+            args_.starkExOperator == address(0) ||
+            args_.interoperabilityContract == address(0) ||
+            args_.tokenAdmin == address(0)
+        ) revert ZeroAddressAccountError();
 
-        LibAccessControl.setRole(LibAccessControl.OWNER_ROLE, args_.owner);
-        LibAccessControl.setRole(LibAccessControl.STARKEX_OPERATOR_ROLE, args_.starkExOperator);
-        LibAccessControl.setRole(LibAccessControl.INTEROPERABILITY_CONTRACT_ROLE, args_.interoperabilityContract);
-        LibAccessControl.setRole(LibAccessControl.TOKEN_ADMIN_ROLE, args_.tokenAdmin);
-
-        // Add the diamondCut external function from the diamondCutFacet
+        LibAccessControl.initializeRoles(
+            [
+                args_.owner,
+                args_.starkExOperator,
+                args_.interoperabilityContract,
+                args_.tokenAdmin
+            ]
+        );
+        
+        /// Add the diamondCut external function from the diamondCutFacet
         IDiamondCut.FacetCut[] memory cut_ = new IDiamondCut.FacetCut[](1);
         bytes4[] memory functionSelectors_ = new bytes4[](1);
         functionSelectors_[0] = IDiamondCut.diamondCut.selector;
