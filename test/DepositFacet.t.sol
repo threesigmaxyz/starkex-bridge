@@ -160,14 +160,13 @@ contract DepositFacetTest is BaseFixture {
         (uint256 branchMask_, bytes32[] memory siblings_) = mpt_.getProof(abi.encode(LOCK_HASH));
         uint256 orderRoot_ = uint256(mpt_.root());
         // and
-        address interop_ = vm.addr(36);
         vm.prank(_owner());
-        IAccessControlFacet(bridge).setPendingRole(LibAccessControl.INTEROPERABILITY_CONTRACT_ROLE, interop_);
+        IAccessControlFacet(bridge).setPendingRole(LibAccessControl.INTEROPERABILITY_CONTRACT_ROLE, _mockInteropContract());
         
-        vm.prank(interop_);
+        vm.prank(_mockInteropContract());
         IAccessControlFacet(bridge).acceptRole(LibAccessControl.INTEROPERABILITY_CONTRACT_ROLE);
         // and
-        vm.prank(interop_);
+        vm.prank(_mockInteropContract());
         IStateFacet(bridge).setOrderRoot(orderRoot_);
 
         // Act + Assert

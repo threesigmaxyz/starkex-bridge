@@ -5,6 +5,8 @@ import { Test } from "@forge-std/Test.sol";
 
 import { BridgeDiamond }    from "src/BridgeDiamond.sol";
 
+import { LibAccessControl } from "src/libraries/LibAccessControl.sol";
+
 import { AccessControlFacet } from "src/facets/AccessControlFacet.sol";
 import { DepositFacet }       from "src/facets/DepositFacet.sol";
 import { DiamondCutFacet }    from "src/facets/DiamondCutFacet.sol";
@@ -36,7 +38,7 @@ contract BaseFixture is Test {
         BridgeDiamond.ConstructorArgs memory args_ = BridgeDiamond.ConstructorArgs({
             owner: _owner(),
             starkExOperator: _operator(),
-            interoperabilityContract: vm.addr(1),
+            interoperabilityContract: _mockInteropContract(),
             tokenAdmin: _tokenAdmin(),
             diamondCutFacet: address(diamondCutFacet)
         });
@@ -105,6 +107,14 @@ contract BaseFixture is Test {
         // Cut diamond finalize
         vm.prank(_owner());
         IDiamondCut(address(bridge)).diamondCut(cut_, address(0), "");
+
+        /// Accept roles other than the owner.
+        vm.prank(_operator());
+        IAccessControlFacet(bridge).acceptRole(LibAccessControl.STARKEX_OPERATOR_ROLE);
+        vm.prank(_mockInteropContract());
+        IAccessControlFacet(bridge).acceptRole(LibAccessControl.INTEROPERABILITY_CONTRACT_ROLE);
+        vm.prank(_tokenAdmin());
+        IAccessControlFacet(bridge).acceptRole(LibAccessControl.TOKEN_ADMIN_ROLE);
     }
 
     function _owner() internal returns (address) {
@@ -113,6 +123,10 @@ contract BaseFixture is Test {
 
     function _operator() internal returns (address) {
         return vm.addr(420);
+    }
+
+    function _mockInteropContract() internal returns (address) {
+        return vm.addr(1338);
     }
 
     function _tokenAdmin() internal returns (address) {
