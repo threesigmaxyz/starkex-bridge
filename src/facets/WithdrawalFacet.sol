@@ -165,7 +165,7 @@ contract WithdrawalFacet is OnlyRegisteredToken, OnlyStarkExOperator, OnlyOwner,
     }
 
     /// @inheritdoc IWithdrawalFacet
-	function getWithdrawalExpirationTimeout() external override returns(uint256) {
+	function getWithdrawalExpirationTimeout() external view override returns(uint256) {
 		return withdrawalStorage().withdrawalExpirationTimeout;
 	}
 }

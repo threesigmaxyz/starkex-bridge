@@ -35,14 +35,7 @@ contract BaseFixture is Test {
 
     function setUp() virtual public {
         // Deploy diamond
-        BridgeDiamond.ConstructorArgs memory args_ = BridgeDiamond.ConstructorArgs({
-            owner: _owner(),
-            starkExOperator: _operator(),
-            interoperabilityContract: _mockInteropContract(),
-            tokenAdmin: _tokenAdmin(),
-            diamondCutFacet: address(diamondCutFacet)
-        });
-        bridge = address(new BridgeDiamond(args_));
+        bridge = address(new BridgeDiamond(_owner(), address(diamondCutFacet)));
 
         /// @dev Cut the deposit facet alone to initialize it.
         IDiamondCut.FacetCut[] memory depositCut_ = new IDiamondCut.FacetCut[](1);
@@ -60,7 +53,7 @@ contract BaseFixture is Test {
             action: IDiamondCut.FacetCutAction.Add, 
             functionSelectors: depositFacetSelectors_
         });
-        vm.prank(_owner());
+        vm.startPrank(_owner());
         IDiamondCut(address(bridge)).diamondCut(
             depositCut_,
             address(depositFacet),
@@ -83,7 +76,6 @@ contract BaseFixture is Test {
             action: IDiamondCut.FacetCutAction.Add, 
             functionSelectors: withdrawalFacetSelectors_
         });
-        vm.prank(_owner());
         IDiamondCut(address(bridge)).diamondCut(
             withdrawalCut_,
             address(withdrawalFacet),
@@ -124,10 +116,16 @@ contract BaseFixture is Test {
         });
 
         /// Cut diamond finalize.
-        vm.prank(_owner());
         IDiamondCut(address(bridge)).diamondCut(cut_, address(0), "");
+       
+        /// Set pending roles.
+        IAccessControlFacet(bridge).setPendingRole(LibAccessControl.STARKEX_OPERATOR_ROLE, _operator());
+        IAccessControlFacet(bridge).setPendingRole(LibAccessControl.INTEROPERABILITY_CONTRACT_ROLE, _mockInteropContract());
+        IAccessControlFacet(bridge).setPendingRole(LibAccessControl.TOKEN_ADMIN_ROLE, _tokenAdmin());
 
-        /// Accept roles other than the owner.
+        vm.stopPrank();
+
+        /// Accept pending roles.
         vm.prank(_operator());
         IAccessControlFacet(bridge).acceptRole(LibAccessControl.STARKEX_OPERATOR_ROLE);
         vm.prank(_mockInteropContract());

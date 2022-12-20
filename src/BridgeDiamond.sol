@@ -9,41 +9,21 @@ import { IDiamondCut } from "src/interfaces/IDiamondCut.sol";
 
 contract BridgeDiamond {    
 
-    struct ConstructorArgs {
-        address owner;
-        address starkExOperator;
-        address interoperabilityContract;
-        address tokenAdmin;
-        address diamondCutFacet;
-    }
-
-    error ZeroAddressAccountError();
+    error ZeroAddressOwnerError();
     error FunctionDoesNotExistError();
     error EtherReceivedError();
     
-    constructor(ConstructorArgs memory args_) {
-        if (
-            args_.owner == address(0) ||
-            args_.starkExOperator == address(0) ||
-            args_.interoperabilityContract == address(0) ||
-            args_.tokenAdmin == address(0)
-        ) revert ZeroAddressAccountError();
+    constructor(address owner_, address diamondCutFacet_) {
+        if (owner_ == address(0)) revert ZeroAddressOwnerError();
 
-        LibAccessControl.initializeRoles(
-            [
-                args_.owner,
-                args_.starkExOperator,
-                args_.interoperabilityContract,
-                args_.tokenAdmin
-            ]
-        );
+        LibAccessControl.accessControlStorage().roles[LibAccessControl.OWNER_ROLE] = owner_;
         
         /// Add the diamondCut external function from the diamondCutFacet
         IDiamondCut.FacetCut[] memory cut_ = new IDiamondCut.FacetCut[](1);
         bytes4[] memory functionSelectors_ = new bytes4[](1);
         functionSelectors_[0] = IDiamondCut.diamondCut.selector;
         cut_[0] = IDiamondCut.FacetCut({
-            facetAddress: args_.diamondCutFacet, 
+            facetAddress: diamondCutFacet_, 
             action: IDiamondCut.FacetCutAction.Add, 
             functionSelectors: functionSelectors_
         });

@@ -78,20 +78,6 @@ library LibAccessControl {
         return accessControlStorage().roles[role_];
     }
 
-    /**
-     * @notice Initializes all roles.
-     * @dev The owner role must be set directly because the `acceptRole` function 
-     * @dev is not available before adding the access control facet.
-     * @param accounts_ The accounts to set the roles.
-     */
-    function initializeRoles(address[4] memory accounts_) internal {
-        AccessControlStorage storage acs = accessControlStorage();
-        acs.roles[OWNER_ROLE] = accounts_[0];
-        acs.pendingRoles[STARKEX_OPERATOR_ROLE] = accounts_[1];
-        acs.pendingRoles[INTEROPERABILITY_CONTRACT_ROLE] = accounts_[2];
-        acs.pendingRoles[TOKEN_ADMIN_ROLE] = accounts_[3];
-    }
-
     /** 
      * @notice Throws if called by any account other than the one assigned to the role.
      * @param role_ The role.

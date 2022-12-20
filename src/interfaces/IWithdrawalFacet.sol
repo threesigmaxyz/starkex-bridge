@@ -127,5 +127,5 @@ interface IWithdrawalFacet {
      * @notice Gets the withdrawal expiration timeout.
      * @return Returns the timeout value.
      */
-    function getWithdrawalExpirationTimeout() external returns(uint256);
+    function getWithdrawalExpirationTimeout() external view returns(uint256);
 }

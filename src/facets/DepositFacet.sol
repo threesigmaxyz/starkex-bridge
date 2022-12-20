@@ -173,7 +173,7 @@ contract DepositFacet is OnlyRegisteredToken, OnlyStarkExOperator, OnlyOwner, ID
 	}
 
 	/// @inheritdoc IDepositFacet
-	function getDepositExpirationTimeout() external override returns(uint256) {
+	function getDepositExpirationTimeout() external view override returns(uint256) {
 		return depositStorage().depositExpirationTimeout;
 	}
 }

@@ -119,5 +119,5 @@ interface IDepositFacet {
      * @notice Gets the deposit expiration timeout.
      * @return Returns the timeout value.
      */
-    function getDepositExpirationTimeout() external returns(uint256);
+    function getDepositExpirationTimeout() external view returns(uint256);
 }
