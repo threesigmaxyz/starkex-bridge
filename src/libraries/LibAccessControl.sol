@@ -1,52 +1,42 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import { IAccessControlFacet } from "src/interfaces/IAccessControlFacet.sol";
+import { LibTokenRegister } from "src/libraries/LibTokenRegister.sol";
 
 library LibAccessControl {
-    bytes32 constant ACESS_CONTROL_STORAGE_POSITION = keccak256("ACESS_CONTROL_STORAGE_POSITION");
+    bytes32 constant ACCESS_CONTROL_STORAGE_POSITION = keccak256("ACCESS_CONTROL_STORAGE_POSITION");
+    
+    bytes32 constant OWNER_ROLE = keccak256("OWNER_ROLE");
+    bytes32 constant STARKEX_OPERATOR_ROLE = keccak256("STARKEX_OPERATOR_ROLE");
+    bytes32 constant INTEROPERABILITY_CONTRACT_ROLE = keccak256("INTEROPERABILITY_CONTRACT_ROLE");
+    bytes32 constant TOKEN_ADMIN_ROLE = keccak256("TOKEN_ADMIN_ROLE");
 
     struct AccessControlStorage {
-        address owner;
-        address starkExOperator;
-        address interoperabilityContract;
+        mapping(bytes32 => address) roles;
     }
 
-    function diamondStorage() internal pure returns (AccessControlStorage storage ds) {
-        bytes32 position_ = ACESS_CONTROL_STORAGE_POSITION;
+    event RoleTransferred(bytes32 indexed role, address indexed previousAccount, address indexed newAccount);
+
+    error NotRoleError();
+
+    function accessControlStorage() internal pure returns (AccessControlStorage storage acs) {
+        bytes32 position_ = ACCESS_CONTROL_STORAGE_POSITION;
         assembly {
-            ds.slot := position_
+            acs.slot := position_
         }
     }
 
-    function setOwner(address owner_) internal {
-        AccessControlStorage storage ds = diamondStorage();
+    function setRole(bytes32 role_, address account_) internal {
+        AccessControlStorage storage acs = accessControlStorage();
         
-        address prevOwner_ = ds.owner;
-        ds.owner = owner_;
-        
-        //emit IAccessControlFacet.OwnershipTransferred(prevOwner_, owner_);
+        address prevAccount_ = acs.roles[role_];
+        acs.roles[role_] = account_;
+
+        emit RoleTransferred(role_, prevAccount_, account_);
     }
 
-    function setStarkExOperator(address operator_) internal {
-        diamondStorage().starkExOperator = operator_;
-        // TODO emit IAccessControlFacet.LogSetStarkExOperator(operator_);
-    }
-
-    function setInteroperabilityContract(address interop_) internal {
-        diamondStorage().interoperabilityContract = interop_;
-        // TODO emit IAccessControlFacet.LogSetInteroperabilityContract(interop_);
-    }
-
-    function getOwner() internal view returns (address owner_) {
-        owner_ = diamondStorage().owner;
-    }
-
-    function getStarkExOperator() internal view returns (address operator_) {
-        operator_ = diamondStorage().starkExOperator;
-    }
-
-    function getInteroperabilityContract() internal view returns (address interop_) {
-        interop_ = diamondStorage().interoperabilityContract;
+    /// @notice Throws if called by any account other than the role.
+    function onlyRole(bytes32 role_) internal view {
+        if (msg.sender != accessControlStorage().roles[role_]) revert NotRoleError();
     }
 }

@@ -1,19 +1,31 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import { AppStorage } from "src/storage/AppStorage.sol";
-
 interface IWithdrawalFacet {
+
+    /// @notice TODO
+    struct Withdrawal {
+        uint256 starkKey;
+        address token;
+        uint256 amount;
+        uint256 expirationDate;
+    }
+
+    struct WithdrawalStorage {
+		mapping(uint256 => Withdrawal) withdrawals;
+		mapping(address => uint256) pendingWithdrawals;
+	}
+
     /**
      * @notice Emitted when a user request is made to the off chain application.
      * that consequently locks funds in this contract.
      * @dev The funds are locked temporarily in this contract.
      * @param lockHash The lock hash to be signed.
      * @param starkKey The STARK key that must sign the lock hash.
-     * @param asset The asset to be locked.
+     * @param token The asset to be locked.
      * @param amount The amount of funds to be locked.
      */
-    event LogLockWithdrawal(uint256 indexed lockHash, uint256 indexed starkKey, address indexed asset, uint256 amount);
+    event LogLockWithdrawal(uint256 indexed lockHash, uint256 indexed starkKey, address indexed token, uint256 amount);
 
     /**
      * @notice Emitted when a withdraw is signed and completed by a user
@@ -32,17 +44,26 @@ interface IWithdrawalFacet {
      */
     event LogReclaimWithdrawal(uint256 indexed lockHash, address indexed recipient);
 
+    error InvalidLockHashError();
+    error InvalidRecipientError();
+    error InvalidStarkKeyError();
+    error ZeroAmountError();
+    error InvalidSignatureError();
+    error WithdrawalAlreadyExistsError();
+    error WithdrawalNotFoundError();
+    error WithdrawalNotExpiredError();
+
     /**
      * @notice Lock funds to be withdrawn
      * @dev Verify if there are enough funds to lock and then lock funds
      * @param starkKey_ TODO
-     * @param asset_ Asset address to be withdrawn
+     * @param token_ Asset address to be withdrawn
      * @param amount_ Amount to be withdrawn
      * @param lockHash_ TODO
      */
     function lockWithdrawal(
         uint256 starkKey_,
-        address asset_,
+        address token_,
         uint256 amount_,
         uint256 lockHash_
     ) external;
@@ -67,10 +88,10 @@ interface IWithdrawalFacet {
     /// @notice TODO
     /// @param hashId_ TODO
     /// @return withdrawal_ TODO
-    function getWithdrawal(uint256 hashId_) external view returns (AppStorage.Withdrawal memory withdrawal_);
+    function getWithdrawal(uint256 hashId_) external view returns (Withdrawal memory withdrawal_);
 
     /// @notice TODO
-    /// @param asset_ TODO
+    /// @param token_ TODO
     /// @return pending_ TODO
-    function getPendingWithdrawals(address asset_) external view returns (uint256 pending_);
+    function getPendingWithdrawals(address token_) external view returns (uint256 pending_);
 }

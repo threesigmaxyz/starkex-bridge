@@ -1,7 +1,6 @@
 //SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import { Modifiers }           from "src/Modifiers.sol";
 import { Constants }           from "src/constants/Constants.sol";
 import { DepositFacet }        from "src/facets/DepositFacet.sol";
 import { IAccessControlFacet } from "src/interfaces/IAccessControlFacet.sol";
@@ -9,7 +8,7 @@ import { IDepositFacet }       from "src/interfaces/IDepositFacet.sol";
 import { IStateFacet }         from "src/interfaces/IStateFacet.sol";
 import { ITokenRegisterFacet } from "src/interfaces/ITokenRegisterFacet.sol";
 import { PatriciaTree }        from "src/dependencies/mpt/v2/PatriciaTree.sol";
-import { AppStorage }          from "src/storage/AppStorage.sol";
+import { LibAccessControl }    from "src/libraries/LibAccessControl.sol";
 
 import { BaseFixture } from "test/fixtures/BaseFixture.sol";
 import { MockERC20 }   from "test/mocks/MockERC20.sol";
@@ -25,8 +24,8 @@ contract DepositFacetTest is BaseFixture {
     uint256 internal constant STARK_KEY = 1234;
 
     /**
-    AssetId Sold:       0x3003a65651d3b9fb2eff934a4416db301afd112a8492aaf8d7297fc87dcd9f4
-    AssetId Fees:       70bf591713d7cb7150523cf64add8d49fa6b61036bba9f596bd2af8e3bb86f9
+    tokenId Sold:       0x3003a65651d3b9fb2eff934a4416db301afd112a8492aaf8d7297fc87dcd9f4
+    tokenId Fees:       70bf591713d7cb7150523cf64add8d49fa6b61036bba9f596bd2af8e3bb86f9
     Receiver Stark Key: 5fa3383597691ea9d827a79e1a4f0f7949435ced18ca9619de8ab97e661020
     VaultId Sender:     34
     VaultId Receiver:   21
@@ -42,7 +41,7 @@ contract DepositFacetTest is BaseFixture {
     //=== Events                                                                 ===//
     //==============================================================================//
 
-	event LogLockDeposit(uint256 indexed lockHash, uint256 indexed starkKey, address indexed asset, uint256 amount);
+	event LogLockDeposit(uint256 indexed lockHash, uint256 indexed starkKey, address indexed token, uint256 amount);
     event LogClaimDeposit(uint256 indexed lockHash, address indexed recipient);
     event LogReclaimDeposit(uint256 indexed lockHash);
 
@@ -64,16 +63,9 @@ contract DepositFacetTest is BaseFixture {
         token = (new MockERC20){salt: "USDC"}("USD Coin", "USDC", 6);   // 0xa33e385d3ab4a55cc949115bb5cb57fb16143d4b
         Console.log(address(token));
 
-        // Whitelist token admin
-        ITokenRegisterFacet(bridge).setValidTokenAdmin(_tokenAdmin(), true);
-
         // Register token in bridge
         vm.prank(_tokenAdmin());
-        ITokenRegisterFacet(bridge).registerToken(
-            0x239763eb446b2ff4f1bfcbefbfb3756d28798fb7f17563f05f5cb1421712410,
-            hex"F47261B0000000000000000000000000A33E385D3AB4A55CC949115BB5CB57FB16143D4B",  // (0xa33e385d3ab4a55cc949115bb5cb57fb16143d4b, 10000)
-            10000
-        );
+        ITokenRegisterFacet(bridge).setTokenRegister(address(token), true);
     }
 
     //==============================================================================//
@@ -86,15 +78,15 @@ contract DepositFacetTest is BaseFixture {
 
     /*
     TODO
-    function test_lockDeposit_WhenAssetNotRegistered_AssetNotRegisteredError() public {
+    function test_lockDeposit_WhentokenNotRegistered_tokenNotRegisteredError() public {
         // Arrange
-        address asset_ = vm.addr(12345);
+        address token_ = vm.addr(12345);
 
         // Act + Assert
         vm.expectRevert(
-            abi.encodeWithSelector(Modifiers.AssetNotRegisteredError.selector, asset_)
+            abi.encodeWithSelector(Modifiers.tokenNotRegisteredError.selector, token_)
         );
-        IDepositFacet(bridge).lockDeposit(STARK_KEY, asset_, 888, LOCK_HASH);
+        IDepositFacet(bridge).lockDeposit(STARK_KEY, token_, 888, LOCK_HASH);
     }*/
 
     function test_lockDeposit_WhenZeroStarkKey_InvalidStarkKeyError() public {
@@ -102,9 +94,7 @@ contract DepositFacetTest is BaseFixture {
         uint256 starkKey_ = 0;
 
         // Act + Assert
-        vm.expectRevert(
-            abi.encodeWithSelector(DepositFacet.InvalidStarkKeyError.selector, starkKey_)
-        );
+        vm.expectRevert(abi.encodeWithSelector(IDepositFacet.InvalidStarkKeyError.selector));
         IDepositFacet(bridge).lockDeposit(starkKey_, address(token), 888, LOCK_HASH);
     }
 
@@ -113,9 +103,7 @@ contract DepositFacetTest is BaseFixture {
         uint256 starkKey_ = Constants.K_MODULUS;
 
         // Act + Assert
-        vm.expectRevert(
-            abi.encodeWithSelector(DepositFacet.InvalidStarkKeyError.selector, starkKey_)
-        );
+        vm.expectRevert(abi.encodeWithSelector(IDepositFacet.InvalidStarkKeyError.selector));
         IDepositFacet(bridge).lockDeposit(starkKey_, address(token), 888, LOCK_HASH);
     }
 
@@ -124,9 +112,7 @@ contract DepositFacetTest is BaseFixture {
         uint256 starkKey_ = STARK_KEY - 1;
 
         // Act + Assert
-        vm.expectRevert(
-            abi.encodeWithSelector(DepositFacet.InvalidStarkKeyError.selector, starkKey_)
-        );
+        vm.expectRevert(abi.encodeWithSelector(IDepositFacet.InvalidStarkKeyError.selector));
         IDepositFacet(bridge).lockDeposit(starkKey_, address(token), 888, LOCK_HASH);
     }
 
@@ -135,9 +121,7 @@ contract DepositFacetTest is BaseFixture {
         uint256 amount_ = 0;
 
         // Act + Assert
-        vm.expectRevert(
-            abi.encodeWithSelector(DepositFacet.InvalidDepositAmountError.selector, amount_)
-        );
+        vm.expectRevert(abi.encodeWithSelector(IDepositFacet.ZeroAmountError.selector));
         IDepositFacet(bridge).lockDeposit(STARK_KEY, address(token), amount_, LOCK_HASH);
     }
 
@@ -146,9 +130,7 @@ contract DepositFacetTest is BaseFixture {
         uint256 lockHash_ = 0;
 
         // Act + Assert
-        vm.expectRevert(
-            abi.encodeWithSelector(DepositFacet.InvalidDepositLockError.selector, lockHash_)
-        );
+        vm.expectRevert(abi.encodeWithSelector(IDepositFacet.InvalidDepositLockError.selector));
         IDepositFacet(bridge).lockDeposit(STARK_KEY, address(token), 888, lockHash_);
     }
 
@@ -158,9 +140,7 @@ contract DepositFacetTest is BaseFixture {
         _lockDeposit(depositor_, STARK_KEY, address(token), 888, LOCK_HASH);
 
         // Act + Assert
-        vm.expectRevert(
-            abi.encodeWithSelector(DepositFacet.DepositPendingError.selector, LOCK_HASH)
-        );
+        vm.expectRevert(abi.encodeWithSelector(IDepositFacet.DepositPendingError.selector));
         IDepositFacet(bridge).lockDeposit(STARK_KEY, address(token), 888, LOCK_HASH);
     }
 
@@ -182,7 +162,7 @@ contract DepositFacetTest is BaseFixture {
         // and
         address interop_ = vm.addr(36);
         vm.prank(_owner());
-        IAccessControlFacet(bridge).setInteroperabilityContract(interop_);
+        IAccessControlFacet(bridge).setRole(LibAccessControl.INTEROPERABILITY_CONTRACT_ROLE, interop_);
         // and
         vm.prank(interop_);
         IStateFacet(bridge).setOrderRoot(orderRoot_);
@@ -202,7 +182,6 @@ contract DepositFacetTest is BaseFixture {
         _lockDeposit(vm.addr(1), STARK_KEY, address(token), amount_, LOCK_HASH);
 
         // Act + Assert
-        address recipient_ = vm.addr(1234);
         _reclaimDeposit(LOCK_HASH);
     }
 
@@ -213,26 +192,26 @@ contract DepositFacetTest is BaseFixture {
     function _lockDeposit(
         address user_,
         uint256 starkKey_,
-		address asset_,
+		address token_,
 		uint256 amount_,
 		uint256 lockHash_
     ) internal {
         // Arrange
-        MockERC20(asset_).mint(user_, amount_);
+        MockERC20(token_).mint(user_, amount_);
         vm.prank(user_);
-        MockERC20(asset_).approve(address(bridge), amount_);
+        MockERC20(token_).approve(address(bridge), amount_);
 
         // Act
         vm.expectEmit(true, true, true, true);
-        emit LogLockDeposit(lockHash_, starkKey_, asset_, amount_);
+        emit LogLockDeposit(lockHash_, starkKey_, token_, amount_);
         vm.prank(user_);
-        IDepositFacet(bridge).lockDeposit(starkKey_, asset_, amount_, lockHash_);
+        IDepositFacet(bridge).lockDeposit(starkKey_, token_, amount_, lockHash_);
 
         // Assert
-        AppStorage.Deposit memory deposit_ = IDepositFacet(bridge).getDeposit(lockHash_);
+        IDepositFacet.Deposit memory deposit_ = IDepositFacet(bridge).getDeposit(lockHash_);
         assertEq(deposit_.receiver, user_);
         assertEq(deposit_.starkKey, starkKey_);
-        assertEq(deposit_.asset, asset_);
+        assertEq(deposit_.token, token_);
         assertEq(deposit_.amount, amount_);
         assertEq(deposit_.expirationDate, block.timestamp + Constants.DEPOSIT_ONCHAIN_EXPIRATION_TIMEOUT);
     }
@@ -244,7 +223,7 @@ contract DepositFacetTest is BaseFixture {
         address recipient_
     ) internal {
         // Arrange
-        AppStorage.Deposit memory deposit_ = IDepositFacet(bridge).getDeposit(lockHash_);
+        IDepositFacet.Deposit memory deposit_ = IDepositFacet(bridge).getDeposit(lockHash_);
         assertGt(deposit_.expirationDate, 0);
         vm.warp(deposit_.expirationDate + 1);
 
@@ -262,12 +241,12 @@ contract DepositFacetTest is BaseFixture {
         // Assert
         _validateDepositDeleted(lockHash_);
         // And
-        assertEq(MockERC20(deposit_.asset).balanceOf(recipient_), deposit_.amount);
+        assertEq(MockERC20(deposit_.token).balanceOf(recipient_), deposit_.amount);
     }
 
     function _reclaimDeposit(uint256 lockHash_) internal {
         // Arrange
-        AppStorage.Deposit memory deposit_ = IDepositFacet(bridge).getDeposit(lockHash_);
+        IDepositFacet.Deposit memory deposit_ = IDepositFacet(bridge).getDeposit(lockHash_);
         assertGt(deposit_.expirationDate, 0);
         vm.warp(deposit_.expirationDate + 1);
 
@@ -280,15 +259,11 @@ contract DepositFacetTest is BaseFixture {
         // Assert
         _validateDepositDeleted(lockHash_);
         // And
-        assertEq(MockERC20(deposit_.asset).balanceOf(deposit_.receiver), deposit_.amount);
+        assertEq(MockERC20(deposit_.token).balanceOf(deposit_.receiver), deposit_.amount);
     }
 
     function _validateDepositDeleted(uint256 lockHash_) internal {
-        AppStorage.Deposit memory deposit_ = IDepositFacet(bridge).getDeposit(lockHash_);
-        assertEq(deposit_.receiver, address(0));
-        assertEq(deposit_.starkKey, 0);
-        assertEq(deposit_.asset, address(0));
-        assertEq(deposit_.amount, 0);
-        assertEq(deposit_.expirationDate, 0);
+        vm.expectRevert(abi.encodeWithSelector(IDepositFacet.DepositNotFoundError.selector));
+        IDepositFacet.Deposit memory deposit_ = IDepositFacet(bridge).getDeposit(lockHash_);
     }
 }

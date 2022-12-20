@@ -1,48 +1,72 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import { AppStorage } from "src/storage/AppStorage.sol";
-
 interface IDepositFacet {
-	/**
-     * @notice TODO
-	 * @param lockHash TODO
-     * @param starkKey TODO
-     * @param asset TODO
-     * @param amount TODO
-     */
-	event LogLockDeposit(uint256 indexed lockHash, uint256 indexed starkKey, address indexed asset, uint256 amount);
+    struct Deposit {
+        address receiver;  
+        uint256 starkKey;
+        address token;
+        uint256 amount;
+        uint256 expirationDate;
+    }
+
+	struct DepositStorage {
+		mapping(uint256 => Deposit) deposits;
+		mapping(address => uint256) pendingDeposits;
+	}
 
 	/**
-	 * @notice TODO
-	 * @param lockHash TODO
-	 * @param recipient TODO
+     * @notice Signals a deposit was locked so the backend can process it.
+	 * @param lockHash The hash of the transfer to the user.
+     * @param starkKey The public starkKey of the user.
+     * @param token The address of the token or native currency.
+     * @param amount The amount of funds.
+     */
+	event LogLockDeposit(uint256 indexed lockHash, uint256 indexed starkKey, address indexed token, uint256 amount);
+
+	/**
+	 * @notice Signals a deposit was claimed by the operator.
+	 * @param lockHash The hash of the transfer to the user.
+	 * @param recipient The recipient of the deposit.
 	 */
 	event LogClaimDeposit(uint256 indexed lockHash, address indexed recipient);
 
 	/**
-	 * @notice TODO
-	 * @param lockHash TODO
+	 * @notice Signals a deposit was reclaimed by the operator.
+	 * @param lockHash The hash of the transfer to the user.
 	 */
 	event LogReclaimDeposit(uint256 indexed lockHash);
 
-	/// @notice TODO
-	/// @param starkKey_ TODO
-	/// @param asset_ TODO
-	/// @param amount_ TODO
-	/// @param lockHash_ TODO
+	/// @dev stateless errors.
+	error InvalidDepositLockError();
+	error InvalidStarkKeyError();
+	error ZeroAmountError();
+	/// @dev statefull errors.
+	error DepositPendingError();
+    error DepositNotFoundError();
+	error DepositNotExpiredError();
+
+	/**
+	 * @notice Locks a deposit until the hash of the transfer is included in the Merkle Tree.
+	 * @param starkKey_ The public starkKey of the user.
+	 * @param token_ The address of the token or native currency.
+	 * @param amount_ The amount of funds.
+	 * @param lockHash_ The hash of the transfer to the user. 
+	 */
 	function lockDeposit(
 		uint256 starkKey_,
-		address asset_,
+		address token_,
 		uint256 amount_,
 		uint256 lockHash_
 	) external;
 
-	/// @notice TODO
-	/// @param lockHash_ TODO
-	/// @param branchMask_ TODO
-	/// @param proof_ TODO
-	/// @param recipient_ TODO
+	/** 
+	 * @notice Claim a deposit if the hash of the transfer was included in the Merkle Tree.
+	 * @param lockHash_ The hash of the transfer to the user.
+	 * @param branchMask_ Bits defining the path to the correct node.
+	 * @param proof_ The Merkle proof proving that the transfer is in the Merkle Tree.
+	 * @param recipient_ The recipient of the deposit.
+	 */
 	function claimDeposit(
 		uint256 lockHash_,
 		uint branchMask_,
@@ -50,15 +74,21 @@ interface IDepositFacet {
 		address recipient_
 	) external;
 
-	/// @notice TODO
-	/// @param lockHash_ TODO
+	/** 
+	 * @notice Reclaims a deposit if enough time has passed and the request failed. 
+	 * @param lockHash_ The hash of the transfer to the user.
+	 */
 	function reclaimDeposit(uint256 lockHash_) external;
 
-	/// @notice TODO
-	/// @param hashId_ TODO
-	function getDeposit(uint256 hashId_) external view returns (AppStorage.Deposit memory deposit_);
+	/** 
+	 * @notice Gets a deposit from it's lockHash.
+	 * @param lockHash_ The hash of the transfer to the user.
+	 */
+	function getDeposit(uint256 lockHash_) external view returns (Deposit memory);
 
-	/// @notice TODO
-	/// @param asset_ TODO
-    function getPendingDeposits(address asset_) external view returns (uint256 pending_);
+	/** 
+	 * @notice Gets the total amount of pending deposits for a token.
+	 * @param token_ The address of the ERC20 token or native currency.
+	 */
+    function getPendingDeposits(address token_) external view returns (uint256);
 }

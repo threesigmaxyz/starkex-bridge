@@ -8,7 +8,6 @@ import { ECDSA }               from "src/dependencies/ecdsa/ECDSA.sol";
 import { LibDiamond }          from "src/libraries/LibDiamond.sol";
 import { ITokenRegisterFacet } from "src/interfaces/ITokenRegisterFacet.sol";
 import { IWithdrawalFacet }    from "src/interfaces/IWithdrawalFacet.sol";
-import { AppStorage }          from "src/storage/AppStorage.sol";
 
 import { BaseFixture } from "test/fixtures/BaseFixture.sol";
 import { MockERC20 }   from "test/mocks/MockERC20.sol";
@@ -20,15 +19,13 @@ contract WithdrawalFacetTest is BaseFixture {
     //==============================================================================//
     //=== Constants                                                              ===//
     //==============================================================================//
-
-    bytes4 internal constant ERC20_SELECTOR = bytes4(keccak256("ERC20Token(address)"));
     
     uint256 internal constant STARK_KEY   = 130079954696431488834386892570532580289305809527482364871420853057975493689;
     uint256 internal constant STARK_KEY_Y = 2014815737900971088087974256122814428168792651933467019210567933592263251564;
     
     /**
-    AssetId Sold:       0x3003a65651d3b9fb2eff934a4416db301afd112a8492aaf8d7297fc87dcd9f4
-    AssetId Fees:       70bf591713d7cb7150523cf64add8d49fa6b61036bba9f596bd2af8e3bb86f9
+    tokenId Sold:       0x3003a65651d3b9fb2eff934a4416db301afd112a8492aaf8d7297fc87dcd9f4
+    tokenId Fees:       70bf591713d7cb7150523cf64add8d49fa6b61036bba9f596bd2af8e3bb86f9
     Receiver Stark Key: 5fa3383597691ea9d827a79e1a4f0f7949435ced18ca9619de8ab97e661020
     VaultId Sender:     34
     VaultId Receiver:   21
@@ -54,7 +51,7 @@ contract WithdrawalFacetTest is BaseFixture {
     //=== Events                                                                 ===//
     //==============================================================================//
 
-    event LogLockWithdrawal(uint256 indexed lockHash, uint256 indexed starkKey, address indexed asset, uint256 amount);
+    event LogLockWithdrawal(uint256 indexed lockHash, uint256 indexed starkKey, address indexed token, uint256 amount);
     event LogClaimWithdrawal(uint256 indexed lockHash, address indexed receiver);
     event LogReclaimWithdrawal(uint256 indexed lockHash, address indexed receiver);
 
@@ -75,16 +72,9 @@ contract WithdrawalFacetTest is BaseFixture {
         vm.prank(_tokenDeployer());
         token = (new MockERC20){salt: "USDC"}("USD Coin", "USDC", 6);   // 0xa33e385d3ab4a55cc949115bb5cb57fb16143d4b
 
-        // Whitelist token admin
-        ITokenRegisterFacet(bridge).setValidTokenAdmin(_tokenAdmin(), true);
-
         // Register token in bridge
         vm.prank(_tokenAdmin());
-        ITokenRegisterFacet(bridge).registerToken(
-            0x239763eb446b2ff4f1bfcbefbfb3756d28798fb7f17563f05f5cb1421712410,
-            hex"F47261B0000000000000000000000000A33E385D3AB4A55CC949115BB5CB57FB16143D4B",  // (0xa33e385d3ab4a55cc949115bb5cb57fb16143d4b, 10000)
-            10000
-        );
+        ITokenRegisterFacet(bridge).setTokenRegister(address(token), true);
 
         // Mint USDC to bridge
         token.mint(address(bridge), 1_000_000e6);
@@ -94,39 +84,39 @@ contract WithdrawalFacetTest is BaseFixture {
     //=== Internal Test Helpers                                                  ===//
     //==============================================================================//
 
-    function _lockWithdrawal(uint256 starkKey_, address asset_, uint256 amount_, uint256 lockHash_) private {
+    function _lockWithdrawal(uint256 starkKey_, address token_, uint256 amount_, uint256 lockHash_) private {
         // Arrange
-        uint256 pendingWithdrawalsBefore_ = IWithdrawalFacet(bridge).getPendingWithdrawals(asset_);
-        uint256 balanceBefore_ = IERC20(asset_).balanceOf(bridge);
+        uint256 pendingWithdrawalsBefore_ = IWithdrawalFacet(bridge).getPendingWithdrawals(token_);
+        uint256 balanceBefore_ = IERC20(token_).balanceOf(bridge);
         // and
-        MockERC20(asset_).mint(_operator(), 1_000_000e6);
+        MockERC20(token_).mint(_operator(), 1_000_000e6);
         vm.prank(_operator());
-        IERC20(asset_).approve(address(bridge), amount_);
+        IERC20(token_).approve(address(bridge), amount_);
         // and
         vm.expectEmit(true, true, true, true);
-        emit LogLockWithdrawal(lockHash_, starkKey_, asset_, amount_);
+        emit LogLockWithdrawal(lockHash_, starkKey_, token_, amount_);
 
         // Act
         vm.prank(_operator());
-        IWithdrawalFacet(bridge).lockWithdrawal(starkKey_, asset_, amount_, lockHash_);
+        IWithdrawalFacet(bridge).lockWithdrawal(starkKey_, token_, amount_, lockHash_);
 
         // Assert
         // A withdrawal request was created.
-        AppStorage.Withdrawal memory withdrawal = IWithdrawalFacet(bridge).getWithdrawal(lockHash_);
+        IWithdrawalFacet.Withdrawal memory withdrawal = IWithdrawalFacet(bridge).getWithdrawal(lockHash_);
         assertEq(withdrawal.starkKey, starkKey_);
-        assertEq(withdrawal.asset, asset_);
+        assertEq(withdrawal.token, token_);
         assertEq(withdrawal.amount, amount_);
         assertGt(withdrawal.expirationDate, 0);
         // The accounting of pending withdrawals was updated.
-        assertEq(IWithdrawalFacet(bridge).getPendingWithdrawals(asset_), pendingWithdrawalsBefore_ + amount_);
-        assertEq(IERC20(asset_).balanceOf(bridge), balanceBefore_ + amount_);
+        assertEq(IWithdrawalFacet(bridge).getPendingWithdrawals(token_), pendingWithdrawalsBefore_ + amount_);
+        assertEq(IERC20(token_).balanceOf(bridge), balanceBefore_ + amount_);
     }
 
     function _claimWithdrawal(uint256 lockHash_, bytes memory signature_, address recipient_, uint256 amount_) private {
         // Arrange
         uint256 bridgeBalanceBefore_ = token.balanceOf(bridge);
         uint256 recipientBalanceBefore_ = token.balanceOf(recipient_);
-        uint256 pendingWithdrawalsBefore_ = IWithdrawalFacet(bridge).getPendingWithdrawals(address(token));  // TODO support multiple assets
+        uint256 pendingWithdrawalsBefore_ = IWithdrawalFacet(bridge).getPendingWithdrawals(address(token));  // TODO support multiple tokens
         // and
         vm.expectEmit(true, true, false, true);
         emit LogClaimWithdrawal(lockHash_, recipient_);
@@ -141,11 +131,9 @@ contract WithdrawalFacetTest is BaseFixture {
 
         // Assert
         // The withdrawal request was deleted
-        AppStorage.Withdrawal memory withdrawal_ = IWithdrawalFacet(bridge).getWithdrawal(lockHash_);
-        assertEq(withdrawal_.starkKey, 0);
-        assertEq(withdrawal_.asset, address(0));
-        assertEq(withdrawal_.amount, 0);
-        assertEq(withdrawal_.expirationDate, 0);
+        vm.expectRevert(abi.encodeWithSelector(IWithdrawalFacet.WithdrawalNotFoundError.selector));
+        IWithdrawalFacet.Withdrawal memory withdrawal_ = IWithdrawalFacet(bridge).getWithdrawal(lockHash_);
+        
         // All balances were corretly updateds
         assertEq(token.balanceOf(bridge), bridgeBalanceBefore_ - amount_);
         assertEq(token.balanceOf(recipient_), recipientBalanceBefore_ + amount_);
@@ -165,9 +153,9 @@ contract WithdrawalFacetTest is BaseFixture {
         
         // Assert
         // The withdrawal request was deleted
-        AppStorage.Withdrawal memory withdrawal_ = IWithdrawalFacet(bridge).getWithdrawal(lockHash_);
+        IWithdrawalFacet.Withdrawal memory withdrawal_ = IWithdrawalFacet(bridge).getWithdrawal(lockHash_);
         assertEq(withdrawal_.starkKey, 0);
-        assertEq(withdrawal_.asset, address(0));
+        assertEq(withdrawal_.token, address(0));
         assertEq(withdrawal_.amount, 0);
         assertEq(withdrawal_.expirationDate, 0);
         // The expected token amount was recalimed by the recipient
@@ -197,10 +185,7 @@ contract WithdrawalFacetTest is BaseFixture {
 
     function test_claimWithdrawal_WithdrawalNotFoundError() public {
         // Arrange
-        vm.expectRevert(abi.encodeWithSelector(
-            WithdrawalFacet.WithdrawalNotFoundError.selector,
-            LOCK_HASH
-        ));
+        vm.expectRevert(abi.encodeWithSelector(IWithdrawalFacet.WithdrawalNotFoundError.selector));
 
         // Act + Assert
         IWithdrawalFacet(bridge).claimWithdrawal(

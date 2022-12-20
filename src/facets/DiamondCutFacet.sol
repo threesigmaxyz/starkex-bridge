@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import { Modifiers } from "src/Modifiers.sol";
-import { IDiamondCut } from "src/interfaces/IDiamondCut.sol";
 import { LibDiamond }  from "src/libraries/LibDiamond.sol";
+import { OnlyOwner } from "src/modifiers/OnlyOwner.sol";
+import { IDiamondCut } from "src/interfaces/IDiamondCut.sol";
 
 // Remember to add the loupe functions from DiamondLoupeFacet to the diamond.
 // The loupe functions are required by the EIP2535 Diamonds standard
-contract DiamondCutFacet is Modifiers, IDiamondCut {
+contract DiamondCutFacet is OnlyOwner, IDiamondCut {
     /// @inheritdoc IDiamondCut
     /// @dev Only callable by the owner.
     function diamondCut(

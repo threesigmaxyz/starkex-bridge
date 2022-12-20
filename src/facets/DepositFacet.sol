@@ -2,14 +2,13 @@
 pragma solidity ^0.8.0;
 
 import { LibMPT as MerklePatriciaTree } from "src/dependencies/mpt/v2/LibMPT.sol";
-
-import { Modifiers }    from "src/Modifiers.sol";
 import { Constants } from "src/constants/Constants.sol";
-import { LibAccessControl } from "src/libraries/LibAccessControl.sol";
-import { LibTokenRegister } from "src/libraries/LibTokenRegister.sol";
 import { HelpersERC20 } from "src/helpers/HelpersERC20.sol";
+import { HelpersECDSA } from "src/helpers/HelpersECDSA.sol";
+import { LibState } from "src/libraries/LibState.sol";
+import { OnlyStarkExOperator } from "src/modifiers/OnlyStarkExOperator.sol";
+import { OnlyRegisteredToken } from "src/modifiers/OnlyRegisteredToken.sol";
 import { IDepositFacet } from "src/interfaces/IDepositFacet.sol";
-import { AppStorage }    from "src/storage/AppStorage.sol";
 
 /**
 	Step 1: The user locks their funds in the sidechain account in the interoperability
@@ -35,25 +34,16 @@ import { AppStorage }    from "src/storage/AppStorage.sol";
 	Fallback flow: if the App fails to complete Fig. 5 step 5 within a limited timeframe, the
 	user can reclaim the funds on the sidechain from the interoperability contract.
 */
-contract DepositFacet is Modifiers, IDepositFacet {
-	//==============================================================================//
-    //=== Errors                                                                 ===//
-    //==============================================================================//
+contract DepositFacet is OnlyRegisteredToken, OnlyStarkExOperator, IDepositFacet {
+	bytes32 constant DEPOSIT_STORAGE_POSITION = keccak256("DEPOSIT_STORAGE_POSITION");
 
-	// stateless errors
-	error InvalidDepositLockError(uint256 lock);
-	error InvalidStarkKeyError(uint256 starkKey);
-	error InvalidDepositAmountError(uint256 amount);
-	// statefull errors
-	error DepositPendingError(uint256 lockHash);
-    error DepositNotFoundError(uint256 lockHash);
-	error DepositNotExpiredError(uint256 lockHash, uint256 expiration);
-
-	//==============================================================================//
-    //=== State Variables                                                        ===//
-    //==============================================================================//
-
-    AppStorage.AppStorage s;
+	/// @dev Storage of this facet using diamond storage.
+	function depositStorage() internal pure returns (DepositStorage storage ds) {
+        bytes32 position_ = DEPOSIT_STORAGE_POSITION;
+        assembly {
+            ds.slot := position_
+        }
+    }
 
 	//==============================================================================//
     //=== Write API		                                                         ===//
@@ -62,36 +52,39 @@ contract DepositFacet is Modifiers, IDepositFacet {
 	/// @inheritdoc IDepositFacet
 	function lockDeposit(
 		uint256 starkKey_,
-		address asset_,
+		address token_,
 		uint256 amount_,
 		uint256 lockHash_
-	) external override onlyRegisteredAsset(asset_) {
+	) external override onlyRegisteredToken(token_) {
 		// stateless argument validation
-		if (starkKey_ == 0 || starkKey_ >= Constants.K_MODULUS || !isOnCurve(starkKey_)) {
-			revert InvalidStarkKeyError(starkKey_);
-		}
-		if (amount_ == 0) revert InvalidDepositAmountError(amount_);
-		if (lockHash_ == 0) revert InvalidDepositLockError(lockHash_);
+		if(starkKey_ == 0) revert InvalidStarkKeyError();
+        if(starkKey_ >= Constants.K_MODULUS) revert InvalidStarkKeyError();
+        if(!HelpersECDSA.isOnCurve(starkKey_)) revert InvalidStarkKeyError();
+		
+		if (amount_ == 0) revert ZeroAmountError();
+		if (lockHash_ == 0) revert InvalidDepositLockError();
+
+		DepositStorage storage ds = depositStorage();
 
 		// check if the deposit is already pending
-		if (s.deposits[lockHash_].starkKey != 0) revert DepositPendingError(lockHash_);
+		if (ds.deposits[lockHash_].expirationDate != 0) revert DepositPendingError();
 
 		// register the deposit
-		s.deposits[lockHash_] = AppStorage.Deposit({
+		ds.deposits[lockHash_] = Deposit({
 			receiver: msg.sender,
             starkKey: starkKey_,
-            asset: asset_,
+            token: token_,
             amount: amount_,
             expirationDate: (block.timestamp + Constants.DEPOSIT_ONCHAIN_EXPIRATION_TIMEOUT)
         });
-		// increment the pending deposit amount for the asset
-		s.pendingDeposits[asset_] += amount_;
+		// increment the pending deposit amount for the token
+		ds.pendingDeposits[token_] += amount_;
 
 		// emit event
-        emit LogLockDeposit(lockHash_, starkKey_, asset_, amount_);
+        emit LogLockDeposit(lockHash_, starkKey_, token_, amount_);
 
 		// transfer deposited funds to the contract
-        HelpersERC20.transferFrom(asset_, msg.sender, address(this), amount_);
+        HelpersERC20.transferFrom(token_, msg.sender, address(this), amount_);
 	}
 
 	/// @inheritdoc IDepositFacet
@@ -102,16 +95,16 @@ contract DepositFacet is Modifiers, IDepositFacet {
 		address recipient_
 	) external override onlyStarkExOperator {
 		// stateless validation
-        if (lockHash_ == 0) revert InvalidDepositLockError(lockHash_);
+        if (lockHash_ == 0) revert InvalidDepositLockError();
 
-		AppStorage.Deposit memory deposit_ = s.deposits[lockHash_];
-		if (deposit_.expirationDate == 0) {
-            revert DepositNotFoundError(lockHash_);
-        }
+		DepositStorage storage ds = depositStorage();
 
+		Deposit memory deposit_ = ds.deposits[lockHash_];
+		if (deposit_.expirationDate == 0) revert DepositNotFoundError();
+        
 		// validate MPT proof
 		MerklePatriciaTree.verifyProof(
-			bytes32(s.orderRoot),
+			bytes32(LibState.getOrderRoot()),
 			abi.encode(lockHash_),
 			abi.encode(1),
 			branchMask_,
@@ -119,38 +112,37 @@ contract DepositFacet is Modifiers, IDepositFacet {
 		);
 
 		// state update
-        delete s.deposits[lockHash_];
-        s.pendingDeposits[deposit_.asset] -= deposit_.amount;
+        delete ds.deposits[lockHash_];
+        ds.pendingDeposits[deposit_.token] -= deposit_.amount;
 
 		// emit event
 		emit LogClaimDeposit(lockHash_, recipient_);
 
 		// Transfer funds
-        HelpersERC20.transfer(deposit_.asset, recipient_, deposit_.amount);
+        HelpersERC20.transfer(deposit_.token, recipient_, deposit_.amount);
 	}
 
 	/// @inheritdoc IDepositFacet
     function reclaimDeposit(uint256 lockHash_) external override {
 		// stateless validation
-		if (lockHash_ == 0) revert InvalidDepositLockError(lockHash_);
+		if (lockHash_ == 0) revert InvalidDepositLockError();
+
+		DepositStorage storage ds = depositStorage();
 
 		// check if deposit exists and is expired
-		AppStorage.Deposit memory deposit_ = s.deposits[lockHash_];
-		if (deposit_.expirationDate == 0) {
-            revert DepositNotFoundError(lockHash_);
-        } else if (block.timestamp <= deposit_.expirationDate) {
-			revert DepositNotExpiredError(lockHash_, deposit_.expirationDate);
-		}
-
+		Deposit memory deposit_ = ds.deposits[lockHash_];
+		if (deposit_.expirationDate == 0) revert DepositNotFoundError();
+        if (block.timestamp <= deposit_.expirationDate) revert DepositNotExpiredError();
+		
 		// state update
-        delete s.deposits[lockHash_];
-        s.pendingDeposits[deposit_.asset] -= deposit_.amount;
+        delete ds.deposits[lockHash_];
+        ds.pendingDeposits[deposit_.token] -= deposit_.amount;
 
 		// emit event
 		emit LogReclaimDeposit(lockHash_);
 
 		// transfer funds
-        HelpersERC20.transfer(deposit_.asset, deposit_.receiver, deposit_.amount);
+        HelpersERC20.transfer(deposit_.token, deposit_.receiver, deposit_.amount);
 	}
 
 	//==============================================================================//
@@ -158,33 +150,13 @@ contract DepositFacet is Modifiers, IDepositFacet {
     //==============================================================================//
 
 	/// @inheritdoc IDepositFacet
-    function getDeposit(uint256 hashId_) external view override returns (AppStorage.Deposit memory) {
-        return s.deposits[hashId_];
+    function getDeposit(uint256 lockHash_) external view override returns (Deposit memory deposit) {
+        deposit = depositStorage().deposits[lockHash_];
+		if (deposit.expirationDate == 0) revert DepositNotFoundError();
     }
 
 	/// @inheritdoc IDepositFacet
-    function getPendingDeposits(address asset_) external view override returns (uint256 _pending) {
-		_pending = s.pendingDeposits[asset_];
+    function getPendingDeposits(address token_) external view override returns (uint256) {
+		return depositStorage().pendingDeposits[token_];
 	}
-
-	//==============================================================================//
-    //=== Internal Functions		                                             ===//
-    //==============================================================================//
-
-	function isOnCurve(uint256 starkKey_) private view returns (bool) {
-        uint256 xCubed_ = mulmod(mulmod(starkKey_, starkKey_, Constants.K_MODULUS), starkKey_, Constants.K_MODULUS);
-        return isQuadraticResidue(addmod(addmod(xCubed_, starkKey_, Constants.K_MODULUS), Constants.K_BETA, Constants.K_MODULUS));
-    }
-
-    function isQuadraticResidue(uint256 fieldElement_) private view returns (bool) {
-        return 1 == fieldPow(fieldElement_, ((Constants.K_MODULUS - 1) / 2));
-    }
-
-	function fieldPow(uint256 base, uint256 exponent) internal view returns (uint256) {
-        (bool success, bytes memory returndata) = address(5).staticcall(
-            abi.encode(0x20, 0x20, 0x20, base, exponent, Constants.K_MODULUS)
-        );
-        require(success, string(returndata));
-        return abi.decode(returndata, (uint256));
-    }
 }

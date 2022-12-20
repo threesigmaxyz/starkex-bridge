@@ -31,13 +31,13 @@ contract BaseFixture is Test {
     WithdrawalFacet withdrawalFacet = new WithdrawalFacet();
     StateFacet stateFacet = new StateFacet();
 
-
     function setUp() virtual public {
         // Deploy diamond
         BridgeDiamond.ConstructorArgs memory args_ = BridgeDiamond.ConstructorArgs({
             owner: _owner(),
-            starkexOperatorAddress: _operator(),
-            l1SetterAddress: vm.addr(1),
+            starkExOperator: _operator(),
+            interoperabilityContract: vm.addr(1),
+            tokenAdmin: _tokenAdmin(),
             diamondCutFacet: address(diamondCutFacet)
         });
         bridge = address(new BridgeDiamond(args_));
@@ -47,8 +47,7 @@ contract BaseFixture is Test {
 
         // Access Control facet
         bytes4[] memory accessControlFacetSelectors_ = new bytes4[](2);
-        accessControlFacetSelectors_[0] = IAccessControlFacet.setStarkExOperator.selector;
-        accessControlFacetSelectors_[1] = IAccessControlFacet.setInteroperabilityContract.selector;
+        accessControlFacetSelectors_[0] = IAccessControlFacet.setRole.selector;
         cut_[0] = IDiamondCut.FacetCut({
             facetAddress: address(accessControlFacet), 
             action: IDiamondCut.FacetCutAction.Add, 
@@ -70,8 +69,8 @@ contract BaseFixture is Test {
 
         // Token Register facet
         bytes4[] memory tokenRegisterFacetSelectors_ = new bytes4[](2);
-        tokenRegisterFacetSelectors_[0] = ITokenRegisterFacet.setValidTokenAdmin.selector;
-        tokenRegisterFacetSelectors_[1] = ITokenRegisterFacet.registerToken.selector;
+        tokenRegisterFacetSelectors_[0] = ITokenRegisterFacet.setTokenRegister.selector;
+        tokenRegisterFacetSelectors_[1] = ITokenRegisterFacet.isTokenRegistered.selector;
         cut_[2] = IDiamondCut.FacetCut({
             facetAddress: address(tokenRegisterFacet), 
             action: IDiamondCut.FacetCutAction.Add, 
@@ -104,9 +103,6 @@ contract BaseFixture is Test {
         // Cut diamond finalize
         vm.prank(_owner());
         IDiamondCut(address(bridge)).diamondCut(cut_, address(0), "");
-
-        vm.prank(_owner());
-        IAccessControlFacet(address(bridge)).setStarkExOperator(_operator());
     }
 
     function _owner() internal returns (address) {

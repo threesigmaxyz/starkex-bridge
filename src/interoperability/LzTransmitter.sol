@@ -100,10 +100,8 @@ contract LzTransmitter is NonblockingLzApp, Pausable {
         uint256 sequenceNumber_ = _starkEx.getSequenceNumber();
         uint256 lastUpdated_ = _lastUpdated[dstChainId_];
         
-        if (sequenceNumber_ <= lastUpdated_) {
-            revert StaleUpdateError(dstChainId_, lastUpdated_);
-        }
-
+        if (sequenceNumber_ <= lastUpdated_) revert StaleUpdateError(dstChainId_, lastUpdated_);
+        
         _lastUpdated[dstChainId_] = sequenceNumber_;
 
         // encode the payload

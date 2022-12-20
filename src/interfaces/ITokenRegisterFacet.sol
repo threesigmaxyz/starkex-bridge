@@ -1,25 +1,22 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
+
 interface ITokenRegisterFacet {
     
-    /**
-     * TODO
-     */
-    event LogTokenAdminSet(address admin, bool isValid);
+    struct TokenRegisterStorage {
+        mapping(address => bool) registeredTokens;
+    }
 
     /**
      * TODO
      */
-    event LogTokenRegistered(uint256 assetType, bytes assetInfo, uint256 quantum);
+    event LogSetTokenRegister(address token, bool flag);
 
     /**
      * TODO
      */
-    function setValidTokenAdmin(address admin_, bool isValid_) external;
+    function setTokenRegister(address token_, bool flag_) external;
 
-    /**
-     * TODO
-     */
-    function registerToken(uint256 assetType_, bytes calldata assetInfo_, uint256 quantum_) external;
+    function isTokenRegistered(address token_) external returns(bool);
 }

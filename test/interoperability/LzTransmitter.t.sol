@@ -19,7 +19,7 @@ contract LzTransmitterTest is LzFixture {
         // Arrange
         address keeper_ = vm.addr(42);
         vm.deal(keeper_, 100 ether);
-        
+
         // Act
         vm.prank(keeper_);
         transmitter.keep{ value: 1 ether }(MOCK_CHAIN_ID, payable(keeper_));

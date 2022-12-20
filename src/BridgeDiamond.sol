@@ -4,26 +4,33 @@ pragma solidity ^0.8.0;
 import { IERC165 } from "@openzeppelin/interfaces/IERC165.sol";
 
 import { LibDiamond }  from "src/libraries/LibDiamond.sol";
+import { LibAccessControl }  from "src/libraries/LibAccessControl.sol";
 import { IDiamondCut } from "src/interfaces/IDiamondCut.sol";
-import { AppStorage }  from "src/storage/AppStorage.sol";
 
 contract BridgeDiamond {    
 
-    AppStorage.AppStorage s;
-
     struct ConstructorArgs {
         address owner;
-        address starkexOperatorAddress;
-        address l1SetterAddress;
+        address starkExOperator;
+        address interoperabilityContract;
+        address tokenAdmin;
         address diamondCutFacet;
     }
+
+    error ZeroAddressAccountError();
+    error FunctionDoesNotExistError();
+    error EtherReceivedError();
     
     constructor(ConstructorArgs memory args_) {
-        require(args_.owner != address(0), "BridgeDiamond: owner can't be address(0)");
-        require(args_.starkexOperatorAddress != address(0), "BridgeDiamond: starkexOperatorAddress can't be address(0)");
-        require(args_.l1SetterAddress != address(0), "BridgeDiamond: l1SetterAddress can't be address(0)");
+        if (args_.owner == address(0)) revert ZeroAddressAccountError();
+        if (args_.starkExOperator == address(0)) revert ZeroAddressAccountError();
+        if (args_.interoperabilityContract == address(0)) revert ZeroAddressAccountError();
+        if (args_.tokenAdmin == address(0)) revert ZeroAddressAccountError();
 
-        LibDiamond.setContractOwner(args_.owner);
+        LibAccessControl.setRole(LibAccessControl.OWNER_ROLE, args_.owner);
+        LibAccessControl.setRole(LibAccessControl.STARKEX_OPERATOR_ROLE, args_.starkExOperator);
+        LibAccessControl.setRole(LibAccessControl.INTEROPERABILITY_CONTRACT_ROLE, args_.interoperabilityContract);
+        LibAccessControl.setRole(LibAccessControl.TOKEN_ADMIN_ROLE, args_.tokenAdmin);
 
         // Add the diamondCut external function from the diamondCutFacet
         IDiamondCut.FacetCut[] memory cut_ = new IDiamondCut.FacetCut[](1);
@@ -35,9 +42,6 @@ contract BridgeDiamond {
             functionSelectors: functionSelectors_
         });
         LibDiamond.diamondCut(cut_, address(0), "");   
-
-        s.starkexOperatorAddress = args_.starkexOperatorAddress;
-        s.l1SetterAddress = args_.l1SetterAddress;
 
         LibDiamond.DiamondStorage storage ds = LibDiamond.diamondStorage();
 
@@ -59,7 +63,7 @@ contract BridgeDiamond {
         }
         // get facet from function selector
         address facet = address(bytes20(ds.facets[msg.sig]));
-        require(facet != address(0), "BridgeDiamond: Function does not exist");
+        if(facet == address(0)) revert FunctionDoesNotExistError();
         // Execute external function from facet using delegatecall and return any value.
         assembly {
             // copy function selector and any arguments
@@ -80,6 +84,6 @@ contract BridgeDiamond {
     }
 
     receive() external payable {
-        revert("BridgeDiamond: Does not accept ether");
+        revert EtherReceivedError();
     }
 }

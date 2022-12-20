@@ -5,6 +5,7 @@ import { BaseFixture } from "test/fixtures/BaseFixture.sol";
 import { LzEndpointMock } from "test/mocks/lz/LzEndpointMock.sol";
 
 import { IAccessControlFacet } from "src/interfaces/IAccessControlFacet.sol";
+import { LibAccessControl } from "src/libraries/LibAccessControl.sol";
 
 import { LzReceptor } from "src/interoperability/LzReceptor.sol";
 import { LzTransmitter } from "src/interoperability/LzTransmitter.sol";
@@ -62,9 +63,8 @@ contract LzFixture is BaseFixture {
         vm.prank(_owner());
         receptor = new LzReceptor(address(lzEndpoint), bridge);
 
-        // Whitelist receptor as brige interoperability contract
         vm.prank(_owner());
-        IAccessControlFacet(bridge).setInteroperabilityContract(address(receptor));
+        IAccessControlFacet(bridge).setRole(LibAccessControl.INTEROPERABILITY_CONTRACT_ROLE, address(receptor));
 
         // Register interoperability contracts on Layer Zero
         lzEndpoint.setDestLzEndpoint(address(transmitter), address(lzEndpoint));

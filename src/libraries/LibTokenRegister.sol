@@ -6,31 +6,33 @@ library LibTokenRegister {
     bytes32 constant TOKEN_REGISTER_STORAGE_POSITION = keccak256("TOKEN_REGISTER_STORAGE_POSITION");
 
     struct TokenRegisterStorage {
-        mapping(address => bool) tokenAdmins;
-        mapping(uint256 => bool) registeredAssetType;
-        mapping(uint256 => bytes) assetTypeToAssetInfo;
-        mapping(uint256 => uint256) assetTypeToQuantum;
-
         mapping(address => bool) registeredToken;
     }
 
-    function tokenRegisterStorage() internal pure returns (TokenRegisterStorage storage fs) {
+    event LogSetTokenRegister(address token, bool flag);
+
+    error TokenNotRegisteredError(address asset);
+
+    function tokenRegisterStorage() internal pure returns (TokenRegisterStorage storage trs) {
         bytes32 position_ = TOKEN_REGISTER_STORAGE_POSITION;
         assembly {
-            fs.slot := position_
+            trs.slot := position_
         }
     }
 
-    function isTokenAdmin(address admin_) internal view returns (bool) {
-        return tokenRegisterStorage().tokenAdmins[admin_];
+	function setTokenRegister(
+        address token_,
+		bool flag_
+    ) internal {
+        tokenRegisterStorage().registeredToken[token_] = flag_;
+        emit LogSetTokenRegister(token_, flag_);
     }
 
-    // TODO deprecated for 'isTokenRegistered'
-    function isAssetRegistered(uint256 assetType_) internal view returns (bool) {
-        return tokenRegisterStorage().registeredAssetType[assetType_];
-    }
-
-    function isTokenRegistered(address token_) internal view returns (bool) {
+    function isTokenRegistered(address token_) internal view returns(bool) {
         return tokenRegisterStorage().registeredToken[token_];
+    }
+
+    function onlyRegisteredToken(address token_) internal view {
+        if(!isTokenRegistered(token_)) revert TokenNotRegisteredError(token_);
     }
 }
