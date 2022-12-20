@@ -40,7 +40,7 @@ contract LzTransmitter is NonblockingLzApp, Pausable {
     //=== Constructor                                                            ===//
     //==============================================================================//
 
-    // constructor requires the LayerZero endpoint for this chain
+    /// constructor requires the LayerZero endpoint for this chain
     constructor(address lzEndpoint_, address starkExAddress_) NonblockingLzApp(lzEndpoint_) {
         _starkEx = IStarkEx(starkExAddress_);
     }

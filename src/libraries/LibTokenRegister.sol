@@ -2,7 +2,6 @@
 pragma solidity ^0.8.0;
 
 library LibTokenRegister {
-
     bytes32 constant TOKEN_REGISTER_STORAGE_POSITION = keccak256("TOKEN_REGISTER_STORAGE_POSITION");
 
     struct TokenRegisterStorage {
@@ -13,6 +12,7 @@ library LibTokenRegister {
 
     error TokenNotRegisteredError(address asset);
 
+    /// @dev Storage of this facet using diamond storage.
     function tokenRegisterStorage() internal pure returns (TokenRegisterStorage storage trs) {
         bytes32 position_ = TOKEN_REGISTER_STORAGE_POSITION;
         assembly {

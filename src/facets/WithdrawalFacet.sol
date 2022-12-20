@@ -35,6 +35,7 @@ import { IWithdrawalFacet } from "src/interfaces/IWithdrawalFacet.sol";
 contract WithdrawalFacet is OnlyRegisteredToken, OnlyStarkExOperator, IWithdrawalFacet {
     bytes32 constant WITHDRAW_STORAGE_POSITION = keccak256("WITHDRAW_STORAGE_POSITION");
 
+    /// @dev Storage of this facet using diamond storage.
 	function withdrawalStorage() internal pure returns (WithdrawalStorage storage ws) {
         bytes32 position_ = WITHDRAW_STORAGE_POSITION;
         assembly {
@@ -46,15 +47,15 @@ contract WithdrawalFacet is OnlyRegisteredToken, OnlyStarkExOperator, IWithdrawa
     //=== Write API		                                                         ===//
     //==============================================================================//
 
-    /** @dev See {IWithdrawalFacet-lockWithdrawal}. */
+    /// @inheritdoc IWithdrawalFacet
     function lockWithdrawal(
         uint256 starkKey_,
         address token_,
         uint256 amount_,
         uint256 lockHash_
     ) external override onlyStarkExOperator onlyRegisteredToken(token_) {
-        // if(userWithdrawLock[receiver].expirationDate == 0) WithdrawalAlreadyExistsError();
-        // Validate keys and availability.
+        /// if(userWithdrawLock[receiver].expirationDate == 0) WithdrawalAlreadyExistsError();
+        /// Validate keys and availability.
         if(lockHash_ == 0) revert InvalidLockHashError();
         if(starkKey_ == 0) revert InvalidStarkKeyError();
         if(starkKey_ >= Constants.K_MODULUS) revert InvalidStarkKeyError();
@@ -63,7 +64,7 @@ contract WithdrawalFacet is OnlyRegisteredToken, OnlyStarkExOperator, IWithdrawa
 
         WithdrawalStorage storage ws = withdrawalStorage();
 
-        // Create a withdrawal lock for the funds
+        /// Create a withdrawal lock for the funds.
         ws.withdrawals[lockHash_] = Withdrawal({
             starkKey: starkKey_,
             token: token_,
@@ -72,20 +73,20 @@ contract WithdrawalFacet is OnlyRegisteredToken, OnlyStarkExOperator, IWithdrawa
         });
         ws.pendingWithdrawals[token_] += amount_;
 
-        // Transfer funds
+        /// Transfer funds.
         HelpersERC20.transferFrom(token_, msg.sender, address(this), amount_);  // TODO is this safe?
         
-        // emit new Lock
+        /// Emit new Lock.
         emit LogLockWithdrawal(lockHash_, starkKey_, token_, amount_);
     }
 
-    /** @dev See {IWithdrawalFacet-claimWithdrawal}. */
+    /// @inheritdoc IWithdrawalFacet
     function claimWithdrawal(
         uint256 lockHash_,
         bytes memory signature_,        // TODO make calldata? hard to test...
         address recipient_
     ) external override {
-        // stateless validation
+        /// Stateless validation.
         if(lockHash_ == 0) revert InvalidLockHashError();
         if(recipient_ == address(0)) revert InvalidRecipientError();
         if(signature_.length != 32 * 3) revert InvalidSignatureError();
@@ -95,27 +96,27 @@ contract WithdrawalFacet is OnlyRegisteredToken, OnlyStarkExOperator, IWithdrawa
         Withdrawal memory withdrawal_ = ws.withdrawals[lockHash_];
         if (withdrawal_.expirationDate == 0) revert WithdrawalNotFoundError();
         
-        // statefull signature validation
+        /// Statefull signature validation.
         (uint256 r_, uint256 s_, uint256 starkKeyY_) = abi.decode(signature_, (uint256, uint256, uint256));
         ECDSA.verify(lockHash_, r_, s_, withdrawal_.starkKey, starkKeyY_);
 
-        // state update
+        /// State update.
         delete ws.withdrawals[lockHash_];
         ws.pendingWithdrawals[withdrawal_.token] -= withdrawal_.amount;
 
-        // emit event
+        /// Emit event.
         emit LogClaimWithdrawal(lockHash_, recipient_);
 
-        // transfer funds
+        /// Transfer funds.
         HelpersERC20.transfer(withdrawal_.token, recipient_, withdrawal_.amount);
     }
 
-    /** @dev See {IWithdrawalFacet-reclaimWithdrawal}. */
+    /// @inheritdoc IWithdrawalFacet
     function reclaimWithdrawal(
         uint256 lockHash_,
         address recipient_
     ) external override onlyStarkExOperator {
-        // stateless validation
+        /// Stateless validation.
         if(lockHash_ == 0) revert InvalidLockHashError();
         if(recipient_ == address(0)) revert InvalidRecipientError();
 
@@ -125,14 +126,14 @@ contract WithdrawalFacet is OnlyRegisteredToken, OnlyStarkExOperator, IWithdrawa
         if (withdrawal_.expirationDate == 0) revert WithdrawalNotFoundError();
         if (block.timestamp <= withdrawal_.expirationDate) revert WithdrawalNotExpiredError();
 
-        // state update
+        /// State update.
         delete ws.withdrawals[lockHash_];
         ws.pendingWithdrawals[withdrawal_.token] -= withdrawal_.amount;
 
-        // emit event
+        /// Emit event.
         emit LogReclaimWithdrawal(lockHash_, recipient_);
 
-        // transfer funds
+        /// Transfer funds.
         HelpersERC20.transfer(withdrawal_.token, recipient_, withdrawal_.amount);
     }
 
@@ -140,13 +141,13 @@ contract WithdrawalFacet is OnlyRegisteredToken, OnlyStarkExOperator, IWithdrawa
     //=== Read API		                                                         ===//
     //==============================================================================//
 
-    /** @dev See {IWithdrawalFacet-getWithdrawal}. */
-    function getWithdrawal(uint256 hashId_) external view override returns (Withdrawal memory withdrawal_) {
-        withdrawal_ = withdrawalStorage().withdrawals[hashId_];
+    /// @inheritdoc IWithdrawalFacet
+    function getWithdrawal(uint256 lockHash_) external view override returns (Withdrawal memory withdrawal_) {
+        withdrawal_ = withdrawalStorage().withdrawals[lockHash_];
         if (withdrawal_.expirationDate == 0) revert WithdrawalNotFoundError();
     }
 
-    /** @dev See {IWithdrawalFacet-getPendingWithdrawals}. */
+    /// @inheritdoc IWithdrawalFacet
     function getPendingWithdrawals(address token_) external view override returns (uint256 pending_) {
         pending_ = withdrawalStorage().pendingWithdrawals[token_];
     }

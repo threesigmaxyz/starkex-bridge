@@ -2,8 +2,7 @@
 pragma solidity ^0.8.0;
 
 interface IWithdrawalFacet {
-
-    /// @notice TODO
+    
     struct Withdrawal {
         uint256 starkKey;
         address token;
@@ -20,8 +19,8 @@ interface IWithdrawalFacet {
      * @notice Emitted when a user request is made to the off chain application.
      * that consequently locks funds in this contract.
      * @dev The funds are locked temporarily in this contract.
-     * @param lockHash The lock hash to be signed.
-     * @param starkKey The STARK key that must sign the lock hash.
+     * @param lockHash The lock hash to be signed that transfers funds to the app.
+     * @param starkKey The public STARK key that must sign the lock hash.
      * @param token The asset to be locked.
      * @param amount The amount of funds to be locked.
      */
@@ -31,16 +30,16 @@ interface IWithdrawalFacet {
      * @notice Emitted when a withdraw is signed and completed by a user
      * @dev The funds are transfered to the user wallet and the lock is cleared allowing
      * new withdraws.
-     * @param lockHash TODO
-     * @param recipient The address that will receive the funds
+     * @param lockHash The lock hash to be signed that transfers funds to the app.
+     * @param recipient The address that will receive the funds.
      */
     event LogClaimWithdrawal(uint256 indexed lockHash, address indexed recipient);
 
     /**
-     * @notice Emitted when a user withdraw request expires and a request is made to unlock funds
-     * @dev Fallback Function
-     * @param lockHash TODO
-     * @param recipient TODO
+     * @notice Emitted when a user withdraw request expires and a request is made to unlock funds.
+     * @dev Fallback Function.
+     * @param lockHash The lock hash to be signed that transfers funds to the app.
+     * @param recipient The recipient of the funds.
      */
     event LogReclaimWithdrawal(uint256 indexed lockHash, address indexed recipient);
 
@@ -55,11 +54,11 @@ interface IWithdrawalFacet {
 
     /**
      * @notice Lock funds to be withdrawn
-     * @dev Verify if there are enough funds to lock and then lock funds
-     * @param starkKey_ TODO
-     * @param token_ Asset address to be withdrawn
-     * @param amount_ Amount to be withdrawn
-     * @param lockHash_ TODO
+     * @dev Verifies if there are enough funds to lock and then lock funds.
+     * @param starkKey_ The public STARK key that must sign the lock hash.
+     * @param token_ Asset address to be withdrawn.
+     * @param amount_ Amount to be withdrawn.
+     * @param lockHash_ The lock hash to be signed that transfers funds to the app.
      */
     function lockWithdrawal(
         uint256 starkKey_,
@@ -68,30 +67,39 @@ interface IWithdrawalFacet {
         uint256 lockHash_
     ) external;
 
-    /// @notice Withdraw funds that were previously locked
-    /// @dev First verifies signature, then clears data and then withdraws funds
-    /// @param lockHash_ TODO
-    /// @param signature_ TODO
-    /// @param recipient_ TODO
+    /** 
+     * @notice Withdraw funds that were previously locked.
+     * @dev First verifies signature, then clears data and then withdraws funds.
+     * @param lockHash_ The lock hash to be signed that transfers funds to the app.
+     * @param signature_ The signature that signed the lockHash.
+     * @param recipient_ The recipient of the funds.
+    */
     function claimWithdrawal(
         uint256 lockHash_,
         bytes memory signature_,
         address recipient_
     ) external;
 
-    /// @notice Unlock funds if lock expires
-    /// @dev Verify if lock exists and expired and deletes it returning funds to the available funds.
-    /// @param lockHash_ TODO
-    /// @param recipient_ TODO
+    /** 
+     * @notice The operator can unlock funds if lock expires.
+     * @dev Verify if lock exists and expired and deletes it returning the funds to the recipient.
+     * @param lockHash_ The lock hash to be signed that transfers funds to the app.
+     * @param recipient_ The recepient of the funds.
+    */
     function reclaimWithdrawal(uint256 lockHash_, address recipient_) external;
 
-    /// @notice TODO
-    /// @param hashId_ TODO
-    /// @return withdrawal_ TODO
-    function getWithdrawal(uint256 hashId_) external view returns (Withdrawal memory withdrawal_);
+    /** 
+     * @notice Gets the withdrawal from the lockHash_.
+     * @dev reverts if not found.
+     * @param lockHash_ The lock hash to be signed that transfers funds to the app.
+     * @return withdrawal_ The withdrawal.
+    */
+    function getWithdrawal(uint256 lockHash_) external view returns (Withdrawal memory withdrawal_);
 
-    /// @notice TODO
-    /// @param token_ TODO
-    /// @return pending_ TODO
+    /** 
+     * @notice Gets the total pending withdrawal amount for a token.
+     * @param token_ The address of the token or native currency.
+     * @return pending_ The amount.
+    */
     function getPendingWithdrawals(address token_) external view returns (uint256 pending_);
 }

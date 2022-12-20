@@ -2,6 +2,7 @@
 pragma solidity ^0.8.0;
 
 interface IDepositFacet {
+
     struct Deposit {
         address receiver;  
         uint256 starkKey;
@@ -16,7 +17,7 @@ interface IDepositFacet {
 	}
 
 	/**
-     * @notice Signals a deposit was locked so the backend can process it.
+     * @notice Emits a deposit was locked so the backend can process it.
 	 * @param lockHash The hash of the transfer to the user.
      * @param starkKey The public starkKey of the user.
      * @param token The address of the token or native currency.
@@ -25,14 +26,14 @@ interface IDepositFacet {
 	event LogLockDeposit(uint256 indexed lockHash, uint256 indexed starkKey, address indexed token, uint256 amount);
 
 	/**
-	 * @notice Signals a deposit was claimed by the operator.
+	 * @notice Emits a deposit was claimed by the operator.
 	 * @param lockHash The hash of the transfer to the user.
 	 * @param recipient The recipient of the deposit.
 	 */
 	event LogClaimDeposit(uint256 indexed lockHash, address indexed recipient);
 
 	/**
-	 * @notice Signals a deposit was reclaimed by the operator.
+	 * @notice Emits a deposit was reclaimed by the operator.
 	 * @param lockHash The hash of the transfer to the user.
 	 */
 	event LogReclaimDeposit(uint256 indexed lockHash);
@@ -81,14 +82,16 @@ interface IDepositFacet {
 	function reclaimDeposit(uint256 lockHash_) external;
 
 	/** 
-	 * @notice Gets a deposit from it's lockHash.
+	 * @notice Gets a deposit from its lockHash and reverts if not found.
 	 * @param lockHash_ The hash of the transfer to the user.
+	 * @return Returns the deposit if found.
 	 */
 	function getDeposit(uint256 lockHash_) external view returns (Deposit memory);
 
 	/** 
 	 * @notice Gets the total amount of pending deposits for a token.
 	 * @param token_ The address of the ERC20 token or native currency.
+	 * @return Returns the amount of pending deposits.
 	 */
     function getPendingDeposits(address token_) external view returns (uint256);
 }

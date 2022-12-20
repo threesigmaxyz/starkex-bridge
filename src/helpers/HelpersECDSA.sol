@@ -4,15 +4,23 @@ pragma solidity ^0.8.0;
 import { Constants } from "src/constants/Constants.sol";
 
 library HelpersECDSA {
+
+    /**
+     * @notice Checks if a stark Key_ is on the curve.
+     * @param starkKey_ The stark key.
+     * @return Whether it is on the curve.
+     */
     function isOnCurve(uint256 starkKey_) internal view returns (bool) {
         uint256 xCubed_ = mulmod(mulmod(starkKey_, starkKey_, Constants.K_MODULUS), starkKey_, Constants.K_MODULUS);
         return isQuadraticResidue(addmod(addmod(xCubed_, starkKey_, Constants.K_MODULUS), Constants.K_BETA, Constants.K_MODULUS));
     }
 
+    /// @notice Helper function.
     function isQuadraticResidue(uint256 fieldElement_) internal view returns (bool) {
         return 1 == fieldPow(fieldElement_, ((Constants.K_MODULUS - 1) / 2));
     }
 
+    /// @notice Helper function.
 	function fieldPow(uint256 base, uint256 exponent) internal view returns (uint256) {
         (bool success, bytes memory returndata) = address(5).staticcall(
             abi.encode(0x20, 0x20, 0x20, base, exponent, Constants.K_MODULUS)

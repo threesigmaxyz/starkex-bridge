@@ -19,6 +19,7 @@ contract AccessControlFacet is OnlyOwner, IAccessControlFacet {
         LibAccessControl.setRole(role_, account_);
     }
 
+    /// @inheritdoc IAccessControlFacet
     function getRole(bytes32 role_) external view override returns (address) {
         return LibAccessControl.accessControlStorage().roles[role_];
     }

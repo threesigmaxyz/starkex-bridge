@@ -4,6 +4,7 @@ pragma solidity ^0.8.0;
 // A loupe is a small magnifying glass used to look at diamonds.
 // These functions look at diamonds
 interface IDiamondLoupe {
+    
     /// @notice These functions are expected to be called frequently by tools.
     struct Facet {
         address facetAddress;

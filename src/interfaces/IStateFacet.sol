@@ -4,7 +4,7 @@ pragma solidity ^0.8.0;
 interface IStateFacet {
 
     /**
-     * @notice Signals a new order root change.
+     * @notice Emits a new order root change.
      * @param orderRoot The order root.
      */
     event LogSetOrderRoot(uint256 orderRoot);

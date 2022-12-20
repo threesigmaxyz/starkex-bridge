@@ -10,6 +10,14 @@ interface IDiamondCut {
     enum FacetCutAction {Add, Replace, Remove}
     /// @dev Add=0, Replace=1, Remove=2.
 
+    /**
+     * @notice Emits a diamond cut was performed and the init address (if not empty) called.
+     * @param _diamondCut Contains the address and selectors of a facet.
+     * @param _init The address to call the initialization function.
+     * @param _calldata The name and arguments of the initialization function.
+     */
+    event DiamondCut(FacetCut[] _diamondCut, address _init, bytes _calldata);
+
     struct FacetCut {
         address facetAddress;
         FacetCutAction action;
@@ -29,12 +37,4 @@ interface IDiamondCut {
         address _init,
         bytes calldata _calldata
     ) external;
-
-    /**
-     * @notice Signals a diamond cut was performed and the init address (if not empty) called.
-     * @param _diamondCut Contains the address and selectors of a facet.
-     * @param _init The address to call the initialization function.
-     * @param _calldata The name and arguments of the initialization function.
-     */
-    event DiamondCut(FacetCut[] _diamondCut, address _init, bytes _calldata);
 }

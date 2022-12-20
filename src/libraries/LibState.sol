@@ -11,6 +11,7 @@ library LibState {
         mapping(address => uint) lzRemoteMessageCounter;
     }
 
+    /// @dev Storage of this facet using diamond storage.
     function stateStorage() internal pure returns (StateStorage storage ds) {
         bytes32 position_ = STATE_STORAGE_POSITION;
         assembly {
@@ -18,6 +19,10 @@ library LibState {
         }
     }
 
+    /**
+     * @notice Get the order root from storage.
+     * @return The order root.
+     */
     function getOrderRoot() internal view returns (uint256) {
         return stateStorage().orderRoot;
     }
