@@ -3,7 +3,6 @@ pragma solidity ^0.8.0;
 
 import { LibDiamond } from "src/libraries/LibDiamond.sol";
 import { IDiamondLoupe } from "src/interfaces/IDiamondLoupe.sol";
-/// TODO why is this needded? chceck original impl in diamond-2 > import { IERC165 } from "../interfaces/IERC165.sol";
 
 /// The functions in DiamondLoupeFacet MUST be added to a diamond.
 /// @dev The EIP-2535 Diamond standard requires these functions.
@@ -138,10 +137,4 @@ contract DiamondLoupeFacet is IDiamondLoupe {
         LibDiamond.DiamondStorage storage ds = LibDiamond.diamondStorage();
         facetAddress_ = address(bytes20(ds.facets[_functionSelector]));
     }
-
-    /// TODO check comment on import: This implements ERC-165.
-    ///function supportsInterface(bytes4 _interfaceId) external override view returns (bool) {
-    ///    LibDiamond.DiamondStorage storage ds = LibDiamond.diamondStorage();
-    ///    return ds.supportedInterfaces[_interfaceId];
-    ///}
 }

@@ -12,15 +12,16 @@ import { DepositFacet }       from "src/facets/DepositFacet.sol";
 import { DiamondCutFacet }    from "src/facets/DiamondCutFacet.sol";
 import { TokenRegisterFacet } from "src/facets/TokenRegisterFacet.sol";
 import { WithdrawalFacet }    from "src/facets/WithdrawalFacet.sol";
-import { StateFacet }    from "src/facets/StateFacet.sol";
+import { StateFacet }         from "src/facets/StateFacet.sol";
+import { ERC165Facet }         from "src/facets/ERC165Facet.sol";
 
 import { IDiamondCut }         from "src/interfaces/IDiamondCut.sol";
 import { IAccessControlFacet } from "src/interfaces/IAccessControlFacet.sol";
 import { IDepositFacet }       from "src/interfaces/IDepositFacet.sol";
 import { ITokenRegisterFacet } from "src/interfaces/ITokenRegisterFacet.sol";
 import { IWithdrawalFacet }    from "src/interfaces/IWithdrawalFacet.sol";
-import { IStateFacet }    from "src/interfaces/IStateFacet.sol";
-// TODO import { IDiamondCutFacet } from "src/interfaces/IDiamondCutFacet.sol";
+import { IStateFacet }         from "src/interfaces/IStateFacet.sol";
+import { IERC165Facet }        from "src/interfaces/IERC165Facet.sol";
 
 contract BaseFixture is Test {
 
@@ -32,6 +33,8 @@ contract BaseFixture is Test {
     TokenRegisterFacet tokenRegisterFacet = new TokenRegisterFacet();
     WithdrawalFacet withdrawalFacet = new WithdrawalFacet();
     StateFacet stateFacet = new StateFacet();
+    ERC165Facet erc165Facet = new ERC165Facet();
+
 
     function setUp() virtual public {
         // Deploy diamond
@@ -82,9 +85,10 @@ contract BaseFixture is Test {
             abi.encodeWithSelector(withdrawalFacet.initialize.selector)
         );
 
-        IDiamondCut.FacetCut[] memory cut_ = new IDiamondCut.FacetCut[](3);
+        /// @dev cut access control, token register, state and ERC165 facets. 
+        IDiamondCut.FacetCut[] memory cut_ = new IDiamondCut.FacetCut[](4);
 
-        // Access Control facet
+        // Access Control facet.
         bytes4[] memory accessControlFacetSelectors_ = new bytes4[](3);
         accessControlFacetSelectors_[0] = IAccessControlFacet.acceptRole.selector;
         accessControlFacetSelectors_[1] = IAccessControlFacet.setPendingRole.selector;
@@ -113,6 +117,16 @@ contract BaseFixture is Test {
             facetAddress: address(stateFacet), 
             action: IDiamondCut.FacetCutAction.Add, 
             functionSelectors: stateFacetSelectors_
+        });
+
+        // State facet
+        bytes4[] memory erc165FacetSelectors_ = new bytes4[](2);
+        erc165FacetSelectors_[0] = IERC165Facet.supportsInterface.selector;
+        erc165FacetSelectors_[1] = IERC165Facet.changeSupportedInterface.selector;
+        cut_[3] = IDiamondCut.FacetCut({
+            facetAddress: address(erc165Facet), 
+            action: IDiamondCut.FacetCutAction.Add, 
+            functionSelectors: erc165FacetSelectors_
         });
 
         /// Cut diamond finalize.

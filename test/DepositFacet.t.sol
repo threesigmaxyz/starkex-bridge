@@ -15,6 +15,8 @@ import { MockERC20 }   from "test/mocks/MockERC20.sol";
 
 import { console2 as Console } from "@forge-std/console2.sol";
 
+import { HelpersECDSA } from "src/helpers/HelpersECDSA.sol";
+
 contract DepositFacetTest is BaseFixture {
 
     //==============================================================================//

@@ -68,20 +68,17 @@ contract DepositFacet is OnlyRegisteredToken, OnlyStarkExOperator, OnlyOwner, ID
 		uint256 amount_,
 		uint256 lockHash_
 	) external override onlyRegisteredToken(token_) {
-		/// stateless argument validation
-		if(starkKey_ == 0) revert InvalidStarkKeyError();
-        if(starkKey_ >= Constants.K_MODULUS) revert InvalidStarkKeyError();
-        if(!HelpersECDSA.isOnCurve(starkKey_)) revert InvalidStarkKeyError();
-		
+		/// Stateless argument validation.
+		if (!HelpersECDSA.isOnCurve(starkKey_)) revert InvalidStarkKeyError();
 		if (amount_ == 0) revert ZeroAmountError();
 		if (lockHash_ == 0) revert InvalidDepositLockError();
 
 		DepositStorage storage ds = depositStorage();
 
-		/// check if the deposit is already pending
+		/// Check if the deposit is already pending.
 		if (ds.deposits[lockHash_].expirationDate != 0) revert DepositPendingError();
 
-		/// register the deposit
+		/// Register the deposit.
 		ds.deposits[lockHash_] = Deposit({
 			receiver: msg.sender,
             starkKey: starkKey_,
@@ -89,13 +86,13 @@ contract DepositFacet is OnlyRegisteredToken, OnlyStarkExOperator, OnlyOwner, ID
             amount: amount_,
             expirationDate: (block.timestamp + ds.depositExpirationTimeout)
         });
-		/// increment the pending deposit amount for the token
+		/// Increment the pending deposit amount for the token.
 		ds.pendingDeposits[token_] += amount_;
 
-		/// emit event
+		/// Emit event.
         emit LogLockDeposit(lockHash_, starkKey_, token_, amount_);
 
-		/// transfer deposited funds to the contract
+		/// Transfer deposited funds to the contract.
         HelpersERC20.transferFrom(token_, msg.sender, address(this), amount_);
 	}
 
@@ -141,8 +138,8 @@ contract DepositFacet is OnlyRegisteredToken, OnlyStarkExOperator, OnlyOwner, ID
 
 		DepositStorage storage ds = depositStorage();
 
-		/// Check if deposit exists or has expired.
 		Deposit memory deposit_ = ds.deposits[lockHash_];
+		/// Check if deposit exists or has expired.
 		if (deposit_.expirationDate == 0) revert DepositNotFoundError();
         if (block.timestamp <= deposit_.expirationDate) revert DepositNotExpiredError();
 		

@@ -8,7 +8,6 @@ library LibState {
 
     struct StateStorage {
         uint256 orderRoot;
-        mapping(address => uint) lzRemoteMessageCounter;
     }
 
     /// @dev Storage of this facet using diamond storage.

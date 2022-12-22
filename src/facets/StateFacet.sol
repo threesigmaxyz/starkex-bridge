@@ -9,7 +9,7 @@ contract StateFacet is OnlyInteroperabilityContract, IStateFacet {
     
     /// @inheritdoc IStateFacet
     function getOrderRoot() external view override returns (uint256 orderRoot_) {
-        orderRoot_ = LibState.stateStorage().orderRoot;
+        orderRoot_ = LibState.getOrderRoot();
     }
 
     /// @inheritdoc IStateFacet

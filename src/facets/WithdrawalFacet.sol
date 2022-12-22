@@ -66,11 +66,9 @@ contract WithdrawalFacet is OnlyRegisteredToken, OnlyStarkExOperator, OnlyOwner,
         uint256 amount_,
         uint256 lockHash_
     ) external override onlyStarkExOperator onlyRegisteredToken(token_) {
-        /// if(userWithdrawLock[receiver].expirationDate == 0) WithdrawalAlreadyExistsError();
+        /// if(userWithdrawLock[receiver].expirationDate != 0) WithdrawalAlreadyExistsError();
         /// Validate keys and availability.
         if(lockHash_ == 0) revert InvalidLockHashError();
-        if(starkKey_ == 0) revert InvalidStarkKeyError();
-        if(starkKey_ >= Constants.K_MODULUS) revert InvalidStarkKeyError();
         if(!HelpersECDSA.isOnCurve(starkKey_)) revert InvalidStarkKeyError();
         if(amount_ == 0) revert ZeroAmountError();
 

@@ -6,9 +6,7 @@ import {OnlyOwner} from "src/modifiers/OnlyOwner.sol";
 import {IAccessControlFacet} from "src/interfaces/IAccessControlFacet.sol";
 
 /// @title Facet for access control operations.
-/// @dev Follows the ERC-173 contract ownership standard.
 contract AccessControlFacet is OnlyOwner, IAccessControlFacet {
-    // TODO supportsInterface for ERC-173 0x7f5828d0
 
     /// @inheritdoc IAccessControlFacet
     function acceptRole(bytes32 role_) external override {
