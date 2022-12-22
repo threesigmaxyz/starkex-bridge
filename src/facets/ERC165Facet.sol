@@ -2,7 +2,7 @@
 pragma solidity ^0.8.0;
 
 import { OnlyOwner } from "src/modifiers/OnlyOwner.sol";
-import { IERC165Facet } from "src/interfaces/IERC165Facet.sol";
+import { IERC165Facet } from "src/interfaces/facets/IERC165Facet.sol";
 
 contract ERC165Facet is OnlyOwner, IERC165Facet {
     bytes32 constant ERC165_STORAGE_POSITION = keccak256("ERC165_STORAGE_POSITION");

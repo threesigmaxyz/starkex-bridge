@@ -2,18 +2,8 @@
 pragma solidity ^0.8.0;
 
 import { Pausable } from "@openzeppelin/security/Pausable.sol";
-
+import { IStarkEx } from "src/interfaces/interoperability/IStarkEx.sol";
 import { LzSender } from "src/dependencies/lz/LzSender.sol";
-
-interface IStarkEx {
-    function getValidiumVaultRoot() external view returns (uint256);
-    function getValidiumTreeHeight() external view returns (uint256);
-    function getRollupVaultRoot() external view returns (uint256);
-    function getRollupTreeHeight() external view returns (uint256);
-    function getOrderRoot() external view returns (uint256);
-    function getOrderTreeHeight() external view returns (uint256);
-    function getSequenceNumber() external view returns (uint256);
-}
 
 contract LzTransmitter is LzSender, Pausable {
 
@@ -84,11 +74,39 @@ contract LzTransmitter is LzSender, Pausable {
     /*** Transmitter Functions                                                                                                  ***/
     /******************************************************************************************************************************/
 
-    // TODO send to multiple chains https://layerzero.gitbook.io/docs/faq/messaging-properties#multi-send
-    function keep(
+    /**
+     * @notice Updates the order root of the interoperability contract in the sideChain.
+     * @param dstChainId_ The id of the destination chain.
+     * @param refundAddress_ The refund address of the unused ether sent.
+     */
+    function keep(uint16 dstChainId_, address payable refundAddress_) external payable {
+        _keep(dstChainId_, refundAddress_, msg.value);
+    }
+
+    /**
+     * @notice Updates the order roots of the interoperability contracts in the selected sideChains.
+     * @param dstChainIds_ The if of the destination chains.
+     * @param refundAddress_ The refund address of the unused ether sent.
+     */
+    function batchKeep(uint16[] calldata dstChainIds_, address payable refundAddress_) external payable {
+        uint256 dstChainIdsLength = dstChainIds_.length;
+        
+        for(uint i = 0; i < dstChainIdsLength; i++) {
+            _keep(dstChainIds_[i], refundAddress_, msg.value/dstChainIdsLength);
+        }
+    }
+
+    /**
+     * @notice Updates the order root of the interoperability contract in the sideChain.
+     * @param dstChainId_ The id of the destination chain.
+     * @param refundAddress_ The refund address of the unused ether sent.
+     * @param usableGasInEther_ The usable gas, in ether, to run code in the sidechain.
+     */
+    function _keep(
         uint16 dstChainId_,
-        address payable refundAddress_
-    ) public payable whenNotPaused {
+        address payable refundAddress_,
+        uint256 usableGasInEther_
+    ) internal {
         uint256 sequenceNumber_ = _starkEx.getSequenceNumber();
         uint256 lastUpdated_ = _lastUpdated[dstChainId_];
         
@@ -99,7 +117,7 @@ contract LzTransmitter is LzSender, Pausable {
 
         uint256 orderRoot_ = _starkEx.getOrderRoot();
 
-        _lzSend(dstChainId_, abi.encode(orderRoot_), refundAddress_, address(0x0), "", msg.value);
+        _lzSend(dstChainId_, abi.encode(orderRoot_), refundAddress_, address(0x0), "", usableGasInEther_);
         emit LogNewOrderRootSent(orderRoot_);
     }
 }

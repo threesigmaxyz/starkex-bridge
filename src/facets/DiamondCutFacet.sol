@@ -3,7 +3,7 @@ pragma solidity ^0.8.0;
 
 import { LibDiamond }  from "src/libraries/LibDiamond.sol";
 import { OnlyOwner } from "src/modifiers/OnlyOwner.sol";
-import { IDiamondCut } from "src/interfaces/IDiamondCut.sol";
+import { IDiamondCut } from "src/interfaces/facets/IDiamondCut.sol";
 
 /// Remember to add the loupe functions from DiamondLoupeFacet to the diamond.
 /// The loupe functions are required by the EIP2535 Diamonds standard.

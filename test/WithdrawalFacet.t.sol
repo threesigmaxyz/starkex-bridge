@@ -7,8 +7,8 @@ import { Constants }           from "src/constants/Constants.sol";
 import { WithdrawalFacet }     from "src/facets/WithdrawalFacet.sol";
 import { ECDSA }               from "src/dependencies/ecdsa/ECDSA.sol";
 import { LibDiamond }          from "src/libraries/LibDiamond.sol";
-import { ITokenRegisterFacet } from "src/interfaces/ITokenRegisterFacet.sol";
-import { IWithdrawalFacet }    from "src/interfaces/IWithdrawalFacet.sol";
+import { ITokenRegisterFacet } from "src/interfaces/facets/ITokenRegisterFacet.sol";
+import { IWithdrawalFacet }    from "src/interfaces/facets/IWithdrawalFacet.sol";
 import { LibAccessControl }    from "src/libraries/LibAccessControl.sol";
 
 import { BaseFixture } from "test/fixtures/BaseFixture.sol";

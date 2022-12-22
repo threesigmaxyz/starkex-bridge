@@ -1,11 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import { IERC165 } from "@openzeppelin/interfaces/IERC165.sol";
-
 import { LibDiamond }  from "src/libraries/LibDiamond.sol";
 import { LibAccessControl }  from "src/libraries/LibAccessControl.sol";
-import { IDiamondCut } from "src/interfaces/IDiamondCut.sol";
+import { IDiamondCut } from "src/interfaces/facets/IDiamondCut.sol";
 
 contract BridgeDiamond {    
 
@@ -28,14 +26,6 @@ contract BridgeDiamond {
             functionSelectors: functionSelectors_
         });
         LibDiamond.diamondCut(cut_, address(0), "");   
-
-        LibDiamond.DiamondStorage storage ds = LibDiamond.diamondStorage();
-
-        // Add ERC165 interface support
-        ds.supportedInterfaces[type(IERC165).interfaceId] = true;
-        //ds.supportedInterfaces[type(IDiamondCut).interfaceId] = true;
-        //ds.supportedInterfaces[type(IDiamondLoupe).interfaceId] = true;
-        //ds.supportedInterfaces[type(IERC173).interfaceId] = true;
     }
 
     // Find facet for function that is called and execute the

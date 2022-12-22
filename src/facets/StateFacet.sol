@@ -3,7 +3,7 @@ pragma solidity ^0.8.0;
 
 import { LibState }    from "src/libraries/LibState.sol";
 import { OnlyInteroperabilityContract } from "src/modifiers/OnlyInteroperabilityContract.sol";
-import { IStateFacet } from "src/interfaces/IStateFacet.sol";
+import { IStateFacet } from "src/interfaces/facets/IStateFacet.sol";
 
 contract StateFacet is OnlyInteroperabilityContract, IStateFacet {
     

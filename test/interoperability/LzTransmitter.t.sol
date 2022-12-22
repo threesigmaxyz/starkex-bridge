@@ -6,7 +6,7 @@ import { Test } from "@forge-std/Test.sol";
 import { LzFixture } from "test/fixtures/LzFixture.sol";
 import { LzEndpointMock } from "test/mocks/lz/LzEndpointMock.sol";
 
-import { IStateFacet } from "src/interfaces/IStateFacet.sol";
+import { IStateFacet } from "src/interfaces/facets/IStateFacet.sol";
 import { LzReceptor } from "src/interoperability/LzReceptor.sol";
 import { LzTransmitter } from "src/interoperability/LzTransmitter.sol";
 

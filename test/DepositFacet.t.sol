@@ -3,10 +3,10 @@ pragma solidity ^0.8.0;
 
 import { Constants }           from "src/constants/Constants.sol";
 import { DepositFacet }        from "src/facets/DepositFacet.sol";
-import { IAccessControlFacet } from "src/interfaces/IAccessControlFacet.sol";
-import { IDepositFacet }       from "src/interfaces/IDepositFacet.sol";
-import { IStateFacet }         from "src/interfaces/IStateFacet.sol";
-import { ITokenRegisterFacet } from "src/interfaces/ITokenRegisterFacet.sol";
+import { IAccessControlFacet } from "src/interfaces/facets/IAccessControlFacet.sol";
+import { IDepositFacet }       from "src/interfaces/facets/IDepositFacet.sol";
+import { IStateFacet }         from "src/interfaces/facets/IStateFacet.sol";
+import { ITokenRegisterFacet } from "src/interfaces/facets/ITokenRegisterFacet.sol";
 import { PatriciaTree }        from "src/dependencies/mpt/v2/PatriciaTree.sol";
 import { LibAccessControl }    from "src/libraries/LibAccessControl.sol";
 

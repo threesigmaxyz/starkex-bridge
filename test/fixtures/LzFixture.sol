@@ -4,22 +4,13 @@ pragma solidity ^0.8.0;
 import { BaseFixture } from "test/fixtures/BaseFixture.sol";
 import { LzEndpointMock } from "test/mocks/lz/LzEndpointMock.sol";
 
-import { IAccessControlFacet } from "src/interfaces/IAccessControlFacet.sol";
+import { IAccessControlFacet } from "src/interfaces/facets/IAccessControlFacet.sol";
 import { LibAccessControl } from "src/libraries/LibAccessControl.sol";
 
 import { LzReceptor } from "src/interoperability/LzReceptor.sol";
 import { LzTransmitter } from "src/interoperability/LzTransmitter.sol";
 
-// TODO move to interoperability/interfaces
-interface IStarkEx {
-    function getValidiumVaultRoot() external view returns (uint256);
-    function getValidiumTreeHeight() external view returns (uint256);
-    function getRollupVaultRoot() external view returns (uint256);
-    function getRollupTreeHeight() external view returns (uint256);
-    function getOrderRoot() external view returns (uint256);
-    function getOrderTreeHeight() external view returns (uint256);
-    function getSequenceNumber() external view returns (uint256);
-}
+import { IStarkEx } from "src/interfaces/interoperability/IStarkEx.sol";
 
 contract LzFixture is BaseFixture {
     //==============================================================================//
@@ -29,12 +20,7 @@ contract LzFixture is BaseFixture {
     address public constant STARKEX_ADDRESS = 0xF5C9F957705bea56a7e806943f98F7777B995826;
     uint16 public constant MOCK_CHAIN_ID = 1337;
 
-    uint256 public STARKEX_MOCK_VALIDIUM_VAULT_ROOT  = 111;
-    uint256 public STARKEX_MOCK_VALIDIUM_TREE_HEIGHT = 31;
-    uint256 public STARKEX_MOCK_ROLLUP_VAULT_ROOT    = 222;
-    uint256 public STARKEX_MOCK_ROLLUP_TREE_HEIGHT   = 31;
     uint256 public STARKEX_MOCK_ORDER_ROOT           = 333;
-    uint256 public STARKEX_MOCK_ORDER_TREE_HEIGHT    = 31;
     uint256 public STARKEX_MOCK_SEQUENCE_NUMBER      = 314;
 
     //==============================================================================//
@@ -85,38 +71,8 @@ contract LzFixture is BaseFixture {
     function _setUpMocks() internal {
         vm.mockCall(
             STARKEX_ADDRESS,
-            abi.encodeWithSelector(IStarkEx.getValidiumVaultRoot.selector),
-            abi.encode(STARKEX_MOCK_VALIDIUM_VAULT_ROOT)
-        );
-
-        vm.mockCall(
-            STARKEX_ADDRESS,
-            abi.encodeWithSelector(IStarkEx.getValidiumTreeHeight.selector),
-            abi.encode(STARKEX_MOCK_VALIDIUM_TREE_HEIGHT)
-        );
-
-        vm.mockCall(
-            STARKEX_ADDRESS,
-            abi.encodeWithSelector(IStarkEx.getRollupVaultRoot.selector),
-            abi.encode(STARKEX_MOCK_ROLLUP_VAULT_ROOT)
-        );
-
-        vm.mockCall(
-            STARKEX_ADDRESS,
-            abi.encodeWithSelector(IStarkEx.getRollupTreeHeight.selector),
-            abi.encode(STARKEX_MOCK_ROLLUP_TREE_HEIGHT)
-        );
-
-        vm.mockCall(
-            STARKEX_ADDRESS,
             abi.encodeWithSelector(IStarkEx.getOrderRoot.selector),
             abi.encode(STARKEX_MOCK_ORDER_ROOT)
-        );
-
-        vm.mockCall(
-            STARKEX_ADDRESS,
-            abi.encodeWithSelector(IStarkEx.getOrderTreeHeight.selector),
-            abi.encode(STARKEX_MOCK_ORDER_TREE_HEIGHT)
         );
 
         vm.mockCall(

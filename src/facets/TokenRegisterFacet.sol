@@ -3,7 +3,7 @@ pragma solidity ^0.8.0;
 
 import { LibTokenRegister } from "src/libraries/LibTokenRegister.sol";
 import { OnlyTokenAdmin } from "src/modifiers/OnlyTokenAdmin.sol";
-import { ITokenRegisterFacet } from "src/interfaces/ITokenRegisterFacet.sol";
+import { ITokenRegisterFacet } from "src/interfaces/facets/ITokenRegisterFacet.sol";
 
 contract TokenRegisterFacet is OnlyTokenAdmin, ITokenRegisterFacet {
     

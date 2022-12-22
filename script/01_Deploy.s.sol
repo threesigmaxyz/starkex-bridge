@@ -9,8 +9,8 @@ import { DiamondCutFacet } from "src/facets/DiamondCutFacet.sol";
 import { DiamondLoupeFacet } from "src/facets/DiamondLoupeFacet.sol";
 import { AccessControlFacet } from "src/facets/AccessControlFacet.sol";
 
-import { IDiamondCut } from "src/interfaces/IDiamondCut.sol";
-import { IDiamondLoupe } from "src/interfaces/IDiamondLoupe.sol";
+import { IDiamondCut } from "src/interfaces/facets/IDiamondCut.sol";
+import { IDiamondLoupe } from "src/interfaces/facets/IDiamondLoupe.sol";
 
 contract DeployBridgeModuleScript is Script {
 

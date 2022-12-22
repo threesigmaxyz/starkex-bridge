@@ -3,25 +3,27 @@ pragma solidity ^0.8.0;
 
 import { Test } from "@forge-std/Test.sol";
 
-import { BridgeDiamond }    from "src/BridgeDiamond.sol";
+import { BridgeDiamond }       from "src/BridgeDiamond.sol";
 
-import { LibAccessControl } from "src/libraries/LibAccessControl.sol";
+import { LibAccessControl }    from "src/libraries/LibAccessControl.sol";
 
-import { AccessControlFacet } from "src/facets/AccessControlFacet.sol";
-import { DepositFacet }       from "src/facets/DepositFacet.sol";
-import { DiamondCutFacet }    from "src/facets/DiamondCutFacet.sol";
-import { TokenRegisterFacet } from "src/facets/TokenRegisterFacet.sol";
-import { WithdrawalFacet }    from "src/facets/WithdrawalFacet.sol";
-import { StateFacet }         from "src/facets/StateFacet.sol";
+import { AccessControlFacet }  from "src/facets/AccessControlFacet.sol";
+import { DepositFacet }        from "src/facets/DepositFacet.sol";
+import { DiamondCutFacet }     from "src/facets/DiamondCutFacet.sol";
+import { TokenRegisterFacet }  from "src/facets/TokenRegisterFacet.sol";
+import { WithdrawalFacet }     from "src/facets/WithdrawalFacet.sol";
+import { StateFacet }          from "src/facets/StateFacet.sol";
 import { ERC165Facet }         from "src/facets/ERC165Facet.sol";
 
-import { IDiamondCut }         from "src/interfaces/IDiamondCut.sol";
-import { IAccessControlFacet } from "src/interfaces/IAccessControlFacet.sol";
-import { IDepositFacet }       from "src/interfaces/IDepositFacet.sol";
-import { ITokenRegisterFacet } from "src/interfaces/ITokenRegisterFacet.sol";
-import { IWithdrawalFacet }    from "src/interfaces/IWithdrawalFacet.sol";
-import { IStateFacet }         from "src/interfaces/IStateFacet.sol";
-import { IERC165Facet }        from "src/interfaces/IERC165Facet.sol";
+import { IDiamondCut }         from "src/interfaces/facets/IDiamondCut.sol";
+import { IAccessControlFacet } from "src/interfaces/facets/IAccessControlFacet.sol";
+import { IDepositFacet }       from "src/interfaces/facets/IDepositFacet.sol";
+import { ITokenRegisterFacet } from "src/interfaces/facets/ITokenRegisterFacet.sol";
+import { IWithdrawalFacet }    from "src/interfaces/facets/IWithdrawalFacet.sol";
+import { IStateFacet }         from "src/interfaces/facets/IStateFacet.sol";
+import { IERC165Facet }        from "src/interfaces/facets/IERC165Facet.sol";
+import { IDiamondLoupe }       from "src/interfaces/facets/IDiamondLoupe.sol";
+import { IERC165 }             from "@openzeppelin/interfaces/IERC165.sol";
 
 contract BaseFixture is Test {
 
@@ -146,6 +148,13 @@ contract BaseFixture is Test {
         IAccessControlFacet(bridge).acceptRole(LibAccessControl.INTEROPERABILITY_CONTRACT_ROLE);
         vm.prank(_tokenAdmin());
         IAccessControlFacet(bridge).acceptRole(LibAccessControl.TOKEN_ADMIN_ROLE);
+
+        // Add ERC165 interfaces
+        vm.startPrank(_owner());
+        IERC165Facet(bridge).changeSupportedInterface(type(IERC165).interfaceId, true);
+        IERC165Facet(bridge).changeSupportedInterface(type(IDiamondCut).interfaceId, true);
+        IERC165Facet(bridge).changeSupportedInterface(type(IDiamondLoupe).interfaceId, true);
+        vm.stopPrank();
     }
 
     function _owner() internal returns (address) {

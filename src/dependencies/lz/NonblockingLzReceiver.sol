@@ -2,6 +2,7 @@
 pragma solidity ^0.8.0;
 
 import { LzReceiver }          from "src/dependencies/lz/LzReceiver.sol";
+import { INonblockingLzReceiver } from "src/dependencies/lz/interfaces/INonblockingLzReceiver.sol";
 import { ExcessivelySafeCall } from "src/dependencies/lz/util/ExcessivelySafeCall.sol";
 
 /*
@@ -9,15 +10,12 @@ import { ExcessivelySafeCall } from "src/dependencies/lz/util/ExcessivelySafeCal
  * this abstract class try-catch all fail messages and store locally for future retry. hence, non-blocking
  * NOTE: if the srcAddress is not configured properly, it will still block the message pathway from (srcChainId, srcAddress)
  */
-abstract contract NonblockingLzReceiver is LzReceiver {
+abstract contract NonblockingLzReceiver is INonblockingLzReceiver, LzReceiver {
     using ExcessivelySafeCall for address;
 
-    constructor(address _endpoint) LzReceiver(_endpoint) {}
+    constructor(address lzEndpoint_) LzReceiver(lzEndpoint_){}
 
     mapping(uint16 => mapping(bytes => mapping(uint64 => bytes32))) public failedMessages;
-
-    event MessageFailed(uint16 _srcChainId, bytes _srcAddress, uint64 _nonce, bytes _payload, bytes _reason);
-    event RetryMessageSuccess(uint16 _srcChainId, bytes _srcAddress, uint64 _nonce, bytes32 _payloadHash);
 
     // overriding the virtual function in LzReceiver
     function _blockingLzReceive(uint16 _srcChainId, bytes memory _srcAddress, uint64 _nonce, bytes memory _payload) internal virtual override {
@@ -33,7 +31,7 @@ abstract contract NonblockingLzReceiver is LzReceiver {
         emit MessageFailed(_srcChainId, _srcAddress, _nonce, _payload, _reason);
     }
 
-    function nonblockingLzReceive(uint16 _srcChainId, bytes calldata _srcAddress, uint64 _nonce, bytes calldata _payload) public virtual {
+    function nonblockingLzReceive(uint16 _srcChainId, bytes calldata _srcAddress, uint64 _nonce, bytes calldata _payload) public virtual override {
         // only internal transaction
         require(_msgSender() == address(this), "NonblockingLzApp: caller must be LzApp");
         _nonblockingLzReceive(_srcChainId, _srcAddress, _nonce, _payload);
@@ -42,7 +40,7 @@ abstract contract NonblockingLzReceiver is LzReceiver {
     //@notice override this function
     function _nonblockingLzReceive(uint16 _srcChainId, bytes memory _srcAddress, uint64 _nonce, bytes memory _payload) internal virtual;
 
-    function retryMessage(uint16 _srcChainId, bytes calldata _srcAddress, uint64 _nonce, bytes calldata _payload) public payable virtual {
+    function retryMessage(uint16 _srcChainId, bytes calldata _srcAddress, uint64 _nonce, bytes calldata _payload) public payable virtual override{
         // assert there is message to retry
         bytes32 payloadHash = failedMessages[_srcChainId][_srcAddress][_nonce];
         require(payloadHash != bytes32(0), "NonblockingLzApp: no stored message");
