@@ -2,7 +2,7 @@
 pragma solidity ^0.8.0;
 
 import { ILayerZeroSenderUserApplicationConfig } from "src/dependencies/lz/interfaces/ILayerZeroSenderUserApplicationConfig.sol";
-import { LzBase } from "src/dependencies/lz/LzBase.sol";
+import { LzBase }                                from "src/dependencies/lz/LzBase.sol";
 
 abstract contract LzSender is ILayerZeroSenderUserApplicationConfig, LzBase {
 

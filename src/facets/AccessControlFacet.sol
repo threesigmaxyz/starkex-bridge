@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import {LibAccessControl} from "src/libraries/LibAccessControl.sol";
-import {OnlyOwner} from "src/modifiers/OnlyOwner.sol";
+import {LibAccessControl}    from "src/libraries/LibAccessControl.sol";
+import {OnlyOwner}           from "src/modifiers/OnlyOwner.sol";
 import {IAccessControlFacet} from "src/interfaces/facets/IAccessControlFacet.sol";
 
 /// @title Facet for access control operations.

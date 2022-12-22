@@ -2,14 +2,14 @@
 pragma solidity ^0.8.0;
 
 import { LibMPT as MerklePatriciaTree } from "src/dependencies/mpt/v2/LibMPT.sol";
-import { Constants } from "src/constants/Constants.sol";
-import { HelpersERC20 } from "src/helpers/HelpersERC20.sol";
-import { HelpersECDSA } from "src/helpers/HelpersECDSA.sol";
-import { LibState } from "src/libraries/LibState.sol";
-import { OnlyOwner } from "src/modifiers/OnlyOwner.sol";
-import { OnlyStarkExOperator } from "src/modifiers/OnlyStarkExOperator.sol";
-import { OnlyRegisteredToken } from "src/modifiers/OnlyRegisteredToken.sol";
-import { IDepositFacet } from "src/interfaces/facets/IDepositFacet.sol";
+import { Constants }                    from "src/constants/Constants.sol";
+import { HelpersERC20 }                 from "src/helpers/HelpersERC20.sol";
+import { HelpersECDSA }                 from "src/helpers/HelpersECDSA.sol";
+import { LibState }                     from "src/libraries/LibState.sol";
+import { OnlyOwner }                    from "src/modifiers/OnlyOwner.sol";
+import { OnlyStarkExOperator }          from "src/modifiers/OnlyStarkExOperator.sol";
+import { OnlyRegisteredToken }          from "src/modifiers/OnlyRegisteredToken.sol";
+import { IDepositFacet }                from "src/interfaces/facets/IDepositFacet.sol";
 
 /**
 	Step 1: The user locks their funds in the sidechain account in the interoperability

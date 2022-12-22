@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import { LzReceiver }          from "src/dependencies/lz/LzReceiver.sol";
+import { LzReceiver } from "src/dependencies/lz/LzReceiver.sol";
 
 /*
  * the default LayerZero messaging behaviour is blocking, i.e. any failed message will block the channel

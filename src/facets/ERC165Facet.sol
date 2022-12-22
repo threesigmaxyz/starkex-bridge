@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import { OnlyOwner } from "src/modifiers/OnlyOwner.sol";
+import { OnlyOwner }    from "src/modifiers/OnlyOwner.sol";
 import { IERC165Facet } from "src/interfaces/facets/IERC165Facet.sol";
 
 contract ERC165Facet is OnlyOwner, IERC165Facet {
