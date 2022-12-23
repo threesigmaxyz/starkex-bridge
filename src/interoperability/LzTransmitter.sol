@@ -63,11 +63,21 @@ contract LzTransmitter is ILzTransmitter, LzSender, Pausable {
     }
 
     /// @inheritdoc ILzTransmitter
-    function batchKeep(uint16[] calldata dstChainIds_, address payable refundAddress_) external payable override {
+    function batchKeep(
+        uint16[] calldata dstChainIds_,
+        uint256[] calldata valueToChainId_,
+        address payable refundAddress_
+    ) external payable override {
         uint256 dstChainIdsLength = dstChainIds_.length;
 
+        uint256 etherSent;
+        for (uint i = 0; i < valueToChainId_.length; i++) {
+            etherSent += valueToChainId_[i];
+        }
+        if (etherSent != msg.value) revert InvalidEtherSentError();
+
         for (uint256 i = 0; i < dstChainIdsLength; i++) {
-            _keep(dstChainIds_[i], refundAddress_, msg.value / dstChainIdsLength);
+            _keep(dstChainIds_[i], refundAddress_, valueToChainId_[i]);
         }
     }
 

@@ -18,6 +18,7 @@ interface ILzTransmitter {
     error StaleUpdateError(uint16 chainId, uint256 sequenceNumber);
     error ZeroStarkExAddressError();
     error ZeroLzEndpointAddressError();
+    error InvalidEtherSentError();
 
     /**
      * @notice Gets the StarkEx address.
@@ -73,5 +74,9 @@ interface ILzTransmitter {
      * @param dstChainIds_ The if of the destination chains.
      * @param refundAddress_ The refund address of the unused ether sent.
      */
-    function batchKeep(uint16[] calldata dstChainIds_, address payable refundAddress_) external payable;
+    function batchKeep(
+        uint16[] calldata dstChainIds_,
+        uint256[] calldata valueToChainId,
+        address payable refundAddress_
+    ) external payable;
 }

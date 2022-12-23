@@ -8,7 +8,7 @@ import { IDiamondLoupe } from "src/interfaces/facets/IDiamondLoupe.sol";
 import { LibAccessControl } from "src/libraries/LibAccessControl.sol";
 import { IERC165 } from "@openzeppelin/interfaces/IERC165.sol";
 
-contract DepositFacetTest is BaseFixture {
+contract ERC165FacetTest is BaseFixture {
     function test_initialize_ok() public {
         assertEq(IERC165Facet(bridge).supportsInterface(type(IERC165).interfaceId), true);
         assertEq(IERC165Facet(bridge).supportsInterface(type(IDiamondCut).interfaceId), true);
