@@ -6,7 +6,7 @@ import { OnlyInteroperabilityContract } from "src/modifiers/OnlyInteroperability
 import { IStateFacet }                  from "src/interfaces/facets/IStateFacet.sol";
 
 contract StateFacet is OnlyInteroperabilityContract, IStateFacet {
-    
+
     /// @inheritdoc IStateFacet
     function getOrderRoot() external view override returns (uint256 orderRoot_) {
         orderRoot_ = LibState.getOrderRoot();
@@ -14,7 +14,6 @@ contract StateFacet is OnlyInteroperabilityContract, IStateFacet {
 
     /// @inheritdoc IStateFacet
     function setOrderRoot(uint256 orderRoot_) external override onlyInteroperabilityContract {
-        LibState.stateStorage().orderRoot = orderRoot_;
-        emit LogSetOrderRoot(orderRoot_);
+        LibState.setOrderRoot(orderRoot_);
     }
 }

@@ -2,13 +2,6 @@
 pragma solidity ^0.8.0;
 
 interface IStateFacet {
-
-    /**
-     * @notice Emits a new order root change.
-     * @param orderRoot The order root.
-     */
-    event LogSetOrderRoot(uint256 orderRoot);
-
     /**
      * @notice Returns the current order root.
      * @return orderRoot_ The order root. 

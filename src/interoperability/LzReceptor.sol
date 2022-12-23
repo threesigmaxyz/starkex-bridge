@@ -33,14 +33,12 @@ contract LzReceptor is ILzReceptor, NonblockingLzReceiver, Pausable {
 
     /**
      * @notice Receives the root update.
-     * @param srcChainId_ The source chain Id.
-     * @param srcAddress_ The source address that sent the message.
      * @param nonce_ The nonce of the message.
      * @param payload_ Contains the roots.  
      */
     function _nonblockingLzReceive(
-        uint16 srcChainId_,
-        bytes memory srcAddress_,
+        uint16,
+        bytes memory,
         uint64 nonce_,
         bytes memory payload_
     ) internal override {
