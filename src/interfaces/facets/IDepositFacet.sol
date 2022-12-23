@@ -45,11 +45,11 @@ interface IDepositFacet {
 	 */
 	event LogSetDepositExpirationTimeout(uint256 timeout);
 
-	/// @dev stateless errors.
+	/// @dev Stateless errors.
 	error InvalidDepositLockError();
 	error InvalidStarkKeyError();
 	error ZeroAmountError();
-	/// @dev statefull errors.
+	/// @dev Statefull errors.
 	error DepositPendingError();
     error DepositNotFoundError();
 	error DepositNotExpiredError();

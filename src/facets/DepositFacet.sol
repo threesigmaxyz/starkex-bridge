@@ -68,17 +68,17 @@ contract DepositFacet is OnlyRegisteredToken, OnlyStarkExOperator, OnlyOwner, ID
 		uint256 amount_,
 		uint256 lockHash_
 	) external override onlyRegisteredToken(token_) {
-		/// Stateless argument validation.
+		// Stateless argument validation.
 		if (!HelpersECDSA.isOnCurve(starkKey_)) revert InvalidStarkKeyError();
 		if (amount_ == 0) revert ZeroAmountError();
 		if (lockHash_ == 0) revert InvalidDepositLockError();
 
 		DepositStorage storage ds = depositStorage();
 
-		/// Check if the deposit is already pending.
+		// Check if the deposit is already pending.
 		if (ds.deposits[lockHash_].expirationDate != 0) revert DepositPendingError();
 
-		/// Register the deposit.
+		// Register the deposit.
 		ds.deposits[lockHash_] = Deposit({
 			receiver: msg.sender,
             starkKey: starkKey_,
@@ -86,13 +86,13 @@ contract DepositFacet is OnlyRegisteredToken, OnlyStarkExOperator, OnlyOwner, ID
             amount: amount_,
             expirationDate: (block.timestamp + ds.depositExpirationTimeout)
         });
-		/// Increment the pending deposit amount for the token.
+		// Increment the pending deposit amount for the token.
 		ds.pendingDeposits[token_] += amount_;
 
-		/// Emit event.
+		// Emit event.
         emit LogLockDeposit(lockHash_, starkKey_, token_, amount_);
 
-		/// Transfer deposited funds to the contract.
+		// Transfer deposited funds to the contract.
         HelpersERC20.transferFrom(token_, msg.sender, address(this), amount_);
 	}
 
@@ -103,7 +103,7 @@ contract DepositFacet is OnlyRegisteredToken, OnlyStarkExOperator, OnlyOwner, ID
 		bytes32[] memory proof_,
 		address recipient_
 	) external override onlyStarkExOperator {
-		/// @dev Stateless validation.
+		/// Stateless validation.
         if (lockHash_ == 0) revert InvalidDepositLockError();
 
 		DepositStorage storage ds = depositStorage();
@@ -111,7 +111,7 @@ contract DepositFacet is OnlyRegisteredToken, OnlyStarkExOperator, OnlyOwner, ID
 		Deposit memory deposit_ = ds.deposits[lockHash_];
 		if (deposit_.expirationDate == 0) revert DepositNotFoundError();
         
-		/// Validate MPT proof.
+		// Validate MPT proof.
 		MerklePatriciaTree.verifyProof(
 			bytes32(LibState.getOrderRoot()),
 			abi.encode(lockHash_),
@@ -120,37 +120,37 @@ contract DepositFacet is OnlyRegisteredToken, OnlyStarkExOperator, OnlyOwner, ID
 			proof_
 		);
 
-		/// State update.
+		// State update.
         delete ds.deposits[lockHash_];
         ds.pendingDeposits[deposit_.token] -= deposit_.amount;
 
-		/// Emit event.
+		// Emit event.
 		emit LogClaimDeposit(lockHash_, recipient_);
 
-		/// Transfer funds
+		// Transfer funds
         HelpersERC20.transfer(deposit_.token, recipient_, deposit_.amount);
 	}
 
 	/// @inheritdoc IDepositFacet
     function reclaimDeposit(uint256 lockHash_) external override {
-		/// Stateless validation.
+		// Stateless validation.
 		if (lockHash_ == 0) revert InvalidDepositLockError();
 
 		DepositStorage storage ds = depositStorage();
 
 		Deposit memory deposit_ = ds.deposits[lockHash_];
-		/// Check if deposit exists or has expired.
+		// Check if deposit exists or has expired.
 		if (deposit_.expirationDate == 0) revert DepositNotFoundError();
         if (block.timestamp <= deposit_.expirationDate) revert DepositNotExpiredError();
 		
-		/// State update.
+		// State update.
         delete ds.deposits[lockHash_];
         ds.pendingDeposits[deposit_.token] -= deposit_.amount;
 
-		/// Emit event.
+		// Emit event.
 		emit LogReclaimDeposit(lockHash_);
 
-		/// Transfer funds.
+		// Transfer funds.
         HelpersERC20.transfer(deposit_.token, deposit_.receiver, deposit_.amount);
 	}
 

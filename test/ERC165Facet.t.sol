@@ -16,22 +16,22 @@ contract DepositFacetTest is BaseFixture {
         assertEq(IERC165Facet(bridge).supportsInterface(type(IDiamondLoupe).interfaceId), true);
     }
 
-    function test_changeSupportedInterface_ok() public {
+    function test_setSupportedInterface_ok() public {
         bytes4 interfaceId = 0x12345678; 
 
         vm.startPrank(_owner());
 
-        IERC165Facet(bridge).changeSupportedInterface(interfaceId, true);
+        IERC165Facet(bridge).setSupportedInterface(interfaceId, true);
         assertEq(IERC165Facet(bridge).supportsInterface(interfaceId), true);
 
-        IERC165Facet(bridge).changeSupportedInterface(interfaceId, false);
+        IERC165Facet(bridge).setSupportedInterface(interfaceId, false);
         assertEq(IERC165Facet(bridge).supportsInterface(interfaceId), false);
 
         vm.stopPrank();
     }
 
-    function test_changeSupportedInterface_notOwner() public {
+    function test_setSupportedInterface_notOwner() public {
         vm.expectRevert(abi.encodeWithSelector(LibAccessControl.Unauthorized.selector));
-        IERC165Facet(bridge).changeSupportedInterface(0x12345678, true);
+        IERC165Facet(bridge).setSupportedInterface(0x12345678, true);
     }
 }

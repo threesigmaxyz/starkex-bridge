@@ -8,6 +8,11 @@ library LibTokenRegister {
         mapping(address => bool) registeredToken;
     }
 
+    /**
+     * @notice Emitted when a token is registered or unregistered.
+     * @param token Address of the token to register.
+     * @param flag Whether to register or unregister.
+     */
     event LogSetTokenRegister(address token, bool flag);
 
     error TokenNotRegisteredError(address asset);

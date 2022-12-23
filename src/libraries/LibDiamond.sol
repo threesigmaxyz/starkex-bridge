@@ -35,12 +35,12 @@ library LibDiamond {
 
     /** 
      * @notice DIAMOND CUT
-     * @notice Internal function version of diamondCut
-     * @notice This code is almost the same as the external diamondCut,
-     * @notice except it is using 'Facet[] memory _diamondCut' instead of
-     * @notice 'Facet[] calldata _diamondCut'.
-     * @notice The code is duplicated to prevent copying calldata to memory which
-     * @notice causes an error for a two dimensional array.
+     *         Internal function version of diamondCut
+     *         This code is almost the same as the external diamondCut,
+     *         except it is using 'Facet[] memory _diamondCut' instead of
+     *         'Facet[] calldata _diamondCut'.
+     *         The code is duplicated to prevent copying calldata to memory which
+     *         causes an error for a two dimensional array.
      * @param _diamondCut The address and selectors of a facet.
      * @param init_ The address of the initialization function to call.
      * @param calldata_ The name and arguments of the initialization function.

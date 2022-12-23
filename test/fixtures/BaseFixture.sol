@@ -124,7 +124,7 @@ contract BaseFixture is Test {
         // State facet
         bytes4[] memory erc165FacetSelectors_ = new bytes4[](2);
         erc165FacetSelectors_[0] = IERC165Facet.supportsInterface.selector;
-        erc165FacetSelectors_[1] = IERC165Facet.changeSupportedInterface.selector;
+        erc165FacetSelectors_[1] = IERC165Facet.setSupportedInterface.selector;
         cut_[3] = IDiamondCut.FacetCut({
             facetAddress: address(erc165Facet), 
             action: IDiamondCut.FacetCutAction.Add, 
@@ -151,9 +151,9 @@ contract BaseFixture is Test {
 
         // Add ERC165 interfaces
         vm.startPrank(_owner());
-        IERC165Facet(bridge).changeSupportedInterface(type(IERC165).interfaceId, true);
-        IERC165Facet(bridge).changeSupportedInterface(type(IDiamondCut).interfaceId, true);
-        IERC165Facet(bridge).changeSupportedInterface(type(IDiamondLoupe).interfaceId, true);
+        IERC165Facet(bridge).setSupportedInterface(type(IERC165).interfaceId, true);
+        IERC165Facet(bridge).setSupportedInterface(type(IDiamondCut).interfaceId, true);
+        IERC165Facet(bridge).setSupportedInterface(type(IDiamondLoupe).interfaceId, true);
         vm.stopPrank();
     }
 

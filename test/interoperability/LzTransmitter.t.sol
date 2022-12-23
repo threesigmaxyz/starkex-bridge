@@ -15,6 +15,11 @@ contract LzTransmitterTest is LzFixture {
     //=== Tests                                                                  ===//
     //==============================================================================//
 
+    function test_isTrustedRemote_ok() public {
+        bytes memory path_ = abi.encodePacked(address(receptor), address(transmitter));
+        assertEq(transmitter.isTrustedRemote(MOCK_CHAIN_ID, path_), true);
+    }
+
     function test_keep_ok() public {
         // Arrange
         address keeper_ = vm.addr(42);

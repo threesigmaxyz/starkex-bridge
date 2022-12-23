@@ -15,7 +15,7 @@ contract DiamondLoupeFacet is IDiamondLoupe {
         uint16[] memory numFacetSelectors = new uint16[](ds.selectorCount);
         uint256 numFacets;
         uint256 selectorIndex;
-        /// Loop through function selectors.
+        // Loop through function selectors.
         for (uint256 slotIndex; selectorIndex < ds.selectorCount; slotIndex++) {
             bytes32 slot = ds.selectorSlots[slotIndex];
             for (uint256 selectorSlotIndex; selectorSlotIndex < 8; selectorSlotIndex++) {
@@ -23,14 +23,14 @@ contract DiamondLoupeFacet is IDiamondLoupe {
                 if (selectorIndex > ds.selectorCount) {
                     break;
                 }
-                /// " << 5 is the same as multiplying by 32 ( * 32).
+                // " << 5 is the same as multiplying by 32 ( * 32).
                 bytes4 selector = bytes4(slot << (selectorSlotIndex << 5));
                 address facetAddress_ = address(bytes20(ds.facets[selector]));
                 bool continueLoop;
                 for (uint256 facetIndex; facetIndex < numFacets; facetIndex++) {
                     if (facets_[facetIndex].facetAddress == facetAddress_) {
                         facets_[facetIndex].functionSelectors[numFacetSelectors[facetIndex]] = selector;
-                        /// Probably will never have more than 256 functions from one facet contract.
+                        // Probably will never have more than 256 functions from one facet contract.
                         require(numFacetSelectors[facetIndex] < 255);
                         numFacetSelectors[facetIndex]++;
                         continueLoop = true;
@@ -50,12 +50,12 @@ contract DiamondLoupeFacet is IDiamondLoupe {
         for (uint256 facetIndex; facetIndex < numFacets; facetIndex++) {
             uint256 numSelectors = numFacetSelectors[facetIndex];
             bytes4[] memory selectors = facets_[facetIndex].functionSelectors;
-            /// Setting the number of selectors.
+            // Setting the number of selectors.
             assembly {
                 mstore(selectors, numSelectors)
             }
         }
-        /// Setting the number of facets.
+        // Setting the number of facets.
         assembly {
             mstore(facets_, numFacets)
         }
@@ -72,7 +72,7 @@ contract DiamondLoupeFacet is IDiamondLoupe {
         uint256 numSelectors;
         _facetFunctionSelectors = new bytes4[](ds.selectorCount);
         uint256 selectorIndex;
-        /// Loop through function selectors.
+        // Loop through function selectors.
         for (uint256 slotIndex; selectorIndex < ds.selectorCount; slotIndex++) {
             bytes32 slot = ds.selectorSlots[slotIndex];
             for (uint256 selectorSlotIndex; selectorSlotIndex < 8; selectorSlotIndex++) {
@@ -89,7 +89,7 @@ contract DiamondLoupeFacet is IDiamondLoupe {
                 }
             }
         }
-        /// Set the number of selectors in the array.
+        // Set the number of selectors in the array.
         assembly {
             mstore(_facetFunctionSelectors, numSelectors)
         }
@@ -101,7 +101,7 @@ contract DiamondLoupeFacet is IDiamondLoupe {
         facetAddresses_ = new address[](ds.selectorCount);
         uint256 numFacets;
         uint256 selectorIndex;
-        /// Loop through function selectors.
+        // Loop through function selectors.
         for (uint256 slotIndex; selectorIndex < ds.selectorCount; slotIndex++) {
             bytes32 slot = ds.selectorSlots[slotIndex];
             for (uint256 selectorSlotIndex; selectorSlotIndex < 8; selectorSlotIndex++) {
@@ -109,7 +109,7 @@ contract DiamondLoupeFacet is IDiamondLoupe {
                 if (selectorIndex > ds.selectorCount) {
                     break;
                 }
-                /// " << 5 is the same as multiplying by 32 ( * 32).
+                // " << 5 is the same as multiplying by 32 ( * 32).
                 bytes4 selector = bytes4(slot << (selectorSlotIndex << 5));
                 address facetAddress_ = address(bytes20(ds.facets[selector]));
                 bool continueLoop;
@@ -126,7 +126,7 @@ contract DiamondLoupeFacet is IDiamondLoupe {
                 numFacets++;
             }
         }
-        /// Set the number of facet addresses in the array.
+        // Set the number of facet addresses in the array.
         assembly {
             mstore(facetAddresses_, numFacets)
         }

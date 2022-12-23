@@ -1,16 +1,24 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import { IStarkEx } from "src/interfaces/interoperability/IStarkEx.sol";
-
 interface ILzTransmitter {
+
+    /**
+     * @notice Emitted when the address of the starkEx contract is set.
+     * @param starkEx The address of the starkEx contract.
+     */
+    event LogSetStarkExAddress(address starkEx);
+
+    /**
+     * @notice Emitted when a new order root is sent.
+     * @param dstChainId The id of the destination chain.
+     * @param orderRoot The root of the order tree.
+     */
+    event LogNewOrderRootSent(uint16 dstChainId, uint256 orderRoot);
 
     error StaleUpdateError(uint16 chainId, uint256 sequenceNumber);
     error ZeroStarkExAddressError();
     error ZeroLzEndpointAddressError();
-
-    event LogSetStarkExAddress(address starkEx);
-    event LogNewOrderRootSent(uint256 orderRoot);
 
     /** 
      * @notice Gets the StarkEx address.

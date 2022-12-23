@@ -2,7 +2,7 @@
 pragma solidity ^0.8.0;
 
 import { Pausable }              from "@openzeppelin/security/Pausable.sol";
-import { NonblockingLzReceiver } from "src/dependencies/lz/NonblockingLzReceiver.sol";
+import { NonblockingLzReceiver } from "src/interoperability/lz/NonblockingLzReceiver.sol";
 import { LibAccessControl  }     from "src/libraries/LibAccessControl.sol";
 import { IAccessControlFacet }   from "src/interfaces/facets/IAccessControlFacet.sol";
 import { IStateFacet }           from "src/interfaces/facets/IStateFacet.sol";
@@ -10,7 +10,10 @@ import { ILzReceptor }           from "src/interfaces/interoperability/ILzRecept
 
 contract LzReceptor is ILzReceptor, NonblockingLzReceiver, Pausable {
     
+    /// @notice Address of the bridge.
     address immutable private _bridge;
+
+    /// @notice Last nonce received. Useful to ignore outdated received roots.
     uint256 private _lastNonce;
 
     constructor(
@@ -44,7 +47,7 @@ contract LzReceptor is ILzReceptor, NonblockingLzReceiver, Pausable {
     ) internal override {
         (uint256 orderRoot_) = abi.decode(payload_, (uint256));
 
-        /// @dev No revert because the most recent order tree contains all the old info.
+        /// No revert because the most recent order tree contains all the old info.
         if (nonce_ <= _lastNonce) {
             emit LogOutdatedRootReceived(orderRoot_, nonce_);
             return;

@@ -50,7 +50,7 @@ library HelpersERC20 {
     /**
      * @notice Handles the return value of a token transfer.
      * @dev If the call reverts, success_ is false and it reverts with the result_ (if not empty).
-     * @dev If the call does not revert, but returns false in result_, it reverts.
+     *      If the call does not revert, but returns false in result_, it reverts.
      * @param success_ The result of the return value.
      * @param result_ The reason (in bytes) of the return value.
      */
