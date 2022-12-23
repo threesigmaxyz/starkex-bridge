@@ -16,6 +16,8 @@ contract LzReceptor is ILzReceptor, NonblockingLzReceiver, Pausable {
     /// @notice Last nonce received. Useful to ignore outdated received roots.
     uint256 private _lastNonce;
 
+    uint256 private _orderRoot;
+
     constructor(
         address lzEndpoint_,
         address bridgeAddress_
@@ -34,6 +36,13 @@ contract LzReceptor is ILzReceptor, NonblockingLzReceiver, Pausable {
         emit LogBridgeRoleAccepted();
     }
 
+    /// @inheritdoc ILzReceptor
+    function setOrderRoot() external override onlyOwner {
+        uint256 orderRoot_ = _orderRoot;
+        IStateFacet(_bridge).setOrderRoot(orderRoot_);
+        emit LogOrderRootUpdate(orderRoot_);
+    }
+
     /**
      * @notice Receives the root update.
      * @param nonce_ The nonce of the message.
@@ -47,15 +56,14 @@ contract LzReceptor is ILzReceptor, NonblockingLzReceiver, Pausable {
     ) internal override {
         (uint256 orderRoot_) = abi.decode(payload_, (uint256));
 
-        /// No revert because the most recent order tree contains all the old info.
+        /// Return because the most recent order tree contains all the old info.
         if (nonce_ <= _lastNonce) {
             emit LogOutdatedRootReceived(orderRoot_, nonce_);
             return;
         }
         _lastNonce = nonce_;
 
-        IStateFacet(_bridge).setOrderRoot(orderRoot_);
-
-        emit LogOrderRootUpdate(orderRoot_);
+        _orderRoot = orderRoot_;
+        emit LogRootReceived(orderRoot_);
     }
 }
