@@ -4,7 +4,7 @@ pragma solidity ^0.8.0;
 interface IStateFacet {
     /**
      * @notice Returns the current order root.
-     * @return orderRoot_ The order root. 
+     * @return orderRoot_ The order root.
      */
     function getOrderRoot() external view returns (uint256 orderRoot_);
 

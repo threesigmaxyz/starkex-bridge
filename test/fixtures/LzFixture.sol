@@ -20,8 +20,8 @@ contract LzFixture is BaseFixture {
     address public constant STARKEX_ADDRESS = 0xF5C9F957705bea56a7e806943f98F7777B995826;
     uint16 public constant MOCK_CHAIN_ID = 1337;
 
-    uint256 public STARKEX_MOCK_ORDER_ROOT           = 333;
-    uint256 public STARKEX_MOCK_SEQUENCE_NUMBER      = 314;
+    uint256 public STARKEX_MOCK_ORDER_ROOT = 333;
+    uint256 public STARKEX_MOCK_SEQUENCE_NUMBER = 314;
 
     //==============================================================================//
     //=== State Variables                                                        ===//
@@ -30,7 +30,7 @@ contract LzFixture is BaseFixture {
     LzEndpointMock lzEndpoint;
     LzTransmitter transmitter;
     LzReceptor receptor;
-    
+
     //==============================================================================//
     //=== Setup                                                                  ===//
     //==============================================================================//
@@ -51,7 +51,7 @@ contract LzFixture is BaseFixture {
 
         vm.prank(_owner());
         IAccessControlFacet(bridge).setPendingRole(LibAccessControl.INTEROPERABILITY_CONTRACT_ROLE, address(receptor));
-        
+
         receptor.acceptBridgeRole();
 
         // Register interoperability contracts on Layer Zero
@@ -70,9 +70,7 @@ contract LzFixture is BaseFixture {
 
     function _setUpMocks() internal {
         vm.mockCall(
-            STARKEX_ADDRESS,
-            abi.encodeWithSelector(IStarkEx.getOrderRoot.selector),
-            abi.encode(STARKEX_MOCK_ORDER_ROOT)
+            STARKEX_ADDRESS, abi.encodeWithSelector(IStarkEx.getOrderRoot.selector), abi.encode(STARKEX_MOCK_ORDER_ROOT)
         );
 
         vm.mockCall(

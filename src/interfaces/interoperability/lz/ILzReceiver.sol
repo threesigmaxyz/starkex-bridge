@@ -2,7 +2,6 @@
 pragma solidity ^0.8.0;
 
 interface ILzReceiver {
-
     error InvalidEndpointCallerError();
 
     // @notice LayerZero endpoint will invoke this function to deliver the message on the destination

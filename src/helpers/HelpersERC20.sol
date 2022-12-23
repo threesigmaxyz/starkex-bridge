@@ -4,7 +4,6 @@ pragma solidity ^0.8.0;
 import { IERC20 } from "@openzeppelin/token/ERC20/IERC20.sol";
 
 library HelpersERC20 {
-    
     /**
      * @notice Transfers the specified amount of a token from an address to another.
      * @param token_ The address of the token.
@@ -12,18 +11,14 @@ library HelpersERC20 {
      * @param to_ The address that receives tokens.
      * @param value_ The amount of tokens.
      */
-    function transferFrom(
-        address token_,
-        address from_,
-        address to_,
-        uint256 value_
-    ) internal {
+    function transferFrom(address token_, address from_, address to_, uint256 value_) internal {
         uint256 size;
         assembly {
             size := extcodesize(token_)
         }
         require(size > 0, "HelpersERC20: Address has no code");
-        (bool success, bytes memory result) = token_.call(abi.encodeWithSelector(IERC20.transferFrom.selector, from_, to_, value_));
+        (bool success, bytes memory result) =
+            token_.call(abi.encodeWithSelector(IERC20.transferFrom.selector, from_, to_, value_));
         handleReturn(success, result);
     }
 
@@ -33,11 +28,7 @@ library HelpersERC20 {
      * @param to_ The address that receives tokens.
      * @param value_ The amount of tokens.
      */
-    function transfer(
-        address token_,
-        address to_,
-        uint256 value_
-    ) internal {
+    function transfer(address token_, address to_, uint256 value_) internal {
         uint256 size;
         assembly {
             size := extcodesize(token_)

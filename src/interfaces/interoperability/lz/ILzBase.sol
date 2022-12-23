@@ -2,11 +2,10 @@
 pragma solidity ^0.8.0;
 
 interface ILzBase {
-
     /**
-    * @notice Emitted when a new precrime address is set.
-    * @param precrime The address of the precrime.
-    */
+     * @notice Emitted when a new precrime address is set.
+     * @param precrime The address of the precrime.
+     */
     event LogSetPrecrime(address precrime);
 
     /**
@@ -30,7 +29,7 @@ interface ILzBase {
     // @param chaindId_ - the chainId for the pending config change
     // @param configType_ - type of configuration. every messaging library has its own convention.
     // @param config_ - configuration in the bytes. can encode arbitrary content.
-    function setConfig(uint16 version_, uint16 chaindId_, uint configType_, bytes calldata config_) external;
+    function setConfig(uint16 version_, uint16 chaindId_, uint256 configType_, bytes calldata config_) external;
 
     /**
      * @notice Gets the current configuration.
@@ -38,7 +37,10 @@ interface ILzBase {
      * @param chaindId_ The id of the chain.
      * @param configType_ The type of configuration.
      */
-    function getConfig(uint16 version_, uint16 chaindId_, address, uint configType_) external view returns (bytes memory);
+    function getConfig(uint16 version_, uint16 chaindId_, address, uint256 configType_)
+        external
+        view
+        returns (bytes memory);
 
     /**
      * @notice Sets a trusted remote address for the cross-chain communication.
@@ -53,7 +55,7 @@ interface ILzBase {
      * @param remoteAddress_ The address of the remote address, in bytes.
      */
     function setTrustedRemoteAddress(uint16 remoteChaindId_, bytes calldata remoteAddress_) external;
-    
+
     /**
      * @notice Gets the remote address of a remote chain.
      * @param remoteChaindId_ The id of the remote chain.

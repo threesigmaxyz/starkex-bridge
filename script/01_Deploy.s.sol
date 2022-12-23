@@ -3,7 +3,7 @@ pragma solidity ^0.8.0;
 
 import { Script } from "@forge-std/Script.sol";
 
-import { BridgeDiamond }  from "src/BridgeDiamond.sol";
+import { BridgeDiamond } from "src/BridgeDiamond.sol";
 
 import { DiamondCutFacet } from "src/facets/DiamondCutFacet.sol";
 import { DiamondLoupeFacet } from "src/facets/DiamondLoupeFacet.sol";
@@ -13,7 +13,6 @@ import { IDiamondCut } from "src/interfaces/facets/IDiamondCut.sol";
 import { IDiamondLoupe } from "src/interfaces/facets/IDiamondLoupe.sol";
 
 contract DeployBridgeModuleScript is Script {
-
     address public operator;
     address public lzEndpoint;
 

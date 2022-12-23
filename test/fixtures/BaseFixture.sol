@@ -3,30 +3,29 @@ pragma solidity ^0.8.0;
 
 import { Test } from "@forge-std/Test.sol";
 
-import { BridgeDiamond }       from "src/BridgeDiamond.sol";
+import { BridgeDiamond } from "src/BridgeDiamond.sol";
 
-import { LibAccessControl }    from "src/libraries/LibAccessControl.sol";
+import { LibAccessControl } from "src/libraries/LibAccessControl.sol";
 
-import { AccessControlFacet }  from "src/facets/AccessControlFacet.sol";
-import { DepositFacet }        from "src/facets/DepositFacet.sol";
-import { DiamondCutFacet }     from "src/facets/DiamondCutFacet.sol";
-import { TokenRegisterFacet }  from "src/facets/TokenRegisterFacet.sol";
-import { WithdrawalFacet }     from "src/facets/WithdrawalFacet.sol";
-import { StateFacet }          from "src/facets/StateFacet.sol";
-import { ERC165Facet }         from "src/facets/ERC165Facet.sol";
+import { AccessControlFacet } from "src/facets/AccessControlFacet.sol";
+import { DepositFacet } from "src/facets/DepositFacet.sol";
+import { DiamondCutFacet } from "src/facets/DiamondCutFacet.sol";
+import { TokenRegisterFacet } from "src/facets/TokenRegisterFacet.sol";
+import { WithdrawalFacet } from "src/facets/WithdrawalFacet.sol";
+import { StateFacet } from "src/facets/StateFacet.sol";
+import { ERC165Facet } from "src/facets/ERC165Facet.sol";
 
-import { IDiamondCut }         from "src/interfaces/facets/IDiamondCut.sol";
+import { IDiamondCut } from "src/interfaces/facets/IDiamondCut.sol";
 import { IAccessControlFacet } from "src/interfaces/facets/IAccessControlFacet.sol";
-import { IDepositFacet }       from "src/interfaces/facets/IDepositFacet.sol";
+import { IDepositFacet } from "src/interfaces/facets/IDepositFacet.sol";
 import { ITokenRegisterFacet } from "src/interfaces/facets/ITokenRegisterFacet.sol";
-import { IWithdrawalFacet }    from "src/interfaces/facets/IWithdrawalFacet.sol";
-import { IStateFacet }         from "src/interfaces/facets/IStateFacet.sol";
-import { IERC165Facet }        from "src/interfaces/facets/IERC165Facet.sol";
-import { IDiamondLoupe }       from "src/interfaces/facets/IDiamondLoupe.sol";
-import { IERC165 }             from "@openzeppelin/interfaces/IERC165.sol";
+import { IWithdrawalFacet } from "src/interfaces/facets/IWithdrawalFacet.sol";
+import { IStateFacet } from "src/interfaces/facets/IStateFacet.sol";
+import { IERC165Facet } from "src/interfaces/facets/IERC165Facet.sol";
+import { IDiamondLoupe } from "src/interfaces/facets/IDiamondLoupe.sol";
+import { IERC165 } from "@openzeppelin/interfaces/IERC165.sol";
 
 contract BaseFixture is Test {
-
     address bridge;
 
     AccessControlFacet accessControlFacet = new AccessControlFacet();
@@ -37,8 +36,7 @@ contract BaseFixture is Test {
     StateFacet stateFacet = new StateFacet();
     ERC165Facet erc165Facet = new ERC165Facet();
 
-
-    function setUp() virtual public {
+    function setUp() public virtual {
         // Deploy diamond
         bridge = address(new BridgeDiamond(_owner(), address(diamondCutFacet)));
 
@@ -54,15 +52,13 @@ contract BaseFixture is Test {
         depositFacetSelectors_[5] = IDepositFacet.getPendingDeposits.selector;
         depositFacetSelectors_[6] = IDepositFacet.getDepositExpirationTimeout.selector;
         depositCut_[0] = IDiamondCut.FacetCut({
-            facetAddress: address(depositFacet), 
-            action: IDiamondCut.FacetCutAction.Add, 
+            facetAddress: address(depositFacet),
+            action: IDiamondCut.FacetCutAction.Add,
             functionSelectors: depositFacetSelectors_
         });
         vm.startPrank(_owner());
         IDiamondCut(address(bridge)).diamondCut(
-            depositCut_,
-            address(depositFacet),
-            abi.encodeWithSelector(depositFacet.initialize.selector)
+            depositCut_, address(depositFacet), abi.encodeWithSelector(depositFacet.initialize.selector)
         );
 
         /// @dev Cut the withdrawal facet alone to initialize it.
@@ -77,17 +73,15 @@ contract BaseFixture is Test {
         withdrawalFacetSelectors_[5] = IWithdrawalFacet.getPendingWithdrawals.selector;
         withdrawalFacetSelectors_[6] = IWithdrawalFacet.getWithdrawalExpirationTimeout.selector;
         withdrawalCut_[0] = IDiamondCut.FacetCut({
-            facetAddress: address(withdrawalFacet), 
-            action: IDiamondCut.FacetCutAction.Add, 
+            facetAddress: address(withdrawalFacet),
+            action: IDiamondCut.FacetCutAction.Add,
             functionSelectors: withdrawalFacetSelectors_
         });
         IDiamondCut(address(bridge)).diamondCut(
-            withdrawalCut_,
-            address(withdrawalFacet),
-            abi.encodeWithSelector(withdrawalFacet.initialize.selector)
+            withdrawalCut_, address(withdrawalFacet), abi.encodeWithSelector(withdrawalFacet.initialize.selector)
         );
 
-        /// @dev cut access control, token register, state and ERC165 facets. 
+        /// @dev cut access control, token register, state and ERC165 facets.
         IDiamondCut.FacetCut[] memory cut_ = new IDiamondCut.FacetCut[](4);
 
         // Access Control facet.
@@ -96,8 +90,8 @@ contract BaseFixture is Test {
         accessControlFacetSelectors_[1] = IAccessControlFacet.setPendingRole.selector;
         accessControlFacetSelectors_[2] = IAccessControlFacet.getRole.selector;
         cut_[0] = IDiamondCut.FacetCut({
-            facetAddress: address(accessControlFacet), 
-            action: IDiamondCut.FacetCutAction.Add, 
+            facetAddress: address(accessControlFacet),
+            action: IDiamondCut.FacetCutAction.Add,
             functionSelectors: accessControlFacetSelectors_
         });
 
@@ -106,8 +100,8 @@ contract BaseFixture is Test {
         tokenRegisterFacetSelectors_[0] = ITokenRegisterFacet.setTokenRegister.selector;
         tokenRegisterFacetSelectors_[1] = ITokenRegisterFacet.isTokenRegistered.selector;
         cut_[1] = IDiamondCut.FacetCut({
-            facetAddress: address(tokenRegisterFacet), 
-            action: IDiamondCut.FacetCutAction.Add, 
+            facetAddress: address(tokenRegisterFacet),
+            action: IDiamondCut.FacetCutAction.Add,
             functionSelectors: tokenRegisterFacetSelectors_
         });
 
@@ -116,8 +110,8 @@ contract BaseFixture is Test {
         stateFacetSelectors_[0] = IStateFacet.getOrderRoot.selector;
         stateFacetSelectors_[1] = IStateFacet.setOrderRoot.selector;
         cut_[2] = IDiamondCut.FacetCut({
-            facetAddress: address(stateFacet), 
-            action: IDiamondCut.FacetCutAction.Add, 
+            facetAddress: address(stateFacet),
+            action: IDiamondCut.FacetCutAction.Add,
             functionSelectors: stateFacetSelectors_
         });
 
@@ -126,17 +120,19 @@ contract BaseFixture is Test {
         erc165FacetSelectors_[0] = IERC165Facet.supportsInterface.selector;
         erc165FacetSelectors_[1] = IERC165Facet.setSupportedInterface.selector;
         cut_[3] = IDiamondCut.FacetCut({
-            facetAddress: address(erc165Facet), 
-            action: IDiamondCut.FacetCutAction.Add, 
+            facetAddress: address(erc165Facet),
+            action: IDiamondCut.FacetCutAction.Add,
             functionSelectors: erc165FacetSelectors_
         });
 
         /// Cut diamond finalize.
         IDiamondCut(address(bridge)).diamondCut(cut_, address(0), "");
-       
+
         /// Set pending roles.
         IAccessControlFacet(bridge).setPendingRole(LibAccessControl.STARKEX_OPERATOR_ROLE, _operator());
-        IAccessControlFacet(bridge).setPendingRole(LibAccessControl.INTEROPERABILITY_CONTRACT_ROLE, _mockInteropContract());
+        IAccessControlFacet(bridge).setPendingRole(
+            LibAccessControl.INTEROPERABILITY_CONTRACT_ROLE, _mockInteropContract()
+        );
         IAccessControlFacet(bridge).setPendingRole(LibAccessControl.TOKEN_ADMIN_ROLE, _tokenAdmin());
 
         vm.stopPrank();

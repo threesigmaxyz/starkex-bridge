@@ -2,14 +2,13 @@
 pragma solidity ^0.8.0;
 
 interface ILzSender {
-
     /**
      * @notice Emitted when the minimum destination gas is set for a chain.
      * @param dstChainId The id of the destination chain.
      * @param packetType The type of the packet.
      * @param minDstGas The minimum destination gas.
      */
-    event LogSetMinDstGas(uint16 dstChainId, uint16 packetType, uint minDstGas);
+    event LogSetMinDstGas(uint16 dstChainId, uint16 packetType, uint256 minDstGas);
 
     error ZeroGasLimitError();
     error GasLimitToolowError();
@@ -27,5 +26,5 @@ interface ILzSender {
      * @param packetType_ The type of the packet to send.
      * @param minGas_ The minimum gas to set.
      */
-    function setMinDstGas(uint16 dstChainId_, uint16 packetType_, uint minGas_) external;
+    function setMinDstGas(uint16 dstChainId_, uint16 packetType_, uint256 minGas_) external;
 }

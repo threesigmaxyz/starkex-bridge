@@ -5,7 +5,7 @@ import { LibTokenRegister } from "src/libraries/LibTokenRegister.sol";
 
 library LibAccessControl {
     bytes32 constant ACCESS_CONTROL_STORAGE_POSITION = keccak256("ACCESS_CONTROL_STORAGE_POSITION");
-    
+
     bytes32 constant OWNER_ROLE = keccak256("OWNER_ROLE");
     bytes32 constant STARKEX_OPERATOR_ROLE = keccak256("STARKEX_OPERATOR_ROLE");
     bytes32 constant INTEROPERABILITY_CONTRACT_ROLE = keccak256("INTEROPERABILITY_CONTRACT_ROLE");
@@ -53,7 +53,7 @@ library LibAccessControl {
 
         address prevAccount_ = acs.roles[role_];
         acs.roles[role_] = msg.sender;
-        
+
         acs.pendingRoles[role_] = address(0);
 
         emit RoleTransferred(role_, prevAccount_, msg.sender);
@@ -69,19 +69,19 @@ library LibAccessControl {
         emit PendingRoleSet(role_, account_);
     }
 
-    /** 
+    /**
      * @notice Gets the account assigned to a role.
      * @param role_ The role.
      * @return The address.
-    */
+     */
     function getRole(bytes32 role_) internal view returns (address) {
         return accessControlStorage().roles[role_];
     }
 
-    /** 
+    /**
      * @notice Throws if called by any account other than the one assigned to the role.
      * @param role_ The role.
-    */
+     */
     function onlyRole(bytes32 role_) internal view {
         if (msg.sender != accessControlStorage().roles[role_]) revert Unauthorized();
     }

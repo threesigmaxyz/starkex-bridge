@@ -1,13 +1,12 @@
 /// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import { LibDiamond }    from "src/libraries/LibDiamond.sol";
+import { LibDiamond } from "src/libraries/LibDiamond.sol";
 import { IDiamondLoupe } from "src/interfaces/facets/IDiamondLoupe.sol";
 
 /// The functions in DiamondLoupeFacet MUST be added to a diamond.
 /// @dev The EIP-2535 Diamond standard requires these functions.
 contract DiamondLoupeFacet is IDiamondLoupe {
-    
     /// @inheritdoc IDiamondLoupe
     function facets() external view override returns (Facet[] memory facets_) {
         LibDiamond.DiamondStorage storage ds = LibDiamond.diamondStorage();

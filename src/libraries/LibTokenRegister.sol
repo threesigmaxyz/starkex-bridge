@@ -30,7 +30,7 @@ library LibTokenRegister {
      * @param token_ The address of the token to set the register.
      * @param flag_ Whether to register or unregister.
      */
-	function setTokenRegister(address token_, bool flag_) internal {
+    function setTokenRegister(address token_, bool flag_) internal {
         tokenRegisterStorage().registeredToken[token_] = flag_;
         emit LogSetTokenRegister(token_, flag_);
     }
@@ -40,16 +40,16 @@ library LibTokenRegister {
      * @param token_ The address of the token.
      * @return Whether it is registered or not.
      */
-    function isTokenRegistered(address token_) internal view returns(bool) {
+    function isTokenRegistered(address token_) internal view returns (bool) {
         return tokenRegisterStorage().registeredToken[token_];
     }
 
     /**
-     * @notice Modifier helper to be called from "src/modifiers". 
+     * @notice Modifier helper to be called from "src/modifiers".
      * @dev Reverts if not registered.
      * @param token_ Address of the token to check.
      */
     function onlyRegisteredToken(address token_) internal view {
-        if(!isTokenRegistered(token_)) revert TokenNotRegisteredError(token_);
+        if (!isTokenRegistered(token_)) revert TokenNotRegisteredError(token_);
     }
 }

@@ -2,7 +2,6 @@
 pragma solidity ^0.8.0;
 
 interface ILzTransmitter {
-
     /**
      * @notice Emitted when the address of the starkEx contract is set.
      * @param starkEx The address of the starkEx contract.
@@ -20,26 +19,26 @@ interface ILzTransmitter {
     error ZeroStarkExAddressError();
     error ZeroLzEndpointAddressError();
 
-    /** 
+    /**
      * @notice Gets the StarkEx address.
      * @return starkEx_ The StarkEx address.
      */
-    function getStarkEx() external view returns(address starkEx_);
+    function getStarkEx() external view returns (address starkEx_);
 
-    /** 
+    /**
      * @notice Gets the sequence number of the last StarkEx update processed.
      * @param chainId_ The id of the sideChain.
      * @return lastUpdated_ The last StarkEx update processed.
      */
-    function getLastUpdatedSequenceNumber(uint16 chainId_) external view returns(uint256 lastUpdated_);
+    function getLastUpdatedSequenceNumber(uint16 chainId_) external view returns (uint256 lastUpdated_);
 
-    /** 
+    /**
      * @notice Gets the starkEx order root to send to the LzReceptor in the sideChains.
      * @return payload_ The payload of the message.
      */
     function getPayload() external view returns (bytes memory payload_);
 
-    /** 
+    /**
      * @notice Gets a quote for the send fee of Layer Zero.
      * @param dstChainId_ The destination chain identifier
      * @param useZro_ Whether the Layer Zero's token (ZRO) will be used to pay for fees.
@@ -47,18 +46,20 @@ interface ILzTransmitter {
      * @return nativeFee_ The estimated fee in the chain native currency.
      * @return zroFee_ The estimated fee in Layer Zero's token (i.e., ZRO).
      */
-    function getLayerZeroFee(
-        uint16 dstChainId_,
-        bool useZro_,
-        bytes calldata adapterParams_
-    ) external view returns (
-        uint nativeFee_,
-        uint zroFee_
-    );
+    function getLayerZeroFee(uint16 dstChainId_, bool useZro_, bytes calldata adapterParams_)
+        external
+        view
+        returns (uint256 nativeFee_, uint256 zroFee_);
 
-    /******************************************************************************************************************************/
-    /*** Transmitter Functions                                                                                                  ***/
-    /******************************************************************************************************************************/
+    /**
+     *
+     */
+    /**
+     * Transmitter Functions                                                                                                  **
+     */
+    /**
+     *
+     */
 
     /**
      * @notice Updates the order root of the interoperability contract in the sideChain.

@@ -2,7 +2,6 @@
 pragma solidity ^0.8.0;
 
 interface ILzReceptor {
-
     /**
      * @notice Emitted when an outdated root is received (lz messages sent in the wrong order).
      * @param orderRoot The order root.
@@ -16,7 +15,7 @@ interface ILzReceptor {
      */
     event LogOrderRootUpdate(uint256 orderRoot);
 
-     /**
+    /**
      * @notice Emitted when an order root is received.
      * @param orderRoot The order root.
      */
@@ -37,7 +36,8 @@ interface ILzReceptor {
     /// @notice Accepts the pending bridge role.
     function acceptBridgeRole() external;
 
-    /**  @notice The owner sets the root of the order tree. 
+    /**
+     * @notice The owner sets the root of the order tree.
      *           This adds another layer of security, stopping layerZero from sending any message.
      */
     function setOrderRoot() external;

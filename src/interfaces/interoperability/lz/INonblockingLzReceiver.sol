@@ -7,7 +7,6 @@ pragma solidity ^0.8.0;
  *         NOTE: if the srcAddress is not configured properly, it will still block the message pathway from (srcChainId, srcAddress)
  */
 interface INonblockingLzReceiver {
-
     /**
      * @notice Emitted when a message fails.
      * @param srcChainId The id of the source chain.
@@ -17,7 +16,7 @@ interface INonblockingLzReceiver {
      * @param reason The reason of the failure.
      */
     event LogMessageFailed(uint16 srcChainId, bytes path, uint64 nonce, bytes payload, bytes reason);
-    
+
     /**
      * @notice Emitted when a message was succefully replayed.
      * @param srcChainId The id of the source chain.
@@ -38,12 +37,8 @@ interface INonblockingLzReceiver {
      * @param nonce_ The nonce of the message.
      * @param payload_ The payload of the message.
      */
-    function nonblockingLzReceive(
-        uint16 srcChaindId_,
-        bytes calldata path_,
-        uint64 nonce_,
-        bytes calldata payload_
-    ) external;
+    function nonblockingLzReceive(uint16 srcChaindId_, bytes calldata path_, uint64 nonce_, bytes calldata payload_)
+        external;
 
     /**
      * @notice Should be called by the LzReceiver itself to process a message.
@@ -52,10 +47,7 @@ interface INonblockingLzReceiver {
      * @param nonce_ The nonce of the message.
      * @param payload_ The payload of the message.
      */
-    function retryMessage(
-        uint16 srcChaindId_,
-        bytes calldata path_,
-        uint64 nonce_,
-        bytes calldata payload_
-    ) external payable;
+    function retryMessage(uint16 srcChaindId_, bytes calldata path_, uint64 nonce_, bytes calldata payload_)
+        external
+        payable;
 }

@@ -1,15 +1,14 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import { Pausable }       from "@openzeppelin/security/Pausable.sol";
-import { IStarkEx }       from "src/interfaces/interoperability/IStarkEx.sol";
-import { LzSender }       from "src/interoperability/lz/LzSender.sol";
+import { Pausable } from "@openzeppelin/security/Pausable.sol";
+import { IStarkEx } from "src/interfaces/interoperability/IStarkEx.sol";
+import { LzSender } from "src/interoperability/lz/LzSender.sol";
 import { ILzTransmitter } from "src/interfaces/interoperability/ILzTransmitter.sol";
 
 contract LzTransmitter is ILzTransmitter, LzSender, Pausable {
-
     /// @notice Address of the starkEx contract.
-    IStarkEx immutable private _starkEx;
+    IStarkEx private immutable _starkEx;
 
     /// @notice Record the last sent sequence number. Avoids sending repeated roots.
     mapping(uint16 => uint256) private _lastUpdated;
@@ -24,12 +23,12 @@ contract LzTransmitter is ILzTransmitter, LzSender, Pausable {
     }
 
     /// @inheritdoc ILzTransmitter
-    function getStarkEx() external view override returns(address starkEx_) {
+    function getStarkEx() external view override returns (address starkEx_) {
         starkEx_ = address(_starkEx);
     }
 
     /// @inheritdoc ILzTransmitter
-    function getLastUpdatedSequenceNumber(uint16 chainId_) external view override returns(uint256 lastUpdated_) {
+    function getLastUpdatedSequenceNumber(uint16 chainId_) external view override returns (uint256 lastUpdated_) {
         lastUpdated_ = _lastUpdated[chainId_];
     }
 
@@ -39,20 +38,24 @@ contract LzTransmitter is ILzTransmitter, LzSender, Pausable {
     }
 
     /// @inheritdoc ILzTransmitter
-    function getLayerZeroFee(
-        uint16 dstChainId_,
-        bool useZro_,
-        bytes calldata adapterParams_
-    ) public view override returns (
-        uint nativeFee_,
-        uint zroFee_
-    ) {
+    function getLayerZeroFee(uint16 dstChainId_, bool useZro_, bytes calldata adapterParams_)
+        public
+        view
+        override
+        returns (uint256 nativeFee_, uint256 zroFee_)
+    {
         return lzEndpoint.estimateFees(dstChainId_, address(this), getPayload(), useZro_, adapterParams_);
     }
 
-    /******************************************************************************************************************************/
-    /*** Transmitter Functions                                                                                                  ***/
-    /******************************************************************************************************************************/
+    /**
+     *
+     */
+    /**
+     * Transmitter Functions                                                                                                  **
+     */
+    /**
+     *
+     */
 
     /// @inheritdoc ILzTransmitter
     function keep(uint16 dstChainId_, address payable refundAddress_) external payable override {
@@ -62,9 +65,9 @@ contract LzTransmitter is ILzTransmitter, LzSender, Pausable {
     /// @inheritdoc ILzTransmitter
     function batchKeep(uint16[] calldata dstChainIds_, address payable refundAddress_) external payable override {
         uint256 dstChainIdsLength = dstChainIds_.length;
-        
-        for(uint i = 0; i < dstChainIdsLength; i++) {
-            _keep(dstChainIds_[i], refundAddress_, msg.value/dstChainIdsLength);
+
+        for (uint256 i = 0; i < dstChainIdsLength; i++) {
+            _keep(dstChainIds_[i], refundAddress_, msg.value / dstChainIdsLength);
         }
     }
 
@@ -74,17 +77,13 @@ contract LzTransmitter is ILzTransmitter, LzSender, Pausable {
      * @param refundAddress_ The refund address of the unused ether sent.
      * @param usableGasInEther_ The usable gas, in ether, to run code in the sidechain.
      */
-    function _keep(
-        uint16 dstChainId_,
-        address payable refundAddress_,
-        uint256 usableGasInEther_
-    ) internal {
+    function _keep(uint16 dstChainId_, address payable refundAddress_, uint256 usableGasInEther_) internal {
         uint256 sequenceNumber_ = _starkEx.getSequenceNumber();
         uint256 lastUpdated_ = _lastUpdated[dstChainId_];
-        
+
         /// Not worth sending the same or an old root.
         if (sequenceNumber_ <= lastUpdated_) revert StaleUpdateError(dstChainId_, lastUpdated_);
-        
+
         _lastUpdated[dstChainId_] = sequenceNumber_;
 
         uint256 orderRoot_ = _starkEx.getOrderRoot();

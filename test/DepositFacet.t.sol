@@ -1,24 +1,23 @@
 //SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import { Constants }           from "src/constants/Constants.sol";
-import { DepositFacet }        from "src/facets/DepositFacet.sol";
+import { Constants } from "src/constants/Constants.sol";
+import { DepositFacet } from "src/facets/DepositFacet.sol";
 import { IAccessControlFacet } from "src/interfaces/facets/IAccessControlFacet.sol";
-import { IDepositFacet }       from "src/interfaces/facets/IDepositFacet.sol";
-import { IStateFacet }         from "src/interfaces/facets/IStateFacet.sol";
+import { IDepositFacet } from "src/interfaces/facets/IDepositFacet.sol";
+import { IStateFacet } from "src/interfaces/facets/IStateFacet.sol";
 import { ITokenRegisterFacet } from "src/interfaces/facets/ITokenRegisterFacet.sol";
-import { PatriciaTree }        from "src/dependencies/mpt/v2/PatriciaTree.sol";
-import { LibAccessControl }    from "src/libraries/LibAccessControl.sol";
+import { PatriciaTree } from "src/dependencies/mpt/v2/PatriciaTree.sol";
+import { LibAccessControl } from "src/libraries/LibAccessControl.sol";
 
 import { BaseFixture } from "test/fixtures/BaseFixture.sol";
-import { MockERC20 }   from "test/mocks/MockERC20.sol";
+import { MockERC20 } from "test/mocks/MockERC20.sol";
 
 import { console2 as Console } from "@forge-std/console2.sol";
 
 import { HelpersECDSA } from "src/helpers/HelpersECDSA.sol";
 
 contract DepositFacetTest is BaseFixture {
-
     //==============================================================================//
     //=== Constants                                                              ===//
     //==============================================================================//
@@ -26,24 +25,25 @@ contract DepositFacetTest is BaseFixture {
     uint256 internal constant STARK_KEY = 1234;
 
     /**
-    tokenId Sold:       0x3003a65651d3b9fb2eff934a4416db301afd112a8492aaf8d7297fc87dcd9f4
-    tokenId Fees:       70bf591713d7cb7150523cf64add8d49fa6b61036bba9f596bd2af8e3bb86f9
-    Receiver Stark Key: 5fa3383597691ea9d827a79e1a4f0f7949435ced18ca9619de8ab97e661020
-    VaultId Sender:     34
-    VaultId Receiver:   21
-    VaultId Fees:       593128169
-    Nonce:              1
-    Quantized Amount:   2154549703648910716
-    Quantized Fee Max:  7
-    Expiration:         1580230800
+     * tokenId Sold:       0x3003a65651d3b9fb2eff934a4416db301afd112a8492aaf8d7297fc87dcd9f4
+     * tokenId Fees:       70bf591713d7cb7150523cf64add8d49fa6b61036bba9f596bd2af8e3bb86f9
+     * Receiver Stark Key: 5fa3383597691ea9d827a79e1a4f0f7949435ced18ca9619de8ab97e661020
+     * VaultId Sender:     34
+     * VaultId Receiver:   21
+     * VaultId Fees:       593128169
+     * Nonce:              1
+     * Quantized Amount:   2154549703648910716
+     * Quantized Fee Max:  7
+     * Expiration:         1580230800
      */
-    uint256 internal constant LOCK_HASH = 2356286878056985831279161846178161693107336866674377330568734796240516368603;
+    uint256 internal constant LOCK_HASH =
+        2_356_286_878_056_985_831_279_161_846_178_161_693_107_336_866_674_377_330_568_734_796_240_516_368_603;
 
     //==============================================================================//
     //=== Events                                                                 ===//
     //==============================================================================//
 
-	event LogLockDeposit(uint256 indexed lockHash, uint256 indexed starkKey, address indexed token, uint256 amount);
+    event LogLockDeposit(uint256 indexed lockHash, uint256 indexed starkKey, address indexed token, uint256 amount);
     event LogClaimDeposit(uint256 indexed lockHash, address indexed recipient);
     event LogReclaimDeposit(uint256 indexed lockHash);
 
@@ -57,12 +57,12 @@ contract DepositFacetTest is BaseFixture {
     //=== Setup                                                                  ===//
     //==============================================================================//
 
-    function setUp() override public {
+    function setUp() public override {
         super.setUp();
 
         // Deploy token
         vm.prank(_tokenDeployer());
-        token = (new MockERC20){salt: "USDC"}("USD Coin", "USDC", 6);   // 0xa33e385d3ab4a55cc949115bb5cb57fb16143d4b
+        token = (new MockERC20){salt: "USDC"}("USD Coin", "USDC", 6); // 0xa33e385d3ab4a55cc949115bb5cb57fb16143d4b
         Console.log(address(token));
 
         // Register token in bridge
@@ -179,8 +179,10 @@ contract DepositFacetTest is BaseFixture {
         uint256 orderRoot_ = uint256(mpt_.root());
         // and
         vm.prank(_owner());
-        IAccessControlFacet(bridge).setPendingRole(LibAccessControl.INTEROPERABILITY_CONTRACT_ROLE, _mockInteropContract());
-        
+        IAccessControlFacet(bridge).setPendingRole(
+            LibAccessControl.INTEROPERABILITY_CONTRACT_ROLE, _mockInteropContract()
+        );
+
         vm.prank(_mockInteropContract());
         IAccessControlFacet(bridge).acceptRole(LibAccessControl.INTEROPERABILITY_CONTRACT_ROLE);
         // and
@@ -209,13 +211,9 @@ contract DepositFacetTest is BaseFixture {
     //=== Internal Test Helpers                                                  ===//
     //==============================================================================//
 
-    function _lockDeposit(
-        address user_,
-        uint256 starkKey_,
-		address token_,
-		uint256 amount_,
-		uint256 lockHash_
-    ) internal {
+    function _lockDeposit(address user_, uint256 starkKey_, address token_, uint256 amount_, uint256 lockHash_)
+        internal
+    {
         // Arrange
         MockERC20(token_).mint(user_, amount_);
         vm.prank(user_);
@@ -236,12 +234,9 @@ contract DepositFacetTest is BaseFixture {
         assertEq(deposit_.expirationDate, block.timestamp + Constants.DEPOSIT_ONCHAIN_EXPIRATION_TIMEOUT);
     }
 
-    function _claimDeposit(
-        uint256 lockHash_,
-        uint256 branchMask_,
-        bytes32[] memory proof_,
-        address recipient_
-    ) internal {
+    function _claimDeposit(uint256 lockHash_, uint256 branchMask_, bytes32[] memory proof_, address recipient_)
+        internal
+    {
         // Arrange
         IDepositFacet.Deposit memory deposit_ = IDepositFacet(bridge).getDeposit(lockHash_);
         assertGt(deposit_.expirationDate, 0);
@@ -251,12 +246,7 @@ contract DepositFacetTest is BaseFixture {
         vm.expectEmit(true, true, false, true);
         emit LogClaimDeposit(lockHash_, recipient_);
         vm.prank(_operator());
-        IDepositFacet(bridge).claimDeposit(
-            lockHash_,
-            branchMask_,
-            proof_,
-            recipient_
-        );
+        IDepositFacet(bridge).claimDeposit(lockHash_, branchMask_, proof_, recipient_);
 
         // Assert
         _validateDepositDeleted(lockHash_);

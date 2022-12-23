@@ -2,14 +2,13 @@
 pragma solidity ^0.8.0;
 
 import { ILzSender } from "src/interfaces/interoperability/lz/ILzSender.sol";
-import { LzBase }      from "src/interoperability/lz/LzBase.sol";
+import { LzBase } from "src/interoperability/lz/LzBase.sol";
 
 abstract contract LzSender is ILzSender, LzBase {
-
     /// @notice Minimum destination chain gas.
-    mapping(uint16 => mapping(uint16 => uint)) public minDstGasLookup;
+    mapping(uint16 => mapping(uint16 => uint256)) public minDstGasLookup;
 
-    constructor(address _endpoint) LzBase(_endpoint) {}
+    constructor(address _endpoint) LzBase(_endpoint) { }
 
     /**
      * @notice Sends the payload to the lzEndpoint if the trusted remote is set.
@@ -32,12 +31,7 @@ abstract contract LzSender is ILzSender, LzBase {
         if (trustedRemote.length == 0) revert RemoteChainNotTrustedError();
 
         lzEndpoint.send{value: nativeFee_}(
-            dstChainId_,
-            trustedRemote,
-            payload_,
-            refundAddress_,
-            zeroPaymentAddress_,
-            adapterParams_
+            dstChainId_, trustedRemote, payload_, refundAddress_, zeroPaymentAddress_, adapterParams_
         );
     }
 
@@ -48,14 +42,13 @@ abstract contract LzSender is ILzSender, LzBase {
      * @param adapterParams_ Specifies parameters such as the gas limit to use in the destination chain.
      * @param extraGas_ Extra gas to send.
      */
-    function _checkGasLimit(
-        uint16 dstChainId_,
-        uint16 packetType_,
-        bytes memory adapterParams_,
-        uint256 extraGas_
-    ) internal view virtual {
-        uint providedGasLimit = _getGasLimit(adapterParams_);
-        uint minGasLimit = minDstGasLookup[dstChainId_][packetType_] + extraGas_;
+    function _checkGasLimit(uint16 dstChainId_, uint16 packetType_, bytes memory adapterParams_, uint256 extraGas_)
+        internal
+        view
+        virtual
+    {
+        uint256 providedGasLimit = _getGasLimit(adapterParams_);
+        uint256 minGasLimit = minDstGasLookup[dstChainId_][packetType_] + extraGas_;
         if (minGasLimit == 0) revert ZeroGasLimitError();
         if (providedGasLimit < minGasLimit) revert GasLimitToolowError();
     }
@@ -65,7 +58,7 @@ abstract contract LzSender is ILzSender, LzBase {
      * @param adapterParams_ Specifies parameters such as the gas limit to use in the destination chain.
      * @return gasLimit The gas limit.
      */
-    function _getGasLimit(bytes memory adapterParams_) internal pure virtual returns (uint gasLimit) {
+    function _getGasLimit(bytes memory adapterParams_) internal pure virtual returns (uint256 gasLimit) {
         if (adapterParams_.length < 34) revert InvalidAdapterParamsError();
         assembly {
             gasLimit := mload(add(adapterParams_, 34))
@@ -78,7 +71,7 @@ abstract contract LzSender is ILzSender, LzBase {
     }
 
     /// @inheritdoc ILzSender
-    function setMinDstGas(uint16 dstChainId_, uint16 packetType_, uint minGas_) external override onlyOwner {
+    function setMinDstGas(uint16 dstChainId_, uint16 packetType_, uint256 minGas_) external override onlyOwner {
         if (minGas_ == 0) revert ZeroGasLimitError();
         minDstGasLookup[dstChainId_][packetType_] = minGas_;
         emit LogSetMinDstGas(dstChainId_, packetType_, minGas_);

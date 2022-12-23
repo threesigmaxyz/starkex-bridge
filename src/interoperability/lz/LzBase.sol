@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import { Ownable }            from "@openzeppelin/access/Ownable.sol";
+import { Ownable } from "@openzeppelin/access/Ownable.sol";
 import { ILayerZeroEndpoint } from "src/dependencies/lz/interfaces/ILayerZeroEndpoint.sol";
-import { ILzBase }            from "src/interfaces/interoperability/lz/ILzBase.sol";
-import { BytesLib }           from "src/dependencies/lz/util/BytesLib.sol";
+import { ILzBase } from "src/interfaces/interoperability/lz/ILzBase.sol";
+import { BytesLib } from "src/dependencies/lz/util/BytesLib.sol";
 
 abstract contract LzBase is Ownable, ILzBase {
     using BytesLib for bytes;
@@ -15,10 +15,10 @@ abstract contract LzBase is Ownable, ILzBase {
     /// @notice The trusted address in each remote chain.
     mapping(uint16 => bytes) public trustedRemoteLookup;
 
-    /** 
+    /**
      * @notice Address of the precrime to add any extra security check.
-     * @dev https://medium.com/layerzero-official/introducing-pre-crime-49bef4a581d5.  
-    */
+     * @dev https://medium.com/layerzero-official/introducing-pre-crime-49bef4a581d5.
+     */
     address public precrime;
 
     constructor(address _endpoint) {
@@ -26,24 +26,23 @@ abstract contract LzBase is Ownable, ILzBase {
     }
 
     //---------------------------UserApplication config----------------------------------------
-    
+
     /// @inheritdoc ILzBase
-    function getConfig(
-        uint16 version_,
-        uint16 chaindId_,
-        address,
-        uint256 configType_
-    ) external view override returns (bytes memory) {
+    function getConfig(uint16 version_, uint16 chaindId_, address, uint256 configType_)
+        external
+        view
+        override
+        returns (bytes memory)
+    {
         return lzEndpoint.getConfig(version_, chaindId_, address(this), configType_);
     }
 
     /// @inheritdoc ILzBase
-    function setConfig(
-        uint16 version_,
-        uint16 chaindId_,
-        uint256 configType_,
-        bytes calldata config_
-    ) external override onlyOwner {
+    function setConfig(uint16 version_, uint16 chaindId_, uint256 configType_, bytes calldata config_)
+        external
+        override
+        onlyOwner
+    {
         lzEndpoint.setConfig(version_, chaindId_, configType_, config_);
     }
 
@@ -54,7 +53,11 @@ abstract contract LzBase is Ownable, ILzBase {
     }
 
     /// @inheritdoc ILzBase
-    function setTrustedRemoteAddress(uint16 remoteChaindId_, bytes calldata remoteAddress_) external override onlyOwner {
+    function setTrustedRemoteAddress(uint16 remoteChaindId_, bytes calldata remoteAddress_)
+        external
+        override
+        onlyOwner
+    {
         trustedRemoteLookup[remoteChaindId_] = abi.encodePacked(remoteAddress_, address(this));
         emit LogSetTrustedRemoteAddress(remoteChaindId_, remoteAddress_);
     }

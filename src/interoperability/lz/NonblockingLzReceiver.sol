@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import { LzReceiver }             from "src/interoperability/lz/LzReceiver.sol";
+import { LzReceiver } from "src/interoperability/lz/LzReceiver.sol";
 import { INonblockingLzReceiver } from "src/interfaces/interoperability/lz/INonblockingLzReceiver.sol";
-import { ExcessivelySafeCall }    from "src/dependencies/lz/util/ExcessivelySafeCall.sol";
+import { ExcessivelySafeCall } from "src/dependencies/lz/util/ExcessivelySafeCall.sol";
 
 abstract contract NonblockingLzReceiver is INonblockingLzReceiver, LzReceiver {
     using ExcessivelySafeCall for address;
@@ -11,15 +11,14 @@ abstract contract NonblockingLzReceiver is INonblockingLzReceiver, LzReceiver {
     /// @notice Mapping of the failed messages.
     mapping(uint16 => mapping(bytes => mapping(uint64 => bytes32))) public failedMessages;
 
-    constructor(address lzEndpoint_) LzReceiver(lzEndpoint_){}
+    constructor(address lzEndpoint_) LzReceiver(lzEndpoint_) { }
 
     /// @inheritdoc LzReceiver
-    function _blockingLzReceive(
-        uint16 srcChaindId_,
-        bytes memory path_,
-        uint64 nonce_,
-        bytes memory payload_
-    ) internal virtual override {
+    function _blockingLzReceive(uint16 srcChaindId_, bytes memory path_, uint64 nonce_, bytes memory payload_)
+        internal
+        virtual
+        override
+    {
         (bool success, bytes memory reason) = address(this).excessivelySafeCall(
             gasleft(),
             150,
@@ -51,12 +50,11 @@ abstract contract NonblockingLzReceiver is INonblockingLzReceiver, LzReceiver {
     }
 
     /// @inheritdoc INonblockingLzReceiver
-    function nonblockingLzReceive(
-        uint16 srcChaindId_,
-        bytes calldata path_,
-        uint64 nonce_,
-        bytes calldata payload_
-    ) public virtual override {
+    function nonblockingLzReceive(uint16 srcChaindId_, bytes calldata path_, uint64 nonce_, bytes calldata payload_)
+        public
+        virtual
+        override
+    {
         // Only internal transaction.
         if (_msgSender() != address(this)) revert CallerMustBeLzReceiverError();
         _nonblockingLzReceive(srcChaindId_, path_, nonce_, payload_);
@@ -69,20 +67,17 @@ abstract contract NonblockingLzReceiver is INonblockingLzReceiver, LzReceiver {
      * @param nonce_ The nonce of the message.
      * @param payload_ The payload of the message.
      */
-    function _nonblockingLzReceive(
-        uint16 srcChaindId_,
-        bytes memory path_,
-        uint64 nonce_,
-        bytes memory payload_
-    ) internal virtual;
-    
+    function _nonblockingLzReceive(uint16 srcChaindId_, bytes memory path_, uint64 nonce_, bytes memory payload_)
+        internal
+        virtual;
+
     /// @inheritdoc INonblockingLzReceiver
-    function retryMessage(
-        uint16 srcChaindId_,
-        bytes calldata path_,
-        uint64 nonce_,
-        bytes calldata payload_
-    ) public payable virtual override {
+    function retryMessage(uint16 srcChaindId_, bytes calldata path_, uint64 nonce_, bytes calldata payload_)
+        public
+        payable
+        virtual
+        override
+    {
         // Assert there is message to retry.
         bytes32 payloadHash = failedMessages[srcChaindId_][path_][nonce_];
         if (keccak256(payload_) != payloadHash) revert InvalidPayloadError();

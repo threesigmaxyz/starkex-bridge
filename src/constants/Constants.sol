@@ -2,10 +2,9 @@
 pragma solidity ^0.8.0;
 
 library Constants {
-
     uint256 constant DEPOSIT_OFFCHAIN_EXPIRATION_TIMEOUT = 5000; // TODO
     uint256 constant DEPOSIT_ONCHAIN_EXPIRATION_TIMEOUT = 7200; // TODO
-	
+
     uint256 constant WITHDRAWAL_ONCHAIN_EXPIRATION_TIMEOUT = 5000; // TODO
 
     /// STARK constants.

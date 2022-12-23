@@ -8,8 +8,7 @@ import { RLPDecode } from "src/dependencies/mpt/RLPDecode.sol";
     Documentation:
     - https://eth.wiki/en/fundamentals/patricia-tree
     - https://github.com/blockchainsllc/in3/wiki/Ethereum-Verification-and-MerkleProof
-    - https://easythereentropy.wordpress.com/2014/06/04/understanding-the-ethereum-trie/
-*/
+    - https://easythereentropy.wordpress.com/2014/06/04/understanding-the-ethereum-trie/*/
 library MPT {
     using RLPDecode for RLPDecode.RLPItem;
     using RLPDecode for RLPDecode.Iterator;
@@ -23,21 +22,16 @@ library MPT {
         bytes expectedValue;
     }
 
-    function verifyTrieProof(
-        MerkleProof memory data
-    ) pure internal returns (bool)
-    {
+    function verifyTrieProof(MerkleProof memory data) internal pure returns (bool) {
         bytes memory node = data.proof[data.proofIndex];
         RLPDecode.Iterator memory dec = RLPDecode.toRlpItem(node).iterator();
 
         if (data.keyIndex == 0) {
             require(keccak256(node) == data.expectedRoot, "verifyTrieProof root node hash invalid");
-        }
-        else if (node.length < 32) {
+        } else if (node.length < 32) {
             bytes32 root = bytes32(dec.next().toUint());
             require(root == data.expectedRoot, "verifyTrieProof < 32");
-        }
-        else {
+        } else {
             require(keccak256(node) == data.expectedRoot, "verifyTrieProof else");
         }
 
@@ -56,10 +50,7 @@ library MPT {
         else return false;
     }
 
-    function verifyTrieProofBranch(
-        MerkleProof memory data
-    ) pure internal returns (bool)
-    {
+    function verifyTrieProofBranch(MerkleProof memory data) internal pure returns (bool) {
         bytes memory node = data.proof[data.proofIndex];
 
         if (data.keyIndex >= data.key.length) {
@@ -67,8 +58,7 @@ library MPT {
             if (keccak256(item) == keccak256(data.expectedValue)) {
                 return true;
             }
-        }
-        else {
+        } else {
             uint256 index = uint256(uint8(data.key[data.keyIndex]));
             bytes memory _newExpectedRoot = RLPDecode.toRlpItem(node).toList()[index].toBytes();
 
@@ -84,10 +74,10 @@ library MPT {
         else return false;
     }
 
-    function verifyTrieProofLeafOrExtension(
-        RLPDecode.Iterator memory dec,
-        MerkleProof memory data
-    ) pure internal returns (bool)
+    function verifyTrieProofLeafOrExtension(RLPDecode.Iterator memory dec, MerkleProof memory data)
+        internal
+        pure
+        returns (bool)
     {
         bytes memory nodekey = dec.next().toBytes();
         bytes memory nodevalue = dec.next().toBytes();
@@ -106,8 +96,7 @@ library MPT {
                 if (keccak256(actualKey) == keccak256(restKey)) return true;
                 if (keccak256(expandKeyEven(actualKey)) == keccak256(restKey)) return true;
             }
-        }
-        else if (prefix == 3) {
+        } else if (prefix == 3) {
             // leaf odd
             bytes memory actualKey = sliceTransform(nodekey, 0, nodekey.length, true);
             bytes memory restKey = sliceTransform(data.key, data.keyIndex, data.key.length - data.keyIndex, false);
@@ -115,58 +104,51 @@ library MPT {
                 if (keccak256(actualKey) == keccak256(restKey)) return true;
                 if (keccak256(expandKeyOdd(actualKey)) == keccak256(restKey)) return true;
             }
-        }
-        else if (prefix == 0) {
+        } else if (prefix == 0) {
             // extension even
             uint256 extensionLength = nodekey.length - 1;
             bytes memory shared_nibbles = sliceTransform(nodekey, 1, extensionLength, false);
             bytes memory restKey = sliceTransform(data.key, data.keyIndex, extensionLength, false);
             if (
-                keccak256(shared_nibbles) == keccak256(restKey) ||
-                keccak256(expandKeyEven(shared_nibbles)) == keccak256(restKey)
-
+                keccak256(shared_nibbles) == keccak256(restKey)
+                    || keccak256(expandKeyEven(shared_nibbles)) == keccak256(restKey)
             ) {
                 data.expectedRoot = b2b32(nodevalue);
                 data.keyIndex += extensionLength;
                 data.proofIndex += 1;
                 return verifyTrieProof(data);
             }
-        }
-        else if (prefix == 1) {
+        } else if (prefix == 1) {
             // extension odd
             uint256 extensionLength = nodekey.length;
             bytes memory shared_nibbles = sliceTransform(nodekey, 0, extensionLength, true);
             bytes memory restKey = sliceTransform(data.key, data.keyIndex, extensionLength, false);
             if (
-                keccak256(shared_nibbles) == keccak256(restKey) ||
-                keccak256(expandKeyEven(shared_nibbles)) == keccak256(restKey)
+                keccak256(shared_nibbles) == keccak256(restKey)
+                    || keccak256(expandKeyEven(shared_nibbles)) == keccak256(restKey)
             ) {
                 data.expectedRoot = b2b32(nodevalue);
                 data.keyIndex += extensionLength;
                 data.proofIndex += 1;
                 return verifyTrieProof(data);
             }
-        }
-        else {
+        } else {
             revert("Invalid proof");
         }
         if (data.expectedValue.length == 0) return true;
         else return false;
     }
 
-    function b2b32(bytes memory data) pure internal returns(bytes32 part) {
+    function b2b32(bytes memory data) internal pure returns (bytes32 part) {
         assembly {
             part := mload(add(data, 32))
         }
     }
 
-    function sliceTransform(
-        bytes memory data,
-        uint256 start,
-        uint256 length,
-        bool removeFirstNibble
-    )
-        pure internal returns(bytes memory)
+    function sliceTransform(bytes memory data, uint256 start, uint256 length, bool removeFirstNibble)
+        internal
+        pure
+        returns (bytes memory)
     {
         uint256 slots = length / 32;
         uint256 rest = 256 - (length % 32) * 8;
@@ -178,37 +160,31 @@ library MPT {
             source := add(start, data)
 
             if removeFirstNibble {
-                mstore(
-                    add(newdata, pos),
-                    shr(4, shl(4, mload(add(source, pos))))
-                )
+                mstore(add(newdata, pos), shr(4, shl(4, mload(add(source, pos)))))
                 si := 1
                 pos := add(pos, 32)
             }
 
-            for {let i := si} lt(i, slots) {i := add(i, 1)} {
+            for { let i := si } lt(i, slots) { i := add(i, 1) } {
                 mstore(add(newdata, pos), mload(add(source, pos)))
                 pos := add(pos, 32)
             }
-            mstore(add(newdata, pos), shl(
-                rest,
-                shr(rest, mload(add(source, pos)))
-            ))
+            mstore(add(newdata, pos), shl(rest, shr(rest, mload(add(source, pos)))))
         }
     }
 
     function getNibbles(bytes1 b) internal pure returns (bytes1 nibble1, bytes1 nibble2) {
         assembly {
-                nibble1 := shr(4, b)
-                nibble2 := shr(4, shl(4, b))
-            }
+            nibble1 := shr(4, b)
+            nibble2 := shr(4, shl(4, b))
+        }
     }
 
     function expandKeyEven(bytes memory data) internal pure returns (bytes memory) {
         uint256 length = data.length * 2;
         bytes memory expanded = new bytes(length);
 
-        for (uint256 i = 0 ; i < data.length; i++) {
+        for (uint256 i = 0; i < data.length; i++) {
             (bytes1 nibble1, bytes1 nibble2) = getNibbles(data[i]);
             expanded[i * 2] = nibble1;
             expanded[i * 2 + 1] = nibble2;
@@ -216,12 +192,12 @@ library MPT {
         return expanded;
     }
 
-    function expandKeyOdd(bytes memory data) internal pure returns(bytes memory) {
+    function expandKeyOdd(bytes memory data) internal pure returns (bytes memory) {
         uint256 length = data.length * 2 - 1;
         bytes memory expanded = new bytes(length);
         expanded[0] = data[0];
 
-        for (uint256 i = 1 ; i < data.length; i++) {
+        for (uint256 i = 1; i < data.length; i++) {
             (bytes1 nibble1, bytes1 nibble2) = getNibbles(data[i]);
             expanded[i * 2 - 1] = nibble1;
             expanded[i * 2] = nibble2;
