@@ -2,7 +2,7 @@
 pragma solidity ^0.8.0;
 
 import { ECDSA } from "src/dependencies/ecdsa/ECDSA.sol";
-
+import { Constants } from "src/constants/Constants.sol";
 import { HelpersERC20 } from "src/helpers/HelpersERC20.sol";
 import { HelpersECDSA } from "src/helpers/HelpersECDSA.sol";
 import { LibTokenRegister } from "src/libraries/LibTokenRegister.sol";
@@ -62,7 +62,7 @@ contract WithdrawalFacet is OnlyRegisteredToken, OnlyStarkExOperator, OnlyOwner,
     {
         // Validate keys and availability.
         if (lockHash_ == 0) revert InvalidLockHashError();
-        if (!HelpersECDSA.isOnCurve(starkKey_)) revert InvalidStarkKeyError();
+        if (!HelpersECDSA.isOnCurve(starkKey_) || starkKey_ > Constants.K_MODULUS) revert InvalidStarkKeyError();
         if (amount_ == 0) revert ZeroAmountError();
 
         WithdrawalStorage storage ws = withdrawalStorage();
@@ -87,7 +87,7 @@ contract WithdrawalFacet is OnlyRegisteredToken, OnlyStarkExOperator, OnlyOwner,
     function claimWithdrawal(uint256 lockHash_, bytes memory signature_, address recipient_) external override {
         // Stateless validation.
         if (lockHash_ == 0) revert InvalidLockHashError();
-        if (recipient_ == address(0)) revert InvalidRecipientError();
+        if (recipient_ == address(0)) revert ZeroAddressRecipientError();
         if (signature_.length != 32 * 3) revert InvalidSignatureError();
 
         WithdrawalStorage storage ws = withdrawalStorage();
@@ -114,7 +114,7 @@ contract WithdrawalFacet is OnlyRegisteredToken, OnlyStarkExOperator, OnlyOwner,
     function reclaimWithdrawal(uint256 lockHash_, address recipient_) external override onlyStarkExOperator {
         // Stateless validation.
         if (lockHash_ == 0) revert InvalidLockHashError();
-        if (recipient_ == address(0)) revert InvalidRecipientError();
+        if (recipient_ == address(0)) revert ZeroAddressRecipientError();
 
         WithdrawalStorage storage ws = withdrawalStorage();
 

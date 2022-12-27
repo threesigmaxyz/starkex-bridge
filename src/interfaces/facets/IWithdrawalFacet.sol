@@ -50,7 +50,7 @@ interface IWithdrawalFacet {
     event LogSetWithdrawalExpirationTimeout(uint256 indexed timeout);
 
     error InvalidLockHashError();
-    error InvalidRecipientError();
+    error ZeroAddressRecipientError();
     error InvalidStarkKeyError();
     error ZeroAmountError();
     error InvalidSignatureError();

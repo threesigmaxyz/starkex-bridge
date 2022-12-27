@@ -28,7 +28,9 @@ import { IDiamondLoupe } from "src/interfaces/facets/IDiamondLoupe.sol";
 import { IERC165 } from "@openzeppelin/interfaces/IERC165.sol";
 
 contract BaseFixture is Test {
-    address bridge;
+    uint256 internal constant USER_TOKENS = 10;
+
+    address _bridge;
 
     AccessControlFacet accessControlFacet = new AccessControlFacet();
     DepositFacet depositFacet = new DepositFacet();
@@ -45,9 +47,10 @@ contract BaseFixture is Test {
         vm.label(_tokenAdmin(), "tokenAdmin");
         vm.label(_tokenDeployer(), "tokenDeployer");
         vm.label(_user(), "user");
+        vm.label(_recipient(), "recipient");
 
         // Deploy diamond
-        bridge = address(new BridgeDiamond(_owner(), address(diamondCutFacet)));
+        _bridge = address(new BridgeDiamond(_owner(), address(diamondCutFacet)));
 
         /// @dev Cut the deposit facet alone to initialize it.
         IDiamondCut.FacetCut[] memory depositCut_ = new IDiamondCut.FacetCut[](1);
@@ -70,7 +73,7 @@ contract BaseFixture is Test {
             Constants.DEPOSIT_ONCHAIN_EXPIRATION_TIMEOUT
         );
         vm.startPrank(_owner());
-        IDiamondCut(address(bridge)).diamondCut(depositCut_, address(depositFacet), depositInitializer);
+        IDiamondCut(address(_bridge)).diamondCut(depositCut_, address(depositFacet), depositInitializer);
 
         /// @dev Cut the withdrawal facet alone to initialize it.
         IDiamondCut.FacetCut[] memory withdrawalCut_ = new IDiamondCut.FacetCut[](1);
@@ -92,7 +95,7 @@ contract BaseFixture is Test {
             withdrawalFacet.setWithdrawalExpirationTimeout.selector,
             Constants.WITHDRAWAL_ONCHAIN_EXPIRATION_TIMEOUT
         );
-        IDiamondCut(address(bridge)).diamondCut(withdrawalCut_, address(withdrawalFacet), withdrawalInitializer);
+        IDiamondCut(address(_bridge)).diamondCut(withdrawalCut_, address(withdrawalFacet), withdrawalInitializer);
 
         /// @dev cut access control, token register, state and ERC165 facets.
         IDiamondCut.FacetCut[] memory cut_ = new IDiamondCut.FacetCut[](4);
@@ -139,30 +142,30 @@ contract BaseFixture is Test {
         });
 
         /// Cut diamond finalize.
-        IDiamondCut(address(bridge)).diamondCut(cut_, address(0), "");
+        IDiamondCut(address(_bridge)).diamondCut(cut_, address(0), "");
 
         /// Set pending roles.
-        IAccessControlFacet(bridge).setPendingRole(LibAccessControl.STARKEX_OPERATOR_ROLE, _operator());
-        IAccessControlFacet(bridge).setPendingRole(
+        IAccessControlFacet(_bridge).setPendingRole(LibAccessControl.STARKEX_OPERATOR_ROLE, _operator());
+        IAccessControlFacet(_bridge).setPendingRole(
             LibAccessControl.INTEROPERABILITY_CONTRACT_ROLE, _mockInteropContract()
         );
-        IAccessControlFacet(bridge).setPendingRole(LibAccessControl.TOKEN_ADMIN_ROLE, _tokenAdmin());
+        IAccessControlFacet(_bridge).setPendingRole(LibAccessControl.TOKEN_ADMIN_ROLE, _tokenAdmin());
 
         vm.stopPrank();
 
         /// Accept pending roles.
         vm.prank(_operator());
-        IAccessControlFacet(bridge).acceptRole(LibAccessControl.STARKEX_OPERATOR_ROLE);
+        IAccessControlFacet(_bridge).acceptRole(LibAccessControl.STARKEX_OPERATOR_ROLE);
         vm.prank(_mockInteropContract());
-        IAccessControlFacet(bridge).acceptRole(LibAccessControl.INTEROPERABILITY_CONTRACT_ROLE);
+        IAccessControlFacet(_bridge).acceptRole(LibAccessControl.INTEROPERABILITY_CONTRACT_ROLE);
         vm.prank(_tokenAdmin());
-        IAccessControlFacet(bridge).acceptRole(LibAccessControl.TOKEN_ADMIN_ROLE);
+        IAccessControlFacet(_bridge).acceptRole(LibAccessControl.TOKEN_ADMIN_ROLE);
 
         // Add ERC165 interfaces
         vm.startPrank(_owner());
-        IERC165Facet(bridge).setSupportedInterface(type(IERC165).interfaceId, true);
-        IERC165Facet(bridge).setSupportedInterface(type(IDiamondCut).interfaceId, true);
-        IERC165Facet(bridge).setSupportedInterface(type(IDiamondLoupe).interfaceId, true);
+        IERC165Facet(_bridge).setSupportedInterface(type(IERC165).interfaceId, true);
+        IERC165Facet(_bridge).setSupportedInterface(type(IDiamondCut).interfaceId, true);
+        IERC165Facet(_bridge).setSupportedInterface(type(IDiamondLoupe).interfaceId, true);
         vm.stopPrank();
     }
 
@@ -188,5 +191,9 @@ contract BaseFixture is Test {
 
     function _user() internal returns (address) {
         return vm.addr(789);
+    }
+
+    function _recipient() internal returns(address) {
+        return vm.addr(777);
     }
 }

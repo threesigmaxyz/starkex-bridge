@@ -31,7 +31,7 @@ library LibAccessControl {
      */
     event PendingRoleSet(bytes32 indexed role, address indexed newAccount);
 
-    error Unauthorized();
+    error UnauthorizedError();
     error NotPendingRoleError();
 
     /// @dev Storage of this facet using diamond storage.
@@ -83,6 +83,6 @@ library LibAccessControl {
      * @param role_ The role.
      */
     function onlyRole(bytes32 role_) internal view {
-        if (msg.sender != accessControlStorage().roles[role_]) revert Unauthorized();
+        if (msg.sender != accessControlStorage().roles[role_]) revert UnauthorizedError();
     }
 }

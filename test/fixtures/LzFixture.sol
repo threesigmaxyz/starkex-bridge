@@ -47,10 +47,10 @@ contract LzFixture is BaseFixture {
 
         // Deploy receptor interoperability contract
         vm.prank(_owner());
-        receptor = new LzReceptor(address(lzEndpoint), bridge);
+        receptor = new LzReceptor(address(lzEndpoint), _bridge);
 
         vm.prank(_owner());
-        IAccessControlFacet(bridge).setPendingRole(LibAccessControl.INTEROPERABILITY_CONTRACT_ROLE, address(receptor));
+        IAccessControlFacet(_bridge).setPendingRole(LibAccessControl.INTEROPERABILITY_CONTRACT_ROLE, address(receptor));
 
         receptor.acceptBridgeRole();
 

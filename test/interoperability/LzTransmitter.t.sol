@@ -33,7 +33,7 @@ contract LzTransmitterTest is LzFixture {
         receptor.setOrderRoot();
 
         assertEq(transmitter.getLastUpdatedSequenceNumber(MOCK_CHAIN_ID), STARKEX_MOCK_SEQUENCE_NUMBER);
-        assertEq(IStateFacet(bridge).getOrderRoot(), STARKEX_MOCK_ORDER_ROOT);
+        assertEq(IStateFacet(_bridge).getOrderRoot(), STARKEX_MOCK_ORDER_ROOT);
     }
 
     function test_keep_onlyOwnerCanSetBridgeOrderRoot() public {
@@ -59,6 +59,6 @@ contract LzTransmitterTest is LzFixture {
         transmitter.keep{value: 1 ether}(MOCK_CHAIN_ID, payable(keeper_));
 
         assertEq(transmitter.getLastUpdatedSequenceNumber(MOCK_CHAIN_ID), STARKEX_MOCK_SEQUENCE_NUMBER);
-        assertEq(IStateFacet(bridge).getOrderRoot(), 0);
+        assertEq(IStateFacet(_bridge).getOrderRoot(), 0);
     }
 }

@@ -27,8 +27,8 @@ contract WithdrawalFacetTest is BaseFixture {
         2_014_815_737_900_971_088_087_974_256_122_814_428_168_792_651_933_467_019_210_567_933_592_263_251_564;
 
     /**
-     * tokenId Sold:       0x3003a65651d3b9fb2eff934a4416db301afd112a8492aaf8d7297fc87dcd9f4
-     * tokenId Fees:       70bf591713d7cb7150523cf64add8d49fa6b61036bba9f596bd2af8e3bb86f9
+     * _tokenId Sold:       0x3003a65651d3b9fb2eff934a4416db301afd112a8492aaf8d7297fc87dcd9f4
+     * _tokenId Fees:       70bf591713d7cb7150523cf64add8d49fa6b61036bba9f596bd2af8e3bb86f9
      * Receiver Stark Key: 5fa3383597691ea9d827a79e1a4f0f7949435ced18ca9619de8ab97e661020
      * VaultId Sender:     34
      * VaultId Receiver:   21
@@ -65,7 +65,7 @@ contract WithdrawalFacetTest is BaseFixture {
     //=== State Variables                                                        ===//
     //==============================================================================//
 
-    MockERC20 token;
+    MockERC20 _token;
 
     //==============================================================================//
     //=== Setup                                                                  ===//
@@ -74,123 +74,206 @@ contract WithdrawalFacetTest is BaseFixture {
     function setUp() public override {
         super.setUp();
 
-        // Deploy token
+        // Deploy _token
         vm.prank(_tokenDeployer());
-        token = (new MockERC20){salt: "USDC"}("USD Coin", "USDC", 6); // 0xa33e385d3ab4a55cc949115bb5cb57fb16143d4b
+        _token = (new MockERC20){salt: "USDC"}("USD Coin", "USDC", 6); // 0xa33e385d3ab4a55cc949115bb5cb57fb16143d4b
 
-        // Register token in bridge
+        // Register _token in _bridge
         vm.prank(_tokenAdmin());
-        ITokenRegisterFacet(bridge).setTokenRegister(address(token), true);
+        ITokenRegisterFacet(_bridge).setTokenRegister(address(_token), true);
 
-        // Mint USDC to bridge
-        token.mint(address(bridge), 1_000_000e6);
+        // Mint USDC to _bridge
+        _token.mint(address(_bridge), 1_000_000e6);
     }
 
     //==============================================================================//
-    //=== Tests                                                                  ===//
+    //=== initialize Tests                                                       ===//
     //==============================================================================//
 
     function test_withdrawal_initialize_ok() public {
         assertEq(
-            IWithdrawalFacet(bridge).getWithdrawalExpirationTimeout(), Constants.WITHDRAWAL_ONCHAIN_EXPIRATION_TIMEOUT
+            IWithdrawalFacet(_bridge).getWithdrawalExpirationTimeout(), Constants.WITHDRAWAL_ONCHAIN_EXPIRATION_TIMEOUT
         );
+         assertEq(IWithdrawalFacet(_bridge).getPendingWithdrawals(address(_token)), 0);
     }
 
-    function test_set_withdrawalExpirationTimeout_ok() public {
+    //==============================================================================//
+    //=== setWithdrawalExpirationTimeout Tests                                                       ===//
+    //==============================================================================//
+
+    function test_setWithdrawalExpirationTimeout_ok() public {
         uint256 newTimeout = 500;
         vm.prank(_owner());
-        IWithdrawalFacet(bridge).setWithdrawalExpirationTimeout(newTimeout);
-        assertEq(IWithdrawalFacet(bridge).getWithdrawalExpirationTimeout(), newTimeout);
+        IWithdrawalFacet(_bridge).setWithdrawalExpirationTimeout(newTimeout);
+        assertEq(IWithdrawalFacet(_bridge).getWithdrawalExpirationTimeout(), newTimeout);
     }
 
-    function test_set_withdrawalExpirationTimeout_notRole() public {
-        vm.expectRevert(abi.encodeWithSelector(LibAccessControl.Unauthorized.selector));
-        IWithdrawalFacet(bridge).setWithdrawalExpirationTimeout(999);
+    function test_setWithdrawalExpirationTimeout_unauthorizedError() public {
+        vm.expectRevert(abi.encodeWithSelector(LibAccessControl.UnauthorizedError.selector));
+        IWithdrawalFacet(_bridge).setWithdrawalExpirationTimeout(999);
     }
+
+    //==============================================================================//
+    //=== lockWithdrawal Tests                                                   ===//
+    //==============================================================================//
 
     function test_lockWithdrawal_ok() public {
-        _lockWithdrawal(STARK_KEY, address(token), 100, LOCK_HASH);
+        _lockWithdrawal(STARK_KEY, address(_token), USER_TOKENS, LOCK_HASH);
     }
+
+    function test_lockWithdrawal_InvalidLockHashError() public {
+        vm.expectRevert(IWithdrawalFacet.InvalidLockHashError.selector);
+        vm.prank(_operator());
+        IWithdrawalFacet(_bridge).lockWithdrawal(STARK_KEY, address(_token), USER_TOKENS, 0);
+    }
+
+    function test_lockWithdrawal_WhenZeroStarkKey_InvalidStarkKeyError() public {
+        vm.expectRevert(IWithdrawalFacet.InvalidStarkKeyError.selector);
+        vm.prank(_operator());
+        IWithdrawalFacet(_bridge).lockWithdrawal(0, address(_token), USER_TOKENS, LOCK_HASH);
+    }
+
+    function test_lockWithdrawal_WhenLargerThanModulusStarkKey_InvalidStarkKeyError(uint256 starkKey_) public {
+        // Arrange
+        vm.assume(starkKey_ >= Constants.K_MODULUS);
+        
+        // Act + Assert
+        vm.expectRevert(IWithdrawalFacet.InvalidStarkKeyError.selector);
+        vm.prank(_operator());
+        IWithdrawalFacet(_bridge).lockWithdrawal(starkKey_, address(_token), USER_TOKENS, LOCK_HASH);
+    }
+
+    function test_lockWithdrawal_WhenNotInCurveStarkKey_InvalidStarkKeyError() public {
+        vm.expectRevert(IWithdrawalFacet.InvalidStarkKeyError.selector);
+        vm.prank(_operator());
+        IWithdrawalFacet(_bridge).lockWithdrawal(STARK_KEY - 1, address(_token), USER_TOKENS, LOCK_HASH);
+    }
+
+    function test_lockWithdrawal_ZeroAmountError() public {
+        vm.expectRevert(IWithdrawalFacet.ZeroAmountError.selector);
+        vm.prank(_operator());
+        IWithdrawalFacet(_bridge).lockWithdrawal(STARK_KEY, address(_token), 0, LOCK_HASH);
+    }
+
+    //==============================================================================//
+    //=== claimWithdrawal Tests                                                  ===//
+    //==============================================================================//
 
     function test_claimWithdrawal_ok() public {
         // Arrange
-        uint256 amount_ = 100;
-        _lockWithdrawal(STARK_KEY, address(token), amount_, LOCK_HASH);
-        // and
-        address recipient_ = vm.addr(1234);
+        _lockWithdrawal(STARK_KEY, address(_token), USER_TOKENS, LOCK_HASH);
+        // And
         bytes memory signature_ = abi.encode(SIGNATURE_R, SIGNATURE_S, STARK_KEY_Y);
 
         // Act + Assert
-        _claimWithdrawal(LOCK_HASH, signature_, recipient_, amount_);
+        _claimWithdrawal(LOCK_HASH, signature_, _recipient(), USER_TOKENS);
+    }
+
+    function test_claimWithdrawal_InvalidLockHashError() public {
+        // Act + Assert
+        vm.expectRevert(IWithdrawalFacet.InvalidLockHashError.selector);
+        IWithdrawalFacet(_bridge).claimWithdrawal(0, abi.encode(0, 0, 0), vm.addr(123));
+    }
+
+    function test_claimWithdrawal_ZeroAddressRecipientError() public {
+        // Act + Assert
+        vm.expectRevert(IWithdrawalFacet.ZeroAddressRecipientError.selector);
+        IWithdrawalFacet(_bridge).claimWithdrawal(LOCK_HASH, abi.encode(0, 0, 0), address(0));
     }
 
     function test_claimWithdrawal_WithdrawalNotFoundError() public {
-        // Arrange
-        vm.expectRevert(abi.encodeWithSelector(IWithdrawalFacet.WithdrawalNotFoundError.selector));
-
         // Act + Assert
-        IWithdrawalFacet(bridge).claimWithdrawal(
-            LOCK_HASH, abi.encode(SIGNATURE_R, SIGNATURE_S, STARK_KEY_Y), vm.addr(1234)
-        );
+        vm.expectRevert(abi.encodeWithSelector(IWithdrawalFacet.WithdrawalNotFoundError.selector));
+        IWithdrawalFacet(_bridge).claimWithdrawal(LOCK_HASH, abi.encode(1, 2, 3), vm.addr(1234));
     }
 
-    function test_claimWithdrawal_InvalidStarkKeyError() public {
+    function test_claimWithdrawal_InvalidStarkKeyYError(uint256 starkKeyY_) public {
         // Arrange
-        _lockWithdrawal(STARK_KEY, address(token), 100, LOCK_HASH);
+        _lockWithdrawal(STARK_KEY, address(_token), USER_TOKENS, LOCK_HASH);
+
+        vm.assume(starkKeyY_ != STARK_KEY_Y);
 
         // Act + Assert
         vm.expectRevert(ECDSA.InvalidStarkKeyError.selector);
-        IWithdrawalFacet(bridge).claimWithdrawal(
-            LOCK_HASH, abi.encode(SIGNATURE_R, SIGNATURE_S, STARK_KEY_Y - 1), vm.addr(1234)
+        IWithdrawalFacet(_bridge).claimWithdrawal(
+            LOCK_HASH, abi.encode(SIGNATURE_R, SIGNATURE_S, starkKeyY_), vm.addr(1234)
         );
+    }
+
+    function test_claimWithdrawal_WhenSignatureWrongLength_InvalidSignatureError() public {
+        // Act + Assert
+        vm.expectRevert(IWithdrawalFacet.InvalidSignatureError.selector);
+        IWithdrawalFacet(_bridge).claimWithdrawal(LOCK_HASH, abi.encode(0, 0), vm.addr(1234));
     }
 
     function test_claimWithdrawal_InvalidSignatureError() public {
         // Arrange
-        _lockWithdrawal(STARK_KEY, address(token), 100, LOCK_HASH);
+        _lockWithdrawal(STARK_KEY, address(_token), USER_TOKENS, LOCK_HASH);
 
         // Act + Assert
         vm.expectRevert(ECDSA.InvalidSignatureError.selector);
-        IWithdrawalFacet(bridge).claimWithdrawal(
+        IWithdrawalFacet(_bridge).claimWithdrawal(
             LOCK_HASH, abi.encode(SIGNATURE_R - 1, SIGNATURE_S, STARK_KEY_Y), vm.addr(1234)
         );
     }
 
-    /*
-    TODO
+    //==============================================================================//
+    //=== reclaimWithdrawal Tests                                                ===//
+    //==============================================================================//
+
     function test_reclaimWithdrawal_ok() public {
         // Arrange
-        uint256 amount_ = 100;
-        _lockWithdrawal(STARK_KEY, address(token), amount_, LOCK_HASH);
+        _lockWithdrawal(STARK_KEY, address(_token), USER_TOKENS, LOCK_HASH);
 
-        // Act + Assert
-        address recipient_ = vm.addr(1234);
-        _reclaimWithdrawal(LOCK_HASH, recipient_, amount_);
+        // Arrange + Act + Assert
+        _reclaimWithdrawal(LOCK_HASH, _recipient(), USER_TOKENS);
     }
 
-    function test_reclaimWithdrawal_notOperator_revert() public {
+    function test_reclaimWithdrawal_UnauthorizedError() public {
         // Arrange
-        uint256 amount_ = 100;
-        address recipient_ = vm.addr(1234);
-        _lockWithdrawal(STARK_KEY, address(token), amount_, LOCK_HASH);
+        vm.expectRevert(abi.encodeWithSelector(LibAccessControl.UnauthorizedError.selector));
 
         // Act + Assert
-        vm.expectRevert(abi.encodePacked("LibAccessControl: Must be StarkEx operator"));
-        IWithdrawalFacet(bridge).reclaimWithdrawal(LOCK_HASH, recipient_);
+        IWithdrawalFacet(_bridge).reclaimWithdrawal(LOCK_HASH, _recipient());
     }
 
-    function test_reclaimWithdrawal_alreadyUnlocked_revert() public {
+    function test_reclaimWithdrawal_InvalidLockHashError() public {
         // Arrange
-        uint256 amount_ = 100;
-        address recipient_ = vm.addr(1234);
-        _lockWithdrawal(STARK_KEY, address(token), amount_, LOCK_HASH);
-        _reclaimWithdrawal(LOCK_HASH, recipient_, amount_);
+        vm.expectRevert(abi.encodeWithSelector(IWithdrawalFacet.InvalidLockHashError.selector));
 
         // Act + Assert
         vm.prank(_operator());
-        vm.expectRevert(abi.encodePacked("CANT_UNLOCK"));
-        IWithdrawalFacet(bridge).reclaimWithdrawal(LOCK_HASH, recipient_);
-    }*/
+        IWithdrawalFacet(_bridge).reclaimWithdrawal(0, _recipient());
+    }
+
+    function test_reclaimWithdrawal_ZeroAddressRecipientError() public {
+        // Arrange
+        vm.expectRevert(abi.encodeWithSelector(IWithdrawalFacet.ZeroAddressRecipientError.selector));
+
+        // Act + Assert
+        vm.prank(_operator());
+        IWithdrawalFacet(_bridge).reclaimWithdrawal(123, address(0));
+    }
+
+    function test_reclaimWithdrawal_WithdrawalNotFoundError() public {
+        // Assert
+        vm.expectRevert(abi.encodeWithSelector(IWithdrawalFacet.WithdrawalNotFoundError.selector));
+
+        // Act + Assert
+        vm.prank(_operator());
+        IWithdrawalFacet(_bridge).reclaimWithdrawal(LOCK_HASH, _recipient());
+    }
+
+    function test_reclaimWithdrawal_WithdrawalNotExpiredError() public {
+        // Arrange
+        _lockWithdrawal(STARK_KEY, address(_token), USER_TOKENS, LOCK_HASH);
+        // And
+        vm.expectRevert(abi.encodeWithSelector(IWithdrawalFacet.WithdrawalNotExpiredError.selector));
+
+        // Act + Assert
+        vm.prank(_operator());
+        IWithdrawalFacet(_bridge).reclaimWithdrawal(LOCK_HASH, _recipient());
+    }
 
     //==============================================================================//
     //=== Internal Test Helpers                                                  ===//
@@ -198,78 +281,79 @@ contract WithdrawalFacetTest is BaseFixture {
 
     function _lockWithdrawal(uint256 starkKey_, address token_, uint256 amount_, uint256 lockHash_) private {
         // Arrange
-        uint256 pendingWithdrawalsBefore_ = IWithdrawalFacet(bridge).getPendingWithdrawals(token_);
-        uint256 balanceBefore_ = IERC20(token_).balanceOf(bridge);
-        // and
-        MockERC20(token_).mint(_operator(), 1_000_000e6);
+        uint256 initialPendingWithdrawals_ = IWithdrawalFacet(_bridge).getPendingWithdrawals(token_);
+        uint256 initialBalance_ = IERC20(token_).balanceOf(_bridge);
+        // And
+        MockERC20(token_).mint(_operator(), amount_);
         vm.prank(_operator());
-        IERC20(token_).approve(address(bridge), amount_);
-        // and
+        IERC20(token_).approve(address(_bridge), amount_);
+
+        // Act + Assert
         vm.expectEmit(true, true, true, true);
         emit LogLockWithdrawal(lockHash_, starkKey_, token_, amount_);
-
-        // Act
         vm.prank(_operator());
-        IWithdrawalFacet(bridge).lockWithdrawal(starkKey_, token_, amount_, lockHash_);
+        IWithdrawalFacet(_bridge).lockWithdrawal(starkKey_, token_, amount_, lockHash_);
 
         // Assert
         // A withdrawal request was created.
-        IWithdrawalFacet.Withdrawal memory withdrawal = IWithdrawalFacet(bridge).getWithdrawal(lockHash_);
-        assertEq(withdrawal.starkKey, starkKey_);
-        assertEq(withdrawal.token, token_);
-        assertEq(withdrawal.amount, amount_);
-        assertGt(withdrawal.expirationDate, 0);
+        IWithdrawalFacet.Withdrawal memory withdrawal_ = IWithdrawalFacet(_bridge).getWithdrawal(lockHash_);
+        assertEq(withdrawal_.starkKey, starkKey_);
+        assertEq(withdrawal_.token, token_);
+        assertEq(withdrawal_.amount, amount_);
+        assertEq(withdrawal_.expirationDate, block.timestamp + IWithdrawalFacet(_bridge).getWithdrawalExpirationTimeout());
         // The accounting of pending withdrawals was updated.
-        assertEq(IWithdrawalFacet(bridge).getPendingWithdrawals(token_), pendingWithdrawalsBefore_ + amount_);
-        assertEq(IERC20(token_).balanceOf(bridge), balanceBefore_ + amount_);
+        assertEq(IWithdrawalFacet(_bridge).getPendingWithdrawals(token_), initialPendingWithdrawals_ + amount_);
+        assertEq(IERC20(token_).balanceOf(_bridge), initialBalance_ + amount_);
     }
 
     function _claimWithdrawal(uint256 lockHash_, bytes memory signature_, address recipient_, uint256 amount_)
         private
     {
         // Arrange
-        uint256 bridgeBalanceBefore_ = token.balanceOf(bridge);
-        uint256 recipientBalanceBefore_ = token.balanceOf(recipient_);
-        uint256 pendingWithdrawalsBefore_ = IWithdrawalFacet(bridge).getPendingWithdrawals(address(token)); // TODO support multiple tokens
-        // and
+        uint256 initialBridgeBalance_ = _token.balanceOf(_bridge);
+        uint256 initialRecipientBalance_ = _token.balanceOf(recipient_);
+        uint256 initialPendingWithdrawals_ = IWithdrawalFacet(_bridge).getPendingWithdrawals(address(_token)); 
+        // And
         vm.expectEmit(true, true, false, true);
         emit LogClaimWithdrawal(lockHash_, recipient_);
 
-        // Act
-        vm.prank(vm.addr(999_999)); // anyone can claim this (auth is made based on the validity of the signature)
-        IWithdrawalFacet(bridge).claimWithdrawal(lockHash_, signature_, recipient_);
+        // Assert
+        vm.prank(recipient_); // anyone could claim this (auth is in the signature)
+        IWithdrawalFacet(_bridge).claimWithdrawal(lockHash_, signature_, recipient_);
 
         // Assert
         // The withdrawal request was deleted
-        vm.expectRevert(abi.encodeWithSelector(IWithdrawalFacet.WithdrawalNotFoundError.selector));
-        IWithdrawalFacet.Withdrawal memory withdrawal_ = IWithdrawalFacet(bridge).getWithdrawal(lockHash_);
+        _validateWithdrawalDeleted(lockHash_);
 
-        // All balances were corretly updateds
-        assertEq(token.balanceOf(bridge), bridgeBalanceBefore_ - amount_);
-        assertEq(token.balanceOf(recipient_), recipientBalanceBefore_ + amount_);
-        assertEq(IWithdrawalFacet(bridge).getPendingWithdrawals(address(token)), pendingWithdrawalsBefore_ - amount_);
+        // All balances were corretly updated
+        assertEq(_token.balanceOf(_bridge), initialBridgeBalance_ - amount_);
+        assertEq(_token.balanceOf(recipient_), initialRecipientBalance_ + amount_);
+        assertEq(IWithdrawalFacet(_bridge).getPendingWithdrawals(address(_token)), initialPendingWithdrawals_ - amount_);
     }
 
     function _reclaimWithdrawal(uint256 lockHash_, address recipient_, uint256 amount_) private {
         // Arrange
-        uint256 expiration_ = IWithdrawalFacet(bridge).getWithdrawal(lockHash_).expirationDate;
-        assertGt(expiration_, 0);
-        vm.warp(expiration_ + 1);
-        // TODO assert event
+        uint256 initialBridgeBalance_ = _token.balanceOf(_bridge);
+        uint256 initialRecipientBalance_ = _token.balanceOf(recipient_);
+        uint256 initialPendingWithdrawals_ = IWithdrawalFacet(_bridge).getPendingWithdrawals(address(_token)); 
+        vm.warp(block.timestamp + IWithdrawalFacet(_bridge).getWithdrawalExpirationTimeout() + 1);
 
         // Act
         vm.prank(_operator());
-        IWithdrawalFacet(bridge).reclaimWithdrawal(lockHash_, recipient_);
+        IWithdrawalFacet(_bridge).reclaimWithdrawal(lockHash_, recipient_);
 
         // Assert
         // The withdrawal request was deleted
-        IWithdrawalFacet.Withdrawal memory withdrawal_ = IWithdrawalFacet(bridge).getWithdrawal(lockHash_);
-        assertEq(withdrawal_.starkKey, 0);
-        assertEq(withdrawal_.token, address(0));
-        assertEq(withdrawal_.amount, 0);
-        assertEq(withdrawal_.expirationDate, 0);
-        // The expected token amount was recalimed by the recipient
-        assertEq(token.balanceOf(recipient_), amount_);
-        // TODO other
+        _validateWithdrawalDeleted(lockHash_);
+        // The expected _token amount was recalimed by the recipient
+        assertEq(_token.balanceOf(recipient_), initialRecipientBalance_ + amount_);
+        assertEq(_token.balanceOf(_bridge), initialBridgeBalance_ - amount_);
+        assertEq(IWithdrawalFacet(_bridge).getPendingWithdrawals(address(_token)), initialPendingWithdrawals_ - amount_);
+        
+    }
+
+    function _validateWithdrawalDeleted(uint256 lockHash_) internal {
+        vm.expectRevert(abi.encodeWithSelector(IWithdrawalFacet.WithdrawalNotFoundError.selector));
+        IWithdrawalFacet(_bridge).getWithdrawal(lockHash_);
     }
 }

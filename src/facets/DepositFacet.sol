@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
+import { Constants } from "src/constants/Constants.sol";
 import { LibMPT as MerklePatriciaTree } from "src/dependencies/mpt/v2/LibMPT.sol";
 import { HelpersERC20 } from "src/helpers/HelpersERC20.sol";
 import { HelpersECDSA } from "src/helpers/HelpersECDSA.sol";
@@ -62,7 +63,7 @@ contract DepositFacet is OnlyRegisteredToken, OnlyStarkExOperator, OnlyOwner, ID
         onlyRegisteredToken(token_)
     {
         // Stateless argument validation.
-        if (!HelpersECDSA.isOnCurve(starkKey_)) revert InvalidStarkKeyError();
+        if (!HelpersECDSA.isOnCurve(starkKey_) || starkKey_ > Constants.K_MODULUS) revert InvalidStarkKeyError();
         if (amount_ == 0) revert ZeroAmountError();
         if (lockHash_ == 0) revert InvalidDepositLockError();
 
