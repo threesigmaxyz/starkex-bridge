@@ -11,7 +11,7 @@ interface IERC165Facet {
      * @param interfaceId The id of the interface.
      * @param flag Whether it was added or removed.
      */
-    event LogSetSupportedInterface(bytes4 interfaceId, bool flag);
+    event LogSetSupportedInterface(bytes4 indexed interfaceId, bool indexed flag);
 
     /**
      * @notice Returns whether an interface is supported.

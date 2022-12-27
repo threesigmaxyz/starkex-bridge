@@ -14,7 +14,7 @@ library LibState {
      * @notice Emits a new order root change.
      * @param orderRoot The order root.
      */
-    event LogSetOrderRoot(uint256 orderRoot);
+    event LogSetOrderRoot(uint256 indexed orderRoot);
 
     /// @dev Storage of this facet using diamond storage.
     function stateStorage() internal pure returns (StateStorage storage ds) {

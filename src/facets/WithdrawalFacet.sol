@@ -3,7 +3,6 @@ pragma solidity ^0.8.0;
 
 import { ECDSA } from "src/dependencies/ecdsa/ECDSA.sol";
 
-import { Constants } from "src/constants/Constants.sol";
 import { HelpersERC20 } from "src/helpers/HelpersERC20.sol";
 import { HelpersECDSA } from "src/helpers/HelpersECDSA.sol";
 import { LibTokenRegister } from "src/libraries/LibTokenRegister.sol";
@@ -44,11 +43,6 @@ contract WithdrawalFacet is OnlyRegisteredToken, OnlyStarkExOperator, OnlyOwner,
         }
     }
 
-    /// @inheritdoc IWithdrawalFacet
-    function initialize() external override onlyOwner {
-        setWithdrawalExpirationTimeout(Constants.WITHDRAWAL_ONCHAIN_EXPIRATION_TIMEOUT);
-    }
-
     //==============================================================================//
     //=== Write API		                                                         ===//
     //==============================================================================//
@@ -78,7 +72,7 @@ contract WithdrawalFacet is OnlyRegisteredToken, OnlyStarkExOperator, OnlyOwner,
             starkKey: starkKey_,
             token: token_,
             amount: amount_,
-            expirationDate: (block.timestamp + Constants.WITHDRAWAL_ONCHAIN_EXPIRATION_TIMEOUT)
+            expirationDate: (block.timestamp + ws.withdrawalExpirationTimeout)
         });
         ws.pendingWithdrawals[token_] += amount_;
 

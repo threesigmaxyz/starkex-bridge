@@ -2,7 +2,6 @@
 pragma solidity ^0.8.0;
 
 import { LibMPT as MerklePatriciaTree } from "src/dependencies/mpt/v2/LibMPT.sol";
-import { Constants } from "src/constants/Constants.sol";
 import { HelpersERC20 } from "src/helpers/HelpersERC20.sol";
 import { HelpersECDSA } from "src/helpers/HelpersECDSA.sol";
 import { LibState } from "src/libraries/LibState.sol";
@@ -44,11 +43,6 @@ contract DepositFacet is OnlyRegisteredToken, OnlyStarkExOperator, OnlyOwner, ID
         assembly {
             ds.slot := position_
         }
-    }
-
-    /// @inheritdoc IDepositFacet
-    function initialize() external override onlyOwner {
-        setDepositExpirationTimeout(Constants.DEPOSIT_ONCHAIN_EXPIRATION_TIMEOUT);
     }
 
     //==============================================================================//
@@ -101,8 +95,9 @@ contract DepositFacet is OnlyRegisteredToken, OnlyStarkExOperator, OnlyOwner, ID
         override
         onlyStarkExOperator
     {
-        /// Stateless validation.
+        // Stateless validation.
         if (lockHash_ == 0) revert InvalidDepositLockError();
+        if (recipient_ == address(0)) revert ZeroAddressRecipientError();
 
         DepositStorage storage ds = depositStorage();
 

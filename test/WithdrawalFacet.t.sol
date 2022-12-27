@@ -87,87 +87,6 @@ contract WithdrawalFacetTest is BaseFixture {
     }
 
     //==============================================================================//
-    //=== Internal Test Helpers                                                  ===//
-    //==============================================================================//
-
-    function _lockWithdrawal(uint256 starkKey_, address token_, uint256 amount_, uint256 lockHash_) private {
-        // Arrange
-        uint256 pendingWithdrawalsBefore_ = IWithdrawalFacet(bridge).getPendingWithdrawals(token_);
-        uint256 balanceBefore_ = IERC20(token_).balanceOf(bridge);
-        // and
-        MockERC20(token_).mint(_operator(), 1_000_000e6);
-        vm.prank(_operator());
-        IERC20(token_).approve(address(bridge), amount_);
-        // and
-        vm.expectEmit(true, true, true, true);
-        emit LogLockWithdrawal(lockHash_, starkKey_, token_, amount_);
-
-        // Act
-        vm.prank(_operator());
-        IWithdrawalFacet(bridge).lockWithdrawal(starkKey_, token_, amount_, lockHash_);
-
-        // Assert
-        // A withdrawal request was created.
-        IWithdrawalFacet.Withdrawal memory withdrawal = IWithdrawalFacet(bridge).getWithdrawal(lockHash_);
-        assertEq(withdrawal.starkKey, starkKey_);
-        assertEq(withdrawal.token, token_);
-        assertEq(withdrawal.amount, amount_);
-        assertGt(withdrawal.expirationDate, 0);
-        // The accounting of pending withdrawals was updated.
-        assertEq(IWithdrawalFacet(bridge).getPendingWithdrawals(token_), pendingWithdrawalsBefore_ + amount_);
-        assertEq(IERC20(token_).balanceOf(bridge), balanceBefore_ + amount_);
-    }
-
-    function _claimWithdrawal(uint256 lockHash_, bytes memory signature_, address recipient_, uint256 amount_)
-        private
-    {
-        // Arrange
-        uint256 bridgeBalanceBefore_ = token.balanceOf(bridge);
-        uint256 recipientBalanceBefore_ = token.balanceOf(recipient_);
-        uint256 pendingWithdrawalsBefore_ = IWithdrawalFacet(bridge).getPendingWithdrawals(address(token)); // TODO support multiple tokens
-        // and
-        vm.expectEmit(true, true, false, true);
-        emit LogClaimWithdrawal(lockHash_, recipient_);
-
-        // Act
-        vm.prank(vm.addr(999_999)); // anyone can claim this (auth is made based on the validity of the signature)
-        IWithdrawalFacet(bridge).claimWithdrawal(lockHash_, signature_, recipient_);
-
-        // Assert
-        // The withdrawal request was deleted
-        vm.expectRevert(abi.encodeWithSelector(IWithdrawalFacet.WithdrawalNotFoundError.selector));
-        IWithdrawalFacet.Withdrawal memory withdrawal_ = IWithdrawalFacet(bridge).getWithdrawal(lockHash_);
-
-        // All balances were corretly updateds
-        assertEq(token.balanceOf(bridge), bridgeBalanceBefore_ - amount_);
-        assertEq(token.balanceOf(recipient_), recipientBalanceBefore_ + amount_);
-        assertEq(IWithdrawalFacet(bridge).getPendingWithdrawals(address(token)), pendingWithdrawalsBefore_ - amount_);
-    }
-
-    function _reclaimWithdrawal(uint256 lockHash_, address recipient_, uint256 amount_) private {
-        // Arrange
-        uint256 expiration_ = IWithdrawalFacet(bridge).getWithdrawal(lockHash_).expirationDate;
-        assertGt(expiration_, 0);
-        vm.warp(expiration_ + 1);
-        // TODO assert event
-
-        // Act
-        vm.prank(_operator());
-        IWithdrawalFacet(bridge).reclaimWithdrawal(lockHash_, recipient_);
-
-        // Assert
-        // The withdrawal request was deleted
-        IWithdrawalFacet.Withdrawal memory withdrawal_ = IWithdrawalFacet(bridge).getWithdrawal(lockHash_);
-        assertEq(withdrawal_.starkKey, 0);
-        assertEq(withdrawal_.token, address(0));
-        assertEq(withdrawal_.amount, 0);
-        assertEq(withdrawal_.expirationDate, 0);
-        // The expected token amount was recalimed by the recipient
-        assertEq(token.balanceOf(recipient_), amount_);
-        // TODO other
-    }
-
-    //==============================================================================//
     //=== Tests                                                                  ===//
     //==============================================================================//
 
@@ -272,4 +191,85 @@ contract WithdrawalFacetTest is BaseFixture {
         vm.expectRevert(abi.encodePacked("CANT_UNLOCK"));
         IWithdrawalFacet(bridge).reclaimWithdrawal(LOCK_HASH, recipient_);
     }*/
+
+    //==============================================================================//
+    //=== Internal Test Helpers                                                  ===//
+    //==============================================================================//
+
+    function _lockWithdrawal(uint256 starkKey_, address token_, uint256 amount_, uint256 lockHash_) private {
+        // Arrange
+        uint256 pendingWithdrawalsBefore_ = IWithdrawalFacet(bridge).getPendingWithdrawals(token_);
+        uint256 balanceBefore_ = IERC20(token_).balanceOf(bridge);
+        // and
+        MockERC20(token_).mint(_operator(), 1_000_000e6);
+        vm.prank(_operator());
+        IERC20(token_).approve(address(bridge), amount_);
+        // and
+        vm.expectEmit(true, true, true, true);
+        emit LogLockWithdrawal(lockHash_, starkKey_, token_, amount_);
+
+        // Act
+        vm.prank(_operator());
+        IWithdrawalFacet(bridge).lockWithdrawal(starkKey_, token_, amount_, lockHash_);
+
+        // Assert
+        // A withdrawal request was created.
+        IWithdrawalFacet.Withdrawal memory withdrawal = IWithdrawalFacet(bridge).getWithdrawal(lockHash_);
+        assertEq(withdrawal.starkKey, starkKey_);
+        assertEq(withdrawal.token, token_);
+        assertEq(withdrawal.amount, amount_);
+        assertGt(withdrawal.expirationDate, 0);
+        // The accounting of pending withdrawals was updated.
+        assertEq(IWithdrawalFacet(bridge).getPendingWithdrawals(token_), pendingWithdrawalsBefore_ + amount_);
+        assertEq(IERC20(token_).balanceOf(bridge), balanceBefore_ + amount_);
+    }
+
+    function _claimWithdrawal(uint256 lockHash_, bytes memory signature_, address recipient_, uint256 amount_)
+        private
+    {
+        // Arrange
+        uint256 bridgeBalanceBefore_ = token.balanceOf(bridge);
+        uint256 recipientBalanceBefore_ = token.balanceOf(recipient_);
+        uint256 pendingWithdrawalsBefore_ = IWithdrawalFacet(bridge).getPendingWithdrawals(address(token)); // TODO support multiple tokens
+        // and
+        vm.expectEmit(true, true, false, true);
+        emit LogClaimWithdrawal(lockHash_, recipient_);
+
+        // Act
+        vm.prank(vm.addr(999_999)); // anyone can claim this (auth is made based on the validity of the signature)
+        IWithdrawalFacet(bridge).claimWithdrawal(lockHash_, signature_, recipient_);
+
+        // Assert
+        // The withdrawal request was deleted
+        vm.expectRevert(abi.encodeWithSelector(IWithdrawalFacet.WithdrawalNotFoundError.selector));
+        IWithdrawalFacet.Withdrawal memory withdrawal_ = IWithdrawalFacet(bridge).getWithdrawal(lockHash_);
+
+        // All balances were corretly updateds
+        assertEq(token.balanceOf(bridge), bridgeBalanceBefore_ - amount_);
+        assertEq(token.balanceOf(recipient_), recipientBalanceBefore_ + amount_);
+        assertEq(IWithdrawalFacet(bridge).getPendingWithdrawals(address(token)), pendingWithdrawalsBefore_ - amount_);
+    }
+
+    function _reclaimWithdrawal(uint256 lockHash_, address recipient_, uint256 amount_) private {
+        // Arrange
+        uint256 expiration_ = IWithdrawalFacet(bridge).getWithdrawal(lockHash_).expirationDate;
+        assertGt(expiration_, 0);
+        vm.warp(expiration_ + 1);
+        // TODO assert event
+
+        // Act
+        vm.prank(_operator());
+        IWithdrawalFacet(bridge).reclaimWithdrawal(lockHash_, recipient_);
+
+        // Assert
+        // The withdrawal request was deleted
+        IWithdrawalFacet.Withdrawal memory withdrawal_ = IWithdrawalFacet(bridge).getWithdrawal(lockHash_);
+        assertEq(withdrawal_.starkKey, 0);
+        assertEq(withdrawal_.token, address(0));
+        assertEq(withdrawal_.amount, 0);
+        assertEq(withdrawal_.expirationDate, 0);
+        // The expected token amount was recalimed by the recipient
+        assertEq(token.balanceOf(recipient_), amount_);
+        // TODO other
+    }
 }

@@ -9,6 +9,7 @@ import { IStateFacet } from "src/interfaces/facets/IStateFacet.sol";
 import { ITokenRegisterFacet } from "src/interfaces/facets/ITokenRegisterFacet.sol";
 import { PatriciaTree } from "src/dependencies/mpt/v2/PatriciaTree.sol";
 import { LibAccessControl } from "src/libraries/LibAccessControl.sol";
+import { LibTokenRegister } from "src/libraries/LibTokenRegister.sol";
 
 import { BaseFixture } from "test/fixtures/BaseFixture.sol";
 import { MockERC20 } from "test/mocks/MockERC20.sol";
@@ -39,6 +40,14 @@ contract DepositFacetTest is BaseFixture {
     uint256 internal constant LOCK_HASH =
         2_356_286_878_056_985_831_279_161_846_178_161_693_107_336_866_674_377_330_568_734_796_240_516_368_603;
 
+    uint256 internal constant USER_TOKENS = 10;
+
+    //==============================================================================//
+    //=== State Variables                                                        ===//
+    //==============================================================================//
+
+    MockERC20 token;
+
     //==============================================================================//
     //=== Events                                                                 ===//
     //==============================================================================//
@@ -46,12 +55,6 @@ contract DepositFacetTest is BaseFixture {
     event LogLockDeposit(uint256 indexed lockHash, uint256 indexed starkKey, address indexed token, uint256 amount);
     event LogClaimDeposit(uint256 indexed lockHash, address indexed recipient);
     event LogReclaimDeposit(uint256 indexed lockHash);
-
-    //==============================================================================//
-    //=== State Variables                                                        ===//
-    //==============================================================================//
-
-    MockERC20 token;
 
     //==============================================================================//
     //=== Setup                                                                  ===//
@@ -63,21 +66,37 @@ contract DepositFacetTest is BaseFixture {
         // Deploy token
         vm.prank(_tokenDeployer());
         token = (new MockERC20){salt: "USDC"}("USD Coin", "USDC", 6); // 0xa33e385d3ab4a55cc949115bb5cb57fb16143d4b
-        Console.log(address(token));
+        
+        // Mint token to user
+        token.mint(_user(), USER_TOKENS);
+
 
         // Register token in bridge
         vm.prank(_tokenAdmin());
         ITokenRegisterFacet(bridge).setTokenRegister(address(token), true);
     }
 
+    //==============================================================================//
+    //=== initialize Tests                                                       ===//
+    //==============================================================================//
+
     function test_deposit_initialize_ok() public {
         assertEq(IDepositFacet(bridge).getDepositExpirationTimeout(), Constants.DEPOSIT_ONCHAIN_EXPIRATION_TIMEOUT);
     }
 
+    //==============================================================================//
+    //=== depositExpirationTimeout Tests                                         ===//
+    //==============================================================================//
+
     function test_set_depositExpirationTimeout_ok() public {
+        // Arrange
         uint256 newTimeout = 500;
+
+        // Act 
         vm.prank(_owner());
         IDepositFacet(bridge).setDepositExpirationTimeout(newTimeout);
+
+        // Assert
         assertEq(IDepositFacet(bridge).getDepositExpirationTimeout(), newTimeout);
     }
 
@@ -91,21 +110,17 @@ contract DepositFacetTest is BaseFixture {
     //==============================================================================//
 
     function test_lockDeposit_ok() public {
-        _lockDeposit(vm.addr(1), STARK_KEY, address(token), 100, LOCK_HASH);
+        _userApproveAndLockDepositAndValidate(_user(), STARK_KEY, address(token), USER_TOKENS, LOCK_HASH);
     }
 
-    /*
-    TODO
     function test_lockDeposit_WhentokenNotRegistered_tokenNotRegisteredError() public {
         // Arrange
         address token_ = vm.addr(12345);
 
         // Act + Assert
-        vm.expectRevert(
-            abi.encodeWithSelector(Modifiers.tokenNotRegisteredError.selector, token_)
-        );
+        vm.expectRevert(abi.encodeWithSelector(LibTokenRegister.TokenNotRegisteredError.selector, token_));
         IDepositFacet(bridge).lockDeposit(STARK_KEY, token_, 888, LOCK_HASH);
-    }*/
+    }
 
     function test_lockDeposit_WhenZeroStarkKey_InvalidStarkKeyError() public {
         // Arrange
@@ -154,15 +169,26 @@ contract DepositFacetTest is BaseFixture {
 
     function test_lockDeposit_WhenDepositAlreadyPending_DepositPendingError() public {
         // Arrange
-        address depositor_ = vm.addr(7829);
-        _lockDeposit(depositor_, STARK_KEY, address(token), 888, LOCK_HASH);
+        _userApproveAndLockDepositAndValidate(_user(), STARK_KEY, address(token), USER_TOKENS, LOCK_HASH);
 
         // Act + Assert
         vm.expectRevert(abi.encodeWithSelector(IDepositFacet.DepositPendingError.selector));
-        IDepositFacet(bridge).lockDeposit(STARK_KEY, address(token), 888, LOCK_HASH);
+        IDepositFacet(bridge).lockDeposit(STARK_KEY, address(token), USER_TOKENS, LOCK_HASH);
     }
 
-    // TODO lockDeposit not enough balance...
+    function test_lockDeposit_NotEnoughBalance() public {
+        // Arrange
+        uint256 amount_ = USER_TOKENS + 1;
+        
+        // Act 
+        vm.prank(_user());
+        token.approve(address(bridge), amount_);
+
+        // Assert
+        vm.expectRevert(abi.encodeWithSelector(0x08c379a0, "ERC20: transfer amount exceeds balance"));
+        vm.prank(_user());
+        IDepositFacet(bridge).lockDeposit(STARK_KEY, address(token), amount_, LOCK_HASH);
+    }
 
     //==============================================================================//
     //=== claimDeposit Tests                                                     ===//
@@ -170,28 +196,59 @@ contract DepositFacetTest is BaseFixture {
 
     function test_claimDeposit_ok() public {
         // Arrange
-        uint256 amount_ = 100;
-        _lockDeposit(vm.addr(1), STARK_KEY, address(token), amount_, LOCK_HASH);
-        // and
+        _userApproveAndLockDepositAndValidate(_user(), STARK_KEY, address(token), USER_TOKENS, LOCK_HASH);
+        // And
         PatriciaTree mpt_ = new PatriciaTree();
         mpt_.insert(abi.encode(LOCK_HASH), abi.encode(1));
         (uint256 branchMask_, bytes32[] memory siblings_) = mpt_.getProof(abi.encode(LOCK_HASH));
         uint256 orderRoot_ = uint256(mpt_.root());
-        // and
-        vm.prank(_owner());
-        IAccessControlFacet(bridge).setPendingRole(
-            LibAccessControl.INTEROPERABILITY_CONTRACT_ROLE, _mockInteropContract()
-        );
-
-        vm.prank(_mockInteropContract());
-        IAccessControlFacet(bridge).acceptRole(LibAccessControl.INTEROPERABILITY_CONTRACT_ROLE);
-        // and
+        // And
         vm.prank(_mockInteropContract());
         IStateFacet(bridge).setOrderRoot(orderRoot_);
+        // And
+        address recipient_ = vm.addr(777);
+        vm.label(recipient_, "recipient");
 
         // Act + Assert
-        address recipient_ = vm.addr(777);
-        _claimDeposit(LOCK_HASH, branchMask_, siblings_, recipient_);
+        vm.expectEmit(true, true, false, true);
+        emit LogClaimDeposit(LOCK_HASH, recipient_);
+        vm.prank(_operator());
+        IDepositFacet(bridge).claimDeposit(LOCK_HASH, branchMask_, siblings_, recipient_);
+
+        // Assert
+        _validateDepositDeleted(LOCK_HASH);
+        // And
+        assertEq(MockERC20(address(token)).balanceOf(recipient_), USER_TOKENS);
+    }
+
+    function test_claimDeposit_zeroAddressRecipientError() public {
+        // Arrange
+        bytes32[] memory emptyArray; 
+
+        // Act + Assert
+        vm.prank(_operator());
+        vm.expectRevert(abi.encodeWithSelector(IDepositFacet.ZeroAddressRecipientError.selector));
+        IDepositFacet(bridge).claimDeposit(LOCK_HASH, 0, emptyArray, address(0));
+    }
+
+    function test_claimDeposit_depositNotFound() public {
+        // Arrange
+        bytes32[] memory emptyArray; 
+
+        // Act + Assert
+        vm.prank(_operator());
+        vm.expectRevert(abi.encodeWithSelector(IDepositFacet.DepositNotFoundError.selector));
+        IDepositFacet(bridge).claimDeposit(LOCK_HASH, 0, emptyArray, vm.addr(777));
+    }
+
+    function test_claimDeposit_invalidLockHashError() public {
+        // Arrange
+        bytes32[] memory emptyArray; 
+
+        // Act + Assert
+        vm.prank(_operator());
+        vm.expectRevert(abi.encodeWithSelector(IDepositFacet.InvalidDepositLockError.selector));
+        IDepositFacet(bridge).claimDeposit(0, 0, emptyArray, vm.addr(777));
     }
 
     //==============================================================================//
@@ -200,30 +257,73 @@ contract DepositFacetTest is BaseFixture {
 
     function test_reclaimDeposit_ok() public {
         // Arrange
-        uint256 amount_ = 100;
-        _lockDeposit(vm.addr(1), STARK_KEY, address(token), amount_, LOCK_HASH);
+        _userApproveAndLockDepositAndValidate(_user(), STARK_KEY, address(token), USER_TOKENS, LOCK_HASH);
+        // And
+        vm.warp(block.timestamp + IDepositFacet(bridge).getDepositExpirationTimeout() + 1);
 
         // Act + Assert
-        _reclaimDeposit(LOCK_HASH);
+        vm.expectEmit(true, false, false, true);
+        emit LogReclaimDeposit(LOCK_HASH);
+        vm.prank(_operator());
+        IDepositFacet(bridge).reclaimDeposit(LOCK_HASH);
+        
+        // Assert
+        _validateDepositDeleted(LOCK_HASH);
+        // And
+        assertEq(MockERC20(address(token)).balanceOf(_user()), USER_TOKENS);
+    }
+
+    function test_reclaimDeposit_depositNotExpiredError() public {
+        // Arrange
+        _userApproveAndLockDepositAndValidate(_user(), STARK_KEY, address(token), USER_TOKENS, LOCK_HASH);
+
+        // Act + Assert
+        vm.expectRevert(abi.encodeWithSelector(IDepositFacet.DepositNotExpiredError.selector));
+        IDepositFacet(bridge).reclaimDeposit(LOCK_HASH);
+    }
+
+    function test_reclaimDeposit_depositNotFound() public {
+        // Act + Assert
+        vm.expectRevert(abi.encodeWithSelector(IDepositFacet.DepositNotFoundError.selector));
+        IDepositFacet(bridge).reclaimDeposit(LOCK_HASH);
+    }
+
+    function test_reclaimDeposit_invalidLockHashError() public {
+        // Act + Assert
+        vm.expectRevert(abi.encodeWithSelector(IDepositFacet.InvalidDepositLockError.selector));
+        IDepositFacet(bridge).reclaimDeposit(0);
+    }
+
+    //==============================================================================//
+    //=== claimDeposit Tests                                                     ===//
+    //==============================================================================//
+
+    function test_getPendingDeposits() public {
+        // Arrange
+        _userApproveAndLockDepositAndValidate(_user(), STARK_KEY, address(token), USER_TOKENS, LOCK_HASH);
+
+        // Act + Assert
+        assertEq(IDepositFacet(bridge).getPendingDeposits(address(token)), USER_TOKENS);
     }
 
     //==============================================================================//
     //=== Internal Test Helpers                                                  ===//
     //==============================================================================//
 
-    function _lockDeposit(address user_, uint256 starkKey_, address token_, uint256 amount_, uint256 lockHash_)
-        internal
-    {
-        // Arrange
-        MockERC20(token_).mint(user_, amount_);
-        vm.prank(user_);
-        MockERC20(token_).approve(address(bridge), amount_);
-
-        // Act
+    function _userApproveAndLockDepositAndValidate(
+        address user_,
+        uint256 starkKey_,
+        address token_,
+        uint256 amount_,
+        uint256 lockHash_
+    ) internal {
+        // Act + Assert
+        vm.startPrank(user_);
+        token.approve(bridge, amount_);
         vm.expectEmit(true, true, true, true);
         emit LogLockDeposit(lockHash_, starkKey_, token_, amount_);
-        vm.prank(user_);
         IDepositFacet(bridge).lockDeposit(starkKey_, token_, amount_, lockHash_);
+        vm.stopPrank();
 
         // Assert
         IDepositFacet.Deposit memory deposit_ = IDepositFacet(bridge).getDeposit(lockHash_);
@@ -231,49 +331,11 @@ contract DepositFacetTest is BaseFixture {
         assertEq(deposit_.starkKey, starkKey_);
         assertEq(deposit_.token, token_);
         assertEq(deposit_.amount, amount_);
-        assertEq(deposit_.expirationDate, block.timestamp + Constants.DEPOSIT_ONCHAIN_EXPIRATION_TIMEOUT);
-    }
-
-    function _claimDeposit(uint256 lockHash_, uint256 branchMask_, bytes32[] memory proof_, address recipient_)
-        internal
-    {
-        // Arrange
-        IDepositFacet.Deposit memory deposit_ = IDepositFacet(bridge).getDeposit(lockHash_);
-        assertGt(deposit_.expirationDate, 0);
-        vm.warp(deposit_.expirationDate + 1);
-
-        // Act
-        vm.expectEmit(true, true, false, true);
-        emit LogClaimDeposit(lockHash_, recipient_);
-        vm.prank(_operator());
-        IDepositFacet(bridge).claimDeposit(lockHash_, branchMask_, proof_, recipient_);
-
-        // Assert
-        _validateDepositDeleted(lockHash_);
-        // And
-        assertEq(MockERC20(deposit_.token).balanceOf(recipient_), deposit_.amount);
-    }
-
-    function _reclaimDeposit(uint256 lockHash_) internal {
-        // Arrange
-        IDepositFacet.Deposit memory deposit_ = IDepositFacet(bridge).getDeposit(lockHash_);
-        assertGt(deposit_.expirationDate, 0);
-        vm.warp(deposit_.expirationDate + 1);
-
-        // Act
-        vm.expectEmit(true, false, false, true);
-        emit LogReclaimDeposit(lockHash_);
-        vm.prank(_operator());
-        IDepositFacet(bridge).reclaimDeposit(lockHash_);
-
-        // Assert
-        _validateDepositDeleted(lockHash_);
-        // And
-        assertEq(MockERC20(deposit_.token).balanceOf(deposit_.receiver), deposit_.amount);
+        assertEq(deposit_.expirationDate, block.timestamp + IDepositFacet(bridge).getDepositExpirationTimeout());
     }
 
     function _validateDepositDeleted(uint256 lockHash_) internal {
         vm.expectRevert(abi.encodeWithSelector(IDepositFacet.DepositNotFoundError.selector));
-        IDepositFacet.Deposit memory deposit_ = IDepositFacet(bridge).getDeposit(lockHash_);
+        IDepositFacet(bridge).getDeposit(lockHash_);
     }
 }

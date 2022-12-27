@@ -6,14 +6,14 @@ interface ILzTransmitter {
      * @notice Emitted when the address of the starkEx contract is set.
      * @param starkEx The address of the starkEx contract.
      */
-    event LogSetStarkExAddress(address starkEx);
+    event LogSetStarkExAddress(address indexed starkEx);
 
     /**
      * @notice Emitted when a new order root is sent.
      * @param dstChainId The id of the destination chain.
      * @param orderRoot The root of the order tree.
      */
-    event LogNewOrderRootSent(uint16 dstChainId, uint256 orderRoot);
+    event LogNewOrderRootSent(uint16 indexed dstChainId, uint256 indexed orderRoot);
 
     error StaleUpdateError(uint16 chainId, uint256 sequenceNumber);
     error ZeroStarkExAddressError();

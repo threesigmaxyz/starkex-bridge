@@ -42,22 +42,17 @@ interface IDepositFacet {
      * @notice Emits the new deposit expiration timeout.
      * @param timeout The new timeout.
      */
-    event LogSetDepositExpirationTimeout(uint256 timeout);
+    event LogSetDepositExpirationTimeout(uint256 indexed timeout);
 
     /// @dev Stateless errors.
     error InvalidDepositLockError();
     error InvalidStarkKeyError();
     error ZeroAmountError();
+    error ZeroAddressRecipientError();
     /// @dev Statefull errors.
     error DepositPendingError();
     error DepositNotFoundError();
     error DepositNotExpiredError();
-
-    /**
-     * @notice Initialize deposit expiration timeout.
-     * @dev Only callable by the owner.
-     */
-    function initialize() external;
 
     /**
      * @notice Sets the deposit expiration timeout.

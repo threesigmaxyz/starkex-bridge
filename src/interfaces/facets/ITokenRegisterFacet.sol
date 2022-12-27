@@ -11,7 +11,7 @@ interface ITokenRegisterFacet {
      * @param token The address of the token.
      * @param flag Boolean that registers or ungisters the token.
      */
-    event LogSetTokenRegister(address token, bool flag);
+    event LogSetTokenRegister(address indexed token, bool indexed flag);
 
     /**
      * @notice Registers or unregisters a token.

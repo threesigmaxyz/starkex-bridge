@@ -13,7 +13,7 @@ library LibTokenRegister {
      * @param token Address of the token to register.
      * @param flag Whether to register or unregister.
      */
-    event LogSetTokenRegister(address token, bool flag);
+    event LogSetTokenRegister(address indexed token, bool indexed flag);
 
     error TokenNotRegisteredError(address asset);
 

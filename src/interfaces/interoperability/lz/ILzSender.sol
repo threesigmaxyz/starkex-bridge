@@ -8,7 +8,7 @@ interface ILzSender {
      * @param packetType The type of the packet.
      * @param minDstGas The minimum destination gas.
      */
-    event LogSetMinDstGas(uint16 dstChainId, uint16 packetType, uint256 minDstGas);
+    event LogSetMinDstGas(uint16 indexed dstChainId, uint16 indexed packetType, uint256 indexed minDstGas);
 
     error ZeroGasLimitError();
     error GasLimitToolowError();

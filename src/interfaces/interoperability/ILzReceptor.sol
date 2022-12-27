@@ -7,19 +7,19 @@ interface ILzReceptor {
      * @param orderRoot The order root.
      * @param nonce The nonce of the message.
      */
-    event LogOutdatedRootReceived(uint256 orderRoot, uint64 nonce);
+    event LogOutdatedRootReceived(uint256 indexed orderRoot, uint64 indexed nonce);
 
     /**
      * @notice Emitted when the order root of the bridge is updated.
      * @param orderRoot The order root.
      */
-    event LogOrderRootUpdate(uint256 orderRoot);
+    event LogOrderRootUpdate(uint256 indexed orderRoot);
 
     /**
      * @notice Emitted when an order root is received.
      * @param orderRoot The order root.
      */
-    event LogRootReceived(uint256 orderRoot);
+    event LogRootReceived(uint256 indexed orderRoot);
 
     /// @notice Emitted when the interoperability role in the bridge is accepted.
     event LogBridgeRoleAccepted();
@@ -28,7 +28,7 @@ interface ILzReceptor {
      * @notice Emitted when the bridge contract is set.
      * @param bridge The address of the bridge.
      */
-    event LogBridgeSet(address bridge);
+    event LogBridgeSet(address indexed bridge);
 
     error ZeroBridgeAddressError();
     error ZeroLzEndpointAddressError();

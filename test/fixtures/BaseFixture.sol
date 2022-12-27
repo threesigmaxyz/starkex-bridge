@@ -3,6 +3,8 @@ pragma solidity ^0.8.0;
 
 import { Test } from "@forge-std/Test.sol";
 
+import { Constants } from "src/constants/Constants.sol";
+
 import { BridgeDiamond } from "src/BridgeDiamond.sol";
 
 import { LibAccessControl } from "src/libraries/LibAccessControl.sol";
@@ -37,6 +39,13 @@ contract BaseFixture is Test {
     ERC165Facet erc165Facet = new ERC165Facet();
 
     function setUp() public virtual {
+        vm.label(_owner(), "owner");
+        vm.label(_operator(), "operator");
+        vm.label(_mockInteropContract(), "mockInteropContract");
+        vm.label(_tokenAdmin(), "tokenAdmin");
+        vm.label(_tokenDeployer(), "tokenDeployer");
+        vm.label(_user(), "user");
+
         // Deploy diamond
         bridge = address(new BridgeDiamond(_owner(), address(diamondCutFacet)));
 
@@ -56,10 +65,12 @@ contract BaseFixture is Test {
             action: IDiamondCut.FacetCutAction.Add,
             functionSelectors: depositFacetSelectors_
         });
-        vm.startPrank(_owner());
-        IDiamondCut(address(bridge)).diamondCut(
-            depositCut_, address(depositFacet), abi.encodeWithSelector(depositFacet.initialize.selector)
+        bytes memory depositInitializer = abi.encodeWithSelector(
+            depositFacet.setDepositExpirationTimeout.selector,
+            Constants.DEPOSIT_ONCHAIN_EXPIRATION_TIMEOUT
         );
+        vm.startPrank(_owner());
+        IDiamondCut(address(bridge)).diamondCut(depositCut_, address(depositFacet), depositInitializer);
 
         /// @dev Cut the withdrawal facet alone to initialize it.
         IDiamondCut.FacetCut[] memory withdrawalCut_ = new IDiamondCut.FacetCut[](1);
@@ -77,9 +88,11 @@ contract BaseFixture is Test {
             action: IDiamondCut.FacetCutAction.Add,
             functionSelectors: withdrawalFacetSelectors_
         });
-        IDiamondCut(address(bridge)).diamondCut(
-            withdrawalCut_, address(withdrawalFacet), abi.encodeWithSelector(withdrawalFacet.initialize.selector)
+        bytes memory withdrawalInitializer = abi.encodeWithSelector(
+            withdrawalFacet.setWithdrawalExpirationTimeout.selector,
+            Constants.WITHDRAWAL_ONCHAIN_EXPIRATION_TIMEOUT
         );
+        IDiamondCut(address(bridge)).diamondCut(withdrawalCut_, address(withdrawalFacet), withdrawalInitializer);
 
         /// @dev cut access control, token register, state and ERC165 facets.
         IDiamondCut.FacetCut[] memory cut_ = new IDiamondCut.FacetCut[](4);
@@ -171,5 +184,9 @@ contract BaseFixture is Test {
 
     function _tokenDeployer() internal returns (address) {
         return vm.addr(666);
+    }
+
+    function _user() internal returns (address) {
+        return vm.addr(789);
     }
 }

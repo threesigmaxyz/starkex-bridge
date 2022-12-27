@@ -15,7 +15,7 @@ interface INonblockingLzReceiver {
      * @param payload The payload of the message.
      * @param reason The reason of the failure.
      */
-    event LogMessageFailed(uint16 srcChainId, bytes path, uint64 nonce, bytes payload, bytes reason);
+    event LogMessageFailed(uint16 indexed srcChainId, bytes indexed path, uint64 indexed nonce, bytes payload, bytes reason);
 
     /**
      * @notice Emitted when a message was succefully replayed.
@@ -24,7 +24,7 @@ interface INonblockingLzReceiver {
      * @param nonce The nonce of the message.
      * @param payloadHash The hash of the payload of the message.
      */
-    event LogRetryMessageSuccess(uint16 srcChainId, bytes path, uint64 nonce, bytes32 payloadHash);
+    event LogRetryMessageSuccess(uint16 indexed srcChainId, bytes indexed path, uint64 indexed nonce, bytes32 payloadHash);
 
     error CallerMustBeLzReceiverError();
     error InvalidPayloadError();

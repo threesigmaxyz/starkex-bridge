@@ -59,12 +59,6 @@ interface IWithdrawalFacet {
     error WithdrawalNotExpiredError();
 
     /**
-     * @notice Initialize withdrawal expiration timeout.
-     * @dev Only callable by the owner.
-     */
-    function initialize() external;
-
-    /**
      * @notice Sets the withdrawal expiration timeout.
      * @dev only callable by the owner.
      * @param timeout_ The timeout.

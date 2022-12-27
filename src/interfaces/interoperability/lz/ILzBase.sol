@@ -6,21 +6,21 @@ interface ILzBase {
      * @notice Emitted when a new precrime address is set.
      * @param precrime The address of the precrime.
      */
-    event LogSetPrecrime(address precrime);
+    event LogSetPrecrime(address indexed precrime);
 
     /**
      * @notice Emitted when a trusted remote is set.
      * @param remoteChainId The id of the remote chain.
      * @param path The encoded path - remote address and local address.
      */
-    event LogSetTrustedRemote(uint16 remoteChainId, bytes path);
+    event LogSetTrustedRemote(uint16 indexed remoteChainId, bytes indexed path);
 
     /**
      * @notice Emitted when a trusted remote address is set.
      * @param remoteChainId The id of the remote chain.
      * @param remoteAddress The remote address, in bytes.
      */
-    event LogSetTrustedRemoteAddress(uint16 remoteChainId, bytes remoteAddress);
+    event LogSetTrustedRemoteAddress(uint16 indexed remoteChainId, bytes indexed remoteAddress);
 
     error RemoteChainNotTrustedError();
 
