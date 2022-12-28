@@ -71,7 +71,7 @@ contract LzTransmitter is ILzTransmitter, LzSender, Pausable {
         uint256 dstChainIdsLength = dstChainIds_.length;
 
         uint256 etherSent;
-        for (uint i = 0; i < valueToChainId_.length; i++) {
+        for (uint256 i = 0; i < valueToChainId_.length; i++) {
             etherSent += valueToChainId_[i];
         }
         if (etherSent != msg.value) revert InvalidEtherSentError();

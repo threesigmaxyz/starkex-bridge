@@ -14,6 +14,10 @@ contract AccessControlFacetTest is BaseFixture {
     event LogSetPendingRole(bytes32 indexed role, address indexed newAccount);
 
     function test_transferRole_ok(bytes32 role1_, bytes32 role2_, address account1_, address account2_) public {
+        // Arrange
+        vm.label(account1_, "account1");
+        vm.label(account2_, "account2");
+
         // Act + Assert
         _transferRole_and_validate(role1_, account1_);
         _transferRole_and_validate(role2_, account2_);
@@ -24,27 +28,40 @@ contract AccessControlFacetTest is BaseFixture {
     }
 
     function test_setPendingRole_UnauthorizedError(address intruder_, bytes32 role_) public {
-        vm.prank(intruder_);
+        // Arrange
+        vm.label(intruder_, "intruder");
+        // And
         vm.expectRevert(abi.encodeWithSelector(LibAccessControl.UnauthorizedError.selector));
+
+        // Act + Assert
+        vm.prank(intruder_);
         IAccessControlFacet(_bridge).setPendingRole(role_, intruder_);
     }
 
-    function test_acceptRole_NotPendingRoleError(address legitAccount, address intruder_, bytes32 role_) public {
+    function test_acceptRole_NotPendingRoleError(address legitAccount_, address intruder_, bytes32 role_) public {
         // Arrange
-        _call_setPendingRole_and_validate(role_, legitAccount);
-        
+        vm.label(legitAccount_, "legitAccount");
+        vm.label(intruder_, "intruder");
+        // And
+        _call_setPendingRole_and_validate(role_, legitAccount_);
+        // And
+        vm.expectRevert(abi.encodeWithSelector(LibAccessControl.NotPendingRoleError.selector));
+
         // Act + Assert
         vm.prank(intruder_);
-        vm.expectRevert(abi.encodeWithSelector(LibAccessControl.NotPendingRoleError.selector));
         IAccessControlFacet(_bridge).acceptRole(role_);
     }
+
+    //==============================================================================//
+    //=== Internal Test Helpers                                                  ===//
+    //==============================================================================//
 
     function _call_setPendingRole_and_validate(bytes32 role_, address account_) internal {
         // Arrange
         vm.expectEmit(true, true, false, true, _bridge);
         emit LogSetPendingRole(role_, account_);
 
-        // Act
+        // Act + Assert
         vm.prank(_owner());
         IAccessControlFacet(_bridge).setPendingRole(role_, account_);
     }
@@ -52,12 +69,12 @@ contract AccessControlFacetTest is BaseFixture {
     function _transferRole_and_validate(bytes32 role_, address account_) internal {
         // Arrange
         _call_setPendingRole_and_validate(role_, account_);
-
         // And
         vm.expectEmit(true, true, true, true, _bridge);
         address previousAccount_ = IAccessControlFacet(_bridge).getRole(role_);
         emit LogRoleTransferred(role_, previousAccount_, account_);
-        // And
+
+        // Act + Assert
         vm.prank(account_);
         IAccessControlFacet(_bridge).acceptRole(role_);
 

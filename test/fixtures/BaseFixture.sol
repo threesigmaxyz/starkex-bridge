@@ -28,7 +28,7 @@ import { IDiamondLoupe } from "src/interfaces/facets/IDiamondLoupe.sol";
 import { IERC165 } from "@openzeppelin/interfaces/IERC165.sol";
 
 contract BaseFixture is Test {
-    uint256 internal constant USER_TOKENS = 10;
+    uint256 internal constant USER_TOKENS = type(uint256).max;
 
     address _bridge;
 
@@ -69,8 +69,7 @@ contract BaseFixture is Test {
             functionSelectors: depositFacetSelectors_
         });
         bytes memory depositInitializer = abi.encodeWithSelector(
-            depositFacet.setDepositExpirationTimeout.selector,
-            Constants.DEPOSIT_ONCHAIN_EXPIRATION_TIMEOUT
+            depositFacet.setDepositExpirationTimeout.selector, Constants.DEPOSIT_ONCHAIN_EXPIRATION_TIMEOUT
         );
         vm.startPrank(_owner());
         IDiamondCut(address(_bridge)).diamondCut(depositCut_, address(depositFacet), depositInitializer);
@@ -92,8 +91,7 @@ contract BaseFixture is Test {
             functionSelectors: withdrawalFacetSelectors_
         });
         bytes memory withdrawalInitializer = abi.encodeWithSelector(
-            withdrawalFacet.setWithdrawalExpirationTimeout.selector,
-            Constants.WITHDRAWAL_ONCHAIN_EXPIRATION_TIMEOUT
+            withdrawalFacet.setWithdrawalExpirationTimeout.selector, Constants.WITHDRAWAL_ONCHAIN_EXPIRATION_TIMEOUT
         );
         IDiamondCut(address(_bridge)).diamondCut(withdrawalCut_, address(withdrawalFacet), withdrawalInitializer);
 
@@ -193,7 +191,7 @@ contract BaseFixture is Test {
         return vm.addr(789);
     }
 
-    function _recipient() internal returns(address) {
+    function _recipient() internal returns (address) {
         return vm.addr(777);
     }
 }

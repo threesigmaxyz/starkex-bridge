@@ -29,9 +29,8 @@ jobs:
         with:
           version: nightly
 
-      # TODO enable
-      #- name: "Lint the contracts"
-      #  run: "make lint"
+      - name: "Lint the contracts"
+        run: "make lint"
 
       - name: "Show the Foundry config"
         run: "forge config"

@@ -34,7 +34,7 @@ library LibDiamond {
         }
     }
 
-    /** 
+    /**
      * @notice DIAMOND CUT
      *         Internal function version of diamondCut
      *         This code is almost the same as the external diamondCut,
@@ -46,17 +46,13 @@ library LibDiamond {
      * @param init_ The address of the initialization function to call.
      * @param calldata_ The name and arguments of the initialization function.
      */
-    function diamondCut(
-        IDiamondCut.FacetCut[] memory _diamondCut,
-        address init_,
-        bytes memory calldata_
-    ) internal {
+    function diamondCut(IDiamondCut.FacetCut[] memory _diamondCut, address init_, bytes memory calldata_) internal {
         DiamondStorage storage ds = diamondStorage();
         uint256 originalSelectorCount = ds.selectorCount;
         uint256 selectorCount = originalSelectorCount;
         bytes32 selectorSlot;
         // Check if last selector slot is not full
-        // "selectorCount & 7" is a gas efficient modulo by eight "selectorCount % 8" 
+        // "selectorCount & 7" is a gas efficient modulo by eight "selectorCount % 8"
         if (selectorCount & 7 > 0) {
             /// get last selectorSlot
             /// "selectorSlot >> 3" is a gas efficient division by 8 "selectorSlot / 8"
@@ -76,7 +72,7 @@ library LibDiamond {
             ds.selectorCount = uint16(selectorCount);
         }
         // If last selector slot is not full
-        // "selectorCount & 7" is a gas efficient modulo by eight "selectorCount % 8" 
+        // "selectorCount & 7" is a gas efficient modulo by eight "selectorCount % 8"
         if (selectorCount & 7 > 0) {
             // "selectorSlot >> 3" is a gas efficient division by 8 "selectorSlot / 8"
             ds.selectorSlots[selectorCount >> 3] = selectorSlot;
@@ -106,14 +102,17 @@ library LibDiamond {
             for (uint256 selectorIndex; selectorIndex < selectors_.length; selectorIndex++) {
                 bytes4 selector = selectors_[selectorIndex];
                 bytes32 oldFacet = ds.facets[selector];
-                require(address(bytes20(oldFacet)) == address(0), "LibDiamondCut: Can't add function that already exists");
+                require(
+                    address(bytes20(oldFacet)) == address(0), "LibDiamondCut: Can't add function that already exists"
+                );
                 // add facet for selector
                 ds.facets[selector] = bytes20(newFacetAddress_) | bytes32(selectorCount_);
-                // "selectorCount_ & 7" is a gas efficient modulo by eight "selectorCount_ % 8" 
+                // "selectorCount_ & 7" is a gas efficient modulo by eight "selectorCount_ % 8"
                 // " << 5 is the same as multiplying by 32 ( * 32)
                 uint256 selectorInSlotPosition = (selectorCount_ & 7) << 5;
                 // clear selector position in slot and add selector
-                selectorSlot_ = (selectorSlot_ & ~(CLEAR_SELECTOR_MASK >> selectorInSlotPosition)) | (bytes32(selector) >> selectorInSlotPosition);
+                selectorSlot_ = (selectorSlot_ & ~(CLEAR_SELECTOR_MASK >> selectorInSlotPosition))
+                    | (bytes32(selector) >> selectorInSlotPosition);
                 // if slot is full then write it to storage
                 if (selectorInSlotPosition == 224) {
                     // "selectorSlot_ >> 3" is a gas efficient division by 8 "selectorSlot_ / 8"
@@ -139,7 +138,7 @@ library LibDiamond {
             require(newFacetAddress_ == address(0), "LibDiamondCut: Remove facet address must be address(0)");
             // "selectorCount_ >> 3" is a gas efficient division by 8 "selectorCount_ / 8"
             uint256 selectorSlotCount = selectorCount_ >> 3;
-            // "selectorCount_ & 7" is a gas efficient modulo by eight "selectorCount_ % 8" 
+            // "selectorCount_ & 7" is a gas efficient modulo by eight "selectorCount_ % 8"
             uint256 selectorInSlotIndex = selectorCount_ & 7;
             for (uint256 selectorIndex; selectorIndex < selectors_.length; selectorIndex++) {
                 if (selectorSlot_ == 0) {
@@ -157,9 +156,14 @@ library LibDiamond {
                 {
                     bytes4 selector = selectors_[selectorIndex];
                     bytes32 oldFacet = ds.facets[selector];
-                    require(address(bytes20(oldFacet)) != address(0), "LibDiamondCut: Can't remove function that doesn't exist");
+                    require(
+                        address(bytes20(oldFacet)) != address(0),
+                        "LibDiamondCut: Can't remove function that doesn't exist"
+                    );
                     // only useful if immutable functions exist
-                    require(address(bytes20(oldFacet)) != address(this), "LibDiamondCut: Can't remove immutable function");
+                    require(
+                        address(bytes20(oldFacet)) != address(this), "LibDiamondCut: Can't remove immutable function"
+                    );
                     // replace selector with last selector in ds.facets
                     // gets the last selector
                     // " << 5 is the same as multiplying by 32 ( * 32)
@@ -172,23 +176,21 @@ library LibDiamond {
                     uint256 oldSelectorCount = uint16(uint256(oldFacet));
                     // "oldSelectorCount >> 3" is a gas efficient division by 8 "oldSelectorCount / 8"
                     oldSelectorsSlotCount = oldSelectorCount >> 3;
-                    // "oldSelectorCount & 7" is a gas efficient modulo by eight "oldSelectorCount % 8" 
+                    // "oldSelectorCount & 7" is a gas efficient modulo by eight "oldSelectorCount % 8"
                     // " << 5 is the same as multiplying by 32 ( * 32)
                     oldSelectorInSlotPosition = (oldSelectorCount & 7) << 5;
                 }
                 if (oldSelectorsSlotCount != selectorSlotCount) {
                     bytes32 oldSelectorSlot = ds.selectorSlots[oldSelectorsSlotCount];
                     // clears the selector we are deleting and puts the last selector in its place.
-                    oldSelectorSlot =
-                        (oldSelectorSlot & ~(CLEAR_SELECTOR_MASK >> oldSelectorInSlotPosition)) |
-                        (bytes32(lastSelector) >> oldSelectorInSlotPosition);
+                    oldSelectorSlot = (oldSelectorSlot & ~(CLEAR_SELECTOR_MASK >> oldSelectorInSlotPosition))
+                        | (bytes32(lastSelector) >> oldSelectorInSlotPosition);
                     // update storage with the modified slot
                     ds.selectorSlots[oldSelectorsSlotCount] = oldSelectorSlot;
                 } else {
                     // clears the selector we are deleting and puts the last selector in its place.
-                    selectorSlot_ =
-                        (selectorSlot_ & ~(CLEAR_SELECTOR_MASK >> oldSelectorInSlotPosition)) |
-                        (bytes32(lastSelector) >> oldSelectorInSlotPosition);
+                    selectorSlot_ = (selectorSlot_ & ~(CLEAR_SELECTOR_MASK >> oldSelectorInSlotPosition))
+                        | (bytes32(lastSelector) >> oldSelectorInSlotPosition);
                 }
                 if (selectorInSlotIndex == 0) {
                     delete ds.selectorSlots[selectorSlotCount];
@@ -211,15 +213,15 @@ library LibDiamond {
         if (init_ == address(0)) {
             return;
         }
-        enforceHasContractCode(init_, "LibDiamondCut: init_ address has no code");        
-        (bool success, bytes memory error) = init_.delegatecall(calldata_);
-        if (!success) {
-            if (error.length > 0) {
+        enforceHasContractCode(init_, "LibDiamondCut: init_ address has no code");
+        (bool success_, bytes memory error_) = init_.delegatecall(calldata_);
+        if (!success_) {
+            if (error_.length > 0) {
                 // bubble up error
                 // @solidity memory-safe-assembly
                 assembly {
-                    let returndata_size := mload(error)
-                    revert(add(32, error), returndata_size)
+                    let returndata_size := mload(error_)
+                    revert(add(32, error_), returndata_size)
                 }
             } else {
                 revert InitializationFunctionReverted(init_, calldata_);
