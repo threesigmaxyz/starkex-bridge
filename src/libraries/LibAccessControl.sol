@@ -22,14 +22,14 @@ library LibAccessControl {
      * @param previousAccount The previous account assigned to the role.
      * @param newAccount The new account assigned.
      */
-    event RoleTransferred(bytes32 indexed role, address indexed previousAccount, address indexed newAccount);
+    event LogRoleTransferred(bytes32 indexed role, address indexed previousAccount, address indexed newAccount);
 
     /**
      * @notice Emits that a pending role was set for an account.
      * @param role The role.
      * @param newAccount The new account assigned.
      */
-    event PendingRoleSet(bytes32 indexed role, address indexed newAccount);
+    event LogSetPendingRole(bytes32 indexed role, address indexed newAccount);
 
     error UnauthorizedError();
     error NotPendingRoleError();
@@ -56,7 +56,7 @@ library LibAccessControl {
 
         acs.pendingRoles[role_] = address(0);
 
-        emit RoleTransferred(role_, prevAccount_, msg.sender);
+        emit LogRoleTransferred(role_, prevAccount_, msg.sender);
     }
 
     /**
@@ -66,7 +66,7 @@ library LibAccessControl {
      */
     function setPendingRole(bytes32 role_, address account_) internal {
         accessControlStorage().pendingRoles[role_] = account_;
-        emit PendingRoleSet(role_, account_);
+        emit LogSetPendingRole(role_, account_);
     }
 
     /**

@@ -23,5 +23,6 @@ contract ERC165Facet is OnlyOwner, IERC165Facet {
     /// @inheritdoc IERC165Facet
     function setSupportedInterface(bytes4 interfaceId_, bool flag_) external override onlyOwner {
         erc165Storage().supportedInterfaces[interfaceId_] = flag_;
+        emit LogSetSupportedInterface(interfaceId_, flag_);
     }
 }

@@ -1,20 +1,19 @@
 //SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import { IERC20 } from "@openzeppelin/interfaces/IERC20.sol";
 
-import { Constants } from "src/constants/Constants.sol";
-import { WithdrawalFacet } from "src/facets/WithdrawalFacet.sol";
+import { IERC20 } from "@openzeppelin/interfaces/IERC20.sol";
 import { ECDSA } from "src/dependencies/ecdsa/ECDSA.sol";
-import { LibDiamond } from "src/libraries/LibDiamond.sol";
-import { ITokenRegisterFacet } from "src/interfaces/facets/ITokenRegisterFacet.sol";
-import { IWithdrawalFacet } from "src/interfaces/facets/IWithdrawalFacet.sol";
-import { LibAccessControl } from "src/libraries/LibAccessControl.sol";
 
 import { BaseFixture } from "test/fixtures/BaseFixture.sol";
-import { MockERC20 } from "test/mocks/MockERC20.sol";
+import { Constants } from "src/constants/Constants.sol";
+import { LibDiamond } from "src/libraries/LibDiamond.sol";
+import { LibAccessControl } from "src/libraries/LibAccessControl.sol";
 
-import { console2 as Console } from "@forge-std/console2.sol";
+import { ITokenRegisterFacet } from "src/interfaces/facets/ITokenRegisterFacet.sol";
+import { IWithdrawalFacet } from "src/interfaces/facets/IWithdrawalFacet.sol";
+
+import { MockERC20 } from "test/mocks/MockERC20.sol";
 
 contract WithdrawalFacetTest is BaseFixture {
     //==============================================================================//
@@ -108,7 +107,7 @@ contract WithdrawalFacetTest is BaseFixture {
         assertEq(IWithdrawalFacet(_bridge).getWithdrawalExpirationTimeout(), newTimeout);
     }
 
-    function test_setWithdrawalExpirationTimeout_unauthorizedError() public {
+    function test_setWithdrawalExpirationTimeout_UnauthorizedError() public {
         vm.expectRevert(abi.encodeWithSelector(LibAccessControl.UnauthorizedError.selector));
         IWithdrawalFacet(_bridge).setWithdrawalExpirationTimeout(999);
     }
@@ -127,13 +126,13 @@ contract WithdrawalFacetTest is BaseFixture {
         IWithdrawalFacet(_bridge).lockWithdrawal(STARK_KEY, address(_token), USER_TOKENS, 0);
     }
 
-    function test_lockWithdrawal_WhenZeroStarkKey_InvalidStarkKeyError() public {
+    function test_lockWithdrawal_whenZeroStarkKey_InvalidStarkKeyError() public {
         vm.expectRevert(IWithdrawalFacet.InvalidStarkKeyError.selector);
         vm.prank(_operator());
         IWithdrawalFacet(_bridge).lockWithdrawal(0, address(_token), USER_TOKENS, LOCK_HASH);
     }
 
-    function test_lockWithdrawal_WhenLargerThanModulusStarkKey_InvalidStarkKeyError(uint256 starkKey_) public {
+    function test_lockWithdrawal_whenLargerThanModulusStarkKey_InvalidStarkKeyError(uint256 starkKey_) public {
         // Arrange
         vm.assume(starkKey_ >= Constants.K_MODULUS);
         
@@ -172,7 +171,7 @@ contract WithdrawalFacetTest is BaseFixture {
     function test_claimWithdrawal_InvalidLockHashError() public {
         // Act + Assert
         vm.expectRevert(IWithdrawalFacet.InvalidLockHashError.selector);
-        IWithdrawalFacet(_bridge).claimWithdrawal(0, abi.encode(0, 0, 0), vm.addr(123));
+        IWithdrawalFacet(_bridge).claimWithdrawal(0, abi.encode(0, 0, 0), _recipient());
     }
 
     function test_claimWithdrawal_ZeroAddressRecipientError() public {
@@ -184,7 +183,7 @@ contract WithdrawalFacetTest is BaseFixture {
     function test_claimWithdrawal_WithdrawalNotFoundError() public {
         // Act + Assert
         vm.expectRevert(abi.encodeWithSelector(IWithdrawalFacet.WithdrawalNotFoundError.selector));
-        IWithdrawalFacet(_bridge).claimWithdrawal(LOCK_HASH, abi.encode(1, 2, 3), vm.addr(1234));
+        IWithdrawalFacet(_bridge).claimWithdrawal(LOCK_HASH, abi.encode(1, 2, 3), _recipient());
     }
 
     function test_claimWithdrawal_InvalidStarkKeyYError(uint256 starkKeyY_) public {
@@ -196,14 +195,14 @@ contract WithdrawalFacetTest is BaseFixture {
         // Act + Assert
         vm.expectRevert(ECDSA.InvalidStarkKeyError.selector);
         IWithdrawalFacet(_bridge).claimWithdrawal(
-            LOCK_HASH, abi.encode(SIGNATURE_R, SIGNATURE_S, starkKeyY_), vm.addr(1234)
+            LOCK_HASH, abi.encode(SIGNATURE_R, SIGNATURE_S, starkKeyY_), _recipient()
         );
     }
 
     function test_claimWithdrawal_WhenSignatureWrongLength_InvalidSignatureError() public {
         // Act + Assert
         vm.expectRevert(IWithdrawalFacet.InvalidSignatureError.selector);
-        IWithdrawalFacet(_bridge).claimWithdrawal(LOCK_HASH, abi.encode(0, 0), vm.addr(1234));
+        IWithdrawalFacet(_bridge).claimWithdrawal(LOCK_HASH, abi.encode(0, 0), _recipient());
     }
 
     function test_claimWithdrawal_InvalidSignatureError() public {
@@ -213,7 +212,7 @@ contract WithdrawalFacetTest is BaseFixture {
         // Act + Assert
         vm.expectRevert(ECDSA.InvalidSignatureError.selector);
         IWithdrawalFacet(_bridge).claimWithdrawal(
-            LOCK_HASH, abi.encode(SIGNATURE_R - 1, SIGNATURE_S, STARK_KEY_Y), vm.addr(1234)
+            LOCK_HASH, abi.encode(SIGNATURE_R - 1, SIGNATURE_S, STARK_KEY_Y), _recipient()
         );
     }
 
