@@ -31,9 +31,10 @@ interface IWithdrawalFacet {
      * @dev The funds are transfered to the user wallet and the lock is cleared allowing
      * new withdraws.
      * @param lockHash The lock hash to be signed that transfers funds to the app.
+     * @param signature The signature of the lock hash.
      * @param recipient The address that will receive the funds.
      */
-    event LogClaimWithdrawal(uint256 indexed lockHash, address indexed recipient);
+    event LogClaimWithdrawal(uint256 indexed lockHash, bytes indexed signature, address indexed recipient);
 
     /**
      * @notice Emitted when a user withdraw request expires and a request is made to unlock funds.

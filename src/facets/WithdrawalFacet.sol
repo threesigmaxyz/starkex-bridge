@@ -104,7 +104,7 @@ contract WithdrawalFacet is OnlyRegisteredToken, OnlyStarkExOperator, OnlyOwner,
         ws.pendingWithdrawals[withdrawal_.token] -= withdrawal_.amount;
 
         // Emit event.
-        emit LogClaimWithdrawal(lockHash_, recipient_);
+        emit LogClaimWithdrawal(lockHash_, signature_, recipient_);
 
         // Transfer funds.
         HelpersERC20.transfer(withdrawal_.token, recipient_, withdrawal_.amount);

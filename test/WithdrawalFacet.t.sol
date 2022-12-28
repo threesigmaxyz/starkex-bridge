@@ -22,7 +22,7 @@ contract WithdrawalFacetTest is BaseFixture {
     //==============================================================================//
 
     /**
-     * Real transfer message starkKeyX, starkKeyY, lockHash, r, s. 
+     * Real transfer message starkKeyX, starkKeyY, lockHash, r, s.
      */
 
     uint256 internal constant STARK_KEY =
@@ -63,25 +63,43 @@ contract WithdrawalFacetTest is BaseFixture {
      * https://github.com/starkware-libs/starkex-resources/tree/master/crypto/starkware/crypto/signature
      */
 
-    uint256 internal constant TEST1_LOCK_HASH = 2768498024101110746696508142221047236812821820792692622141175702701103930225;
-    uint256 internal constant TEST1_STARK_KEY = 1410225993332634470202560909114723138561976893956229306659000512838147202368;
-    bytes internal constant TEST1_SIGNATURE = abi.encode(1417788528162357035924286781382228312675846595616081893010976955190062063050, 1318134603878147217244629510785462151626046285961597347969354279708584411257, 3218401326520968552537101891568590869550707696386218520346262731201923932803);
-    
-    uint256 internal constant TEST2_LOCK_HASH = 2480207829510485056284954855926199275298262159107854212941872284560595297337;
-    uint256 internal constant TEST2_STARK_KEY = 393519290310313169176754085449142119068983495536535633569553387859779093537;
-    bytes internal constant TEST2_SIGNATURE = abi.encode(2789139206898324895113446948241743896238588727971229863189676057206614028577, 1725473343147954267477796972742114362211416311070107670152257415557686585975, 3357823828217307413273536559741209184995235490907709188314694614739399372145);
+    uint256 internal constant TEST1_LOCK_HASH =
+        2_768_498_024_101_110_746_696_508_142_221_047_236_812_821_820_792_692_622_141_175_702_701_103_930_225;
+    uint256 internal constant TEST1_STARK_KEY =
+        1_410_225_993_332_634_470_202_560_909_114_723_138_561_976_893_956_229_306_659_000_512_838_147_202_368;
+    bytes internal constant TEST1_SIGNATURE = abi.encode(
+        1_417_788_528_162_357_035_924_286_781_382_228_312_675_846_595_616_081_893_010_976_955_190_062_063_050,
+        1_318_134_603_878_147_217_244_629_510_785_462_151_626_046_285_961_597_347_969_354_279_708_584_411_257,
+        3_218_401_326_520_968_552_537_101_891_568_590_869_550_707_696_386_218_520_346_262_731_201_923_932_803
+    );
 
-    uint256 internal constant TEST3_LOCK_HASH = 3590286349374207174270012308800953866517252228506574589862927360690715980751;
-    uint256 internal constant TEST3_STARK_KEY = 2437230325969354975235258831341275667339988923341775167571997821679961938355;
-    bytes internal constant TEST3_SIGNATURE = abi.encode(3439622490524341933411563568217831691991405621598316644121030162835536605975, 1637901094685721530662236016820430329087183410061499048224085677917140879469, 1534393668539701326208551554998688494424617161553919984570245573850249875114);
+    uint256 internal constant TEST2_LOCK_HASH =
+        2_480_207_829_510_485_056_284_954_855_926_199_275_298_262_159_107_854_212_941_872_284_560_595_297_337;
+    uint256 internal constant TEST2_STARK_KEY =
+        393_519_290_310_313_169_176_754_085_449_142_119_068_983_495_536_535_633_569_553_387_859_779_093_537;
+    bytes internal constant TEST2_SIGNATURE = abi.encode(
+        2_789_139_206_898_324_895_113_446_948_241_743_896_238_588_727_971_229_863_189_676_057_206_614_028_577,
+        1_725_473_343_147_954_267_477_796_972_742_114_362_211_416_311_070_107_670_152_257_415_557_686_585_975,
+        3_357_823_828_217_307_413_273_536_559_741_209_184_995_235_490_907_709_188_314_694_614_739_399_372_145
+    );
 
+    uint256 internal constant TEST3_LOCK_HASH =
+        3_590_286_349_374_207_174_270_012_308_800_953_866_517_252_228_506_574_589_862_927_360_690_715_980_751;
+    uint256 internal constant TEST3_STARK_KEY =
+        2_437_230_325_969_354_975_235_258_831_341_275_667_339_988_923_341_775_167_571_997_821_679_961_938_355;
+    bytes internal constant TEST3_SIGNATURE = abi.encode(
+        3_439_622_490_524_341_933_411_563_568_217_831_691_991_405_621_598_316_644_121_030_162_835_536_605_975,
+        1_637_901_094_685_721_530_662_236_016_820_430_329_087_183_410_061_499_048_224_085_677_917_140_879_469,
+        1_534_393_668_539_701_326_208_551_554_998_688_494_424_617_161_553_919_984_570_245_573_850_249_875_114
+    );
 
     //==============================================================================//
     //=== Events                                                                 ===//
     //==============================================================================//
 
+    event LogSetWithdrawalExpirationTimeout(uint256 indexed timeout);
     event LogLockWithdrawal(uint256 indexed lockHash, uint256 indexed starkKey, address indexed token, uint256 amount);
-    event LogClaimWithdrawal(uint256 indexed lockHash, address indexed receiver);
+    event LogClaimWithdrawal(uint256 indexed lockHash, bytes indexed signature, address indexed receiver);
     event LogReclaimWithdrawal(uint256 indexed lockHash, address indexed receiver);
 
     //==============================================================================//
@@ -123,6 +141,10 @@ contract WithdrawalFacetTest is BaseFixture {
     //==============================================================================//
 
     function test_setWithdrawalExpirationTimeout_ok(uint256 timeout_) public {
+        // Arrange
+        vm.expectEmit(true, false, false, true, _bridge);
+        emit LogSetWithdrawalExpirationTimeout(timeout_);
+
         vm.prank(_owner());
         IWithdrawalFacet(_bridge).setWithdrawalExpirationTimeout(timeout_);
         assertEq(IWithdrawalFacet(_bridge).getWithdrawalExpirationTimeout(), timeout_);
@@ -229,7 +251,7 @@ contract WithdrawalFacetTest is BaseFixture {
         _lockWithdrawal(STARK_KEY, address(_token), USER_TOKENS, LOCK_HASH);
         // Set the user as the recipient to repeat the tests afterwards.
         _claimWithdrawal(LOCK_HASH, realTransferSignature_, _user(), USER_TOKENS);
-        // Test 1 
+        // Test 1
         _lockWithdrawal(TEST1_STARK_KEY, address(_token), USER_TOKENS, TEST1_LOCK_HASH);
         _claimWithdrawal(TEST1_LOCK_HASH, TEST1_SIGNATURE, _user(), USER_TOKENS);
         // Test 2
@@ -285,7 +307,7 @@ contract WithdrawalFacetTest is BaseFixture {
     }
 
     function test_claimWithdrawal_InvalidSignatureError(bytes memory signature_) public {
-        vm.assume(signature_.length == 32*3);
+        vm.assume(signature_.length == 32 * 3);
         // Arrange
         _lockWithdrawal(STARK_KEY, address(_token), USER_TOKENS, LOCK_HASH);
 
@@ -357,7 +379,7 @@ contract WithdrawalFacetTest is BaseFixture {
 
     function test_reclaimWithdrawal_WithdrawalNotExpiredError(uint256 timePassed_) public {
         vm.assume(timePassed_ <= block.timestamp + IWithdrawalFacet(_bridge).getWithdrawalExpirationTimeout());
-        
+
         // Arrange
         _lockWithdrawal(STARK_KEY, address(_token), USER_TOKENS, LOCK_HASH);
         // And
@@ -412,7 +434,7 @@ contract WithdrawalFacetTest is BaseFixture {
         uint256 initialPendingWithdrawals_ = IWithdrawalFacet(_bridge).getPendingWithdrawals(address(_token));
         // And
         vm.expectEmit(true, true, false, true);
-        emit LogClaimWithdrawal(lockHash_, recipient_);
+        emit LogClaimWithdrawal(lockHash_, signature_, recipient_);
 
         // Assert
         vm.prank(recipient_); // anyone could claim this (auth is in the signature)
@@ -433,6 +455,9 @@ contract WithdrawalFacetTest is BaseFixture {
         uint256 initialBridgeBalance_ = _token.balanceOf(_bridge);
         uint256 initialRecipientBalance_ = _token.balanceOf(recipient_);
         uint256 initialPendingWithdrawals_ = IWithdrawalFacet(_bridge).getPendingWithdrawals(address(_token));
+        // And
+        vm.expectEmit(true, true, false, true);
+        emit LogReclaimWithdrawal(lockHash_, recipient_);
         vm.warp(block.timestamp + IWithdrawalFacet(_bridge).getWithdrawalExpirationTimeout() + 1);
 
         // Act

@@ -45,6 +45,7 @@ contract DepositFacetTest is BaseFixture {
     //=== Events                                                                 ===//
     //==============================================================================//
 
+    event LogSetDepositExpirationTimeout(uint256 indexed timeout);
     event LogLockDeposit(uint256 indexed lockHash, uint256 indexed starkKey, address indexed token, uint256 amount);
     event LogClaimDeposit(uint256 indexed lockHash, address indexed recipient);
     event LogReclaimDeposit(uint256 indexed lockHash);
@@ -81,6 +82,10 @@ contract DepositFacetTest is BaseFixture {
     //==============================================================================//
 
     function test_setDepositExpirationTimeout_ok(uint256 timeout_) public {
+        // Arrange
+        vm.expectEmit(true, false, false, true, _bridge);
+        emit LogSetDepositExpirationTimeout(timeout_);
+
         // Act
         vm.prank(_owner());
         IDepositFacet(_bridge).setDepositExpirationTimeout(timeout_);
