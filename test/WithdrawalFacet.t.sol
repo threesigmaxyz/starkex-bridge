@@ -175,7 +175,6 @@ contract WithdrawalFacetTest is BaseFixture {
     }
 
     function test_lockWithdrawal_TokenNotRegisteredError(address token_) public {
-        // Addresses 0 to 8 are reserved to pre compiled contracts.
         vm.assume(token_ != address(_token));
 
         // Arrange
@@ -193,7 +192,7 @@ contract WithdrawalFacetTest is BaseFixture {
 
         // Act + Assert
         vm.prank(_operator());
-        IWithdrawalFacet(_bridge).lockWithdrawal(STARK_KEY, address(_token), USER_TOKENS, 0);
+        IWithdrawalFacet(_bridge).lockWithdrawal(STARK_KEY, address(_token), USER_TOKENS, lockHash_);
     }
 
     function test_lockWithdrawal_whenZeroStarkKey_InvalidStarkKeyError() public {

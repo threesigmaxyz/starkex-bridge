@@ -167,31 +167,31 @@ contract BaseFixture is Test {
         vm.stopPrank();
     }
 
-    function _owner() internal returns (address) {
+    function _owner() internal pure returns (address) {
         return vm.addr(1337);
     }
 
-    function _operator() internal returns (address) {
+    function _operator() internal pure returns (address) {
         return vm.addr(420);
     }
 
-    function _mockInteropContract() internal returns (address) {
+    function _mockInteropContract() internal pure returns (address) {
         return vm.addr(1338);
     }
 
-    function _tokenAdmin() internal returns (address) {
+    function _tokenAdmin() internal pure returns (address) {
         return vm.addr(888);
     }
 
-    function _tokenDeployer() internal returns (address) {
+    function _tokenDeployer() internal pure returns (address) {
         return vm.addr(666);
     }
 
-    function _user() internal returns (address) {
+    function _user() internal pure returns (address) {
         return vm.addr(789);
     }
 
-    function _recipient() internal returns (address) {
+    function _recipient() internal pure returns (address) {
         return vm.addr(777);
     }
 }

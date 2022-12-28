@@ -207,7 +207,7 @@ contract DepositFacetTest is BaseFixture {
 
         // Act + Assert
         _lockDeposit(_user(), STARK_KEY, address(_token), amount_, lockHash_);
-        _claimDeposit(_user(), address(_token), amount_, lockHash_, recipient_);
+        _claimDeposit(address(_token), amount_, lockHash_, recipient_);
     }
 
     function test_claimDeposit_ZeroAddressRecipientError() public {
@@ -336,7 +336,7 @@ contract DepositFacetTest is BaseFixture {
         assertEq(IDepositFacet(_bridge).getPendingDeposits(token_), initialPendingDeposits_ + amount_);
     }
 
-    function _claimDeposit(address user_, address token_, uint256 amount_, uint256 lockHash_, address recipient_)
+    function _claimDeposit(address token_, uint256 amount_, uint256 lockHash_, address recipient_)
         internal
     {
         // Arrange
