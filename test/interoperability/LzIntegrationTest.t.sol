@@ -15,11 +15,6 @@ contract LzTransmitterTest is LzFixture {
     //=== Tests                                                                  ===//
     //==============================================================================//
 
-    function test_isTrustedRemote_ok() public {
-        bytes memory path_ = abi.encodePacked(address(_receptor), address(_transmitter));
-        assertEq(_transmitter.isTrustedRemote(MOCK_CHAIN_ID, path_), true);
-    }
-
     function test_keep_ok() public {
         // Arrange
         address keeper_ = vm.addr(42);
@@ -34,18 +29,5 @@ contract LzTransmitterTest is LzFixture {
 
         assertEq(_transmitter.getLastUpdatedSequenceNumber(MOCK_CHAIN_ID), STARKEX_MOCK_SEQUENCE_NUMBER);
         assertEq(IStateFacet(_bridge).getOrderRoot(), STARKEX_MOCK_ORDER_ROOT);
-    }
-
-    function test_keep_noOrderRootSet() public {
-        // Arrange
-        address keeper_ = vm.addr(42);
-        vm.deal(keeper_, 100 ether);
-
-        // Act
-        vm.prank(keeper_);
-        _transmitter.keep{value: 1 ether}(MOCK_CHAIN_ID, payable(keeper_));
-
-        assertEq(_transmitter.getLastUpdatedSequenceNumber(MOCK_CHAIN_ID), STARKEX_MOCK_SEQUENCE_NUMBER);
-        assertEq(IStateFacet(_bridge).getOrderRoot(), 0);
     }
 }

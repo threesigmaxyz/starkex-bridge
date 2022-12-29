@@ -1,0 +1,1217 @@
+{
+    "contracts": {
+        "/home/simao/dev/starkex-bridge/src/libraries/LibTokenRegister.sol": {
+            "LibTokenRegister": {
+                "abi": [
+                    {
+                        "inputs": [
+                            {
+                                "internalType": "address",
+                                "name": "asset",
+                                "type": "address"
+                            }
+                        ],
+                        "name": "TokenNotRegisteredError",
+                        "type": "error"
+                    },
+                    {
+                        "anonymous": false,
+                        "inputs": [
+                            {
+                                "indexed": true,
+                                "internalType": "address",
+                                "name": "token",
+                                "type": "address"
+                            },
+                            {
+                                "indexed": true,
+                                "internalType": "bool",
+                                "name": "flag",
+                                "type": "bool"
+                            }
+                        ],
+                        "name": "LogSetTokenRegister",
+                        "type": "event"
+                    }
+                ],
+                "devdoc": {
+                    "events": {
+                        "LogSetTokenRegister(address,bool)": {
+                            "params": {
+                                "flag": "Whether to register or unregister.",
+                                "token": "Address of the token to register."
+                            }
+                        }
+                    },
+                    "kind": "dev",
+                    "methods": {},
+                    "version": 1
+                },
+                "evm": {
+                    "bytecode": {
+                        "functionDebugData": {},
+                        "generatedSources": [],
+                        "linkReferences": {},
+                        "object": "60566037600b82828239805160001a607314602a57634e487b7160e01b600052600060045260246000fd5b30600052607381538281f3fe73000000000000000000000000000000000000000030146080604052600080fdfea264697066735822122058a1d0b41c6661c60ea5dd0365fd59c15f543288f1207065237994267a6cb8bf64736f6c63430008100033",
+                        "opcodes": "PUSH1 0x56 PUSH1 0x37 PUSH1 0xB DUP3 DUP3 DUP3 CODECOPY DUP1 MLOAD PUSH1 0x0 BYTE PUSH1 0x73 EQ PUSH1 0x2A JUMPI PUSH4 0x4E487B71 PUSH1 0xE0 SHL PUSH1 0x0 MSTORE PUSH1 0x0 PUSH1 0x4 MSTORE PUSH1 0x24 PUSH1 0x0 REVERT JUMPDEST ADDRESS PUSH1 0x0 MSTORE PUSH1 0x73 DUP2 MSTORE8 DUP3 DUP2 RETURN INVALID PUSH20 0x0 ADDRESS EQ PUSH1 0x80 PUSH1 0x40 MSTORE PUSH1 0x0 DUP1 REVERT INVALID LOG2 PUSH5 0x6970667358 0x22 SLT KECCAK256 PC LOG1 0xD0 0xB4 SHR PUSH7 0x61C60EA5DD0365 REVERT MSIZE 0xC1 0x5F SLOAD ORIGIN DUP9 CALL KECCAK256 PUSH17 0x65237994267A6CB8BF64736F6C63430008 LT STOP CALLER ",
+                        "sourceMap": "57:1828:0:-:0;;;;;;;;;;;;;;;-1:-1:-1;;;57:1828:0;;;;;;;;;;;;;;;;;"
+                    },
+                    "deployedBytecode": {
+                        "functionDebugData": {},
+                        "generatedSources": [],
+                        "immutableReferences": {},
+                        "linkReferences": {},
+                        "object": "73000000000000000000000000000000000000000030146080604052600080fdfea264697066735822122058a1d0b41c6661c60ea5dd0365fd59c15f543288f1207065237994267a6cb8bf64736f6c63430008100033",
+                        "opcodes": "PUSH20 0x0 ADDRESS EQ PUSH1 0x80 PUSH1 0x40 MSTORE PUSH1 0x0 DUP1 REVERT INVALID LOG2 PUSH5 0x6970667358 0x22 SLT KECCAK256 PC LOG1 0xD0 0xB4 SHR PUSH7 0x61C60EA5DD0365 REVERT MSIZE 0xC1 0x5F SLOAD ORIGIN DUP9 CALL KECCAK256 PUSH17 0x65237994267A6CB8BF64736F6C63430008 LT STOP CALLER ",
+                        "sourceMap": "57:1828:0:-:0;;;;;;;;"
+                    },
+                    "gasEstimates": {
+                        "creation": {
+                            "codeDepositCost": "17200",
+                            "executionCost": "103",
+                            "totalCost": "17303"
+                        },
+                        "internal": {
+                            "isTokenRegistered(address)": "infinite",
+                            "onlyRegisteredToken(address)": "infinite",
+                            "setTokenRegister(address,bool)": "infinite",
+                            "tokenRegisterStorage()": "infinite"
+                        }
+                    },
+                    "methodIdentifiers": {}
+                },
+                "metadata": "{\"compiler\":{\"version\":\"0.8.16+commit.07a7930e\"},\"language\":\"Solidity\",\"output\":{\"abi\":[{\"inputs\":[{\"internalType\":\"address\",\"name\":\"asset\",\"type\":\"address\"}],\"name\":\"TokenNotRegisteredError\",\"type\":\"error\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"token\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"bool\",\"name\":\"flag\",\"type\":\"bool\"}],\"name\":\"LogSetTokenRegister\",\"type\":\"event\"}],\"devdoc\":{\"events\":{\"LogSetTokenRegister(address,bool)\":{\"params\":{\"flag\":\"Whether to register or unregister.\",\"token\":\"Address of the token to register.\"}}},\"kind\":\"dev\",\"methods\":{},\"version\":1},\"userdoc\":{\"events\":{\"LogSetTokenRegister(address,bool)\":{\"notice\":\"Emitted when a token is registered or unregistered.\"}},\"kind\":\"user\",\"methods\":{},\"version\":1}},\"settings\":{\"compilationTarget\":{\"/home/simao/dev/starkex-bridge/src/libraries/LibTokenRegister.sol\":\"LibTokenRegister\"},\"evmVersion\":\"london\",\"libraries\":{},\"metadata\":{\"bytecodeHash\":\"ipfs\"},\"optimizer\":{\"enabled\":true,\"runs\":200},\"remappings\":[]},\"sources\":{\"/home/simao/dev/starkex-bridge/src/libraries/LibTokenRegister.sol\":{\"keccak256\":\"0x33103f0e11f01bf480462fbde6746776b2ded269542ef8abb182b096754e31fd\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://e4090f5599c08ad0007436b0e12bc6dd1296681239ab8ace972261f423c4c661\",\"dweb:/ipfs/QmUShnqWMyMF8VhCwE4tCYiCnXCpP5pxzhK7bs1Wud3cTm\"]}},\"version\":1}",
+                "storageLayout": {
+                    "storage": [],
+                    "types": null
+                },
+                "userdoc": {
+                    "events": {
+                        "LogSetTokenRegister(address,bool)": {
+                            "notice": "Emitted when a token is registered or unregistered."
+                        }
+                    },
+                    "kind": "user",
+                    "methods": {},
+                    "version": 1
+                }
+            }
+        }
+    },
+    "sources": {
+        "/home/simao/dev/starkex-bridge/src/libraries/LibTokenRegister.sol": {
+            "ast": {
+                "absolutePath": "/home/simao/dev/starkex-bridge/src/libraries/LibTokenRegister.sol",
+                "exportedSymbols": {
+                    "LibTokenRegister": [
+                        89
+                    ]
+                },
+                "id": 90,
+                "license": "MIT",
+                "nodeType": "SourceUnit",
+                "nodes": [
+                    {
+                        "id": 1,
+                        "literals": [
+                            "solidity",
+                            "^",
+                            "0.8",
+                            ".0"
+                        ],
+                        "nodeType": "PragmaDirective",
+                        "src": "32:23:0"
+                    },
+                    {
+                        "abstract": false,
+                        "baseContracts": [],
+                        "canonicalName": "LibTokenRegister",
+                        "contractDependencies": [],
+                        "contractKind": "library",
+                        "fullyImplemented": true,
+                        "id": 89,
+                        "linearizedBaseContracts": [
+                            89
+                        ],
+                        "name": "LibTokenRegister",
+                        "nameLocation": "65:16:0",
+                        "nodeType": "ContractDefinition",
+                        "nodes": [
+                            {
+                                "constant": true,
+                                "id": 6,
+                                "mutability": "constant",
+                                "name": "TOKEN_REGISTER_STORAGE_POSITION",
+                                "nameLocation": "105:31:0",
+                                "nodeType": "VariableDeclaration",
+                                "scope": 89,
+                                "src": "88:95:0",
+                                "stateVariable": true,
+                                "storageLocation": "default",
+                                "typeDescriptions": {
+                                    "typeIdentifier": "t_bytes32",
+                                    "typeString": "bytes32"
+                                },
+                                "typeName": {
+                                    "id": 2,
+                                    "name": "bytes32",
+                                    "nodeType": "ElementaryTypeName",
+                                    "src": "88:7:0",
+                                    "typeDescriptions": {
+                                        "typeIdentifier": "t_bytes32",
+                                        "typeString": "bytes32"
+                                    }
+                                },
+                                "value": {
+                                    "arguments": [
+                                        {
+                                            "hexValue": "544f4b454e5f52454749535445525f53544f524147455f504f534954494f4e",
+                                            "id": 4,
+                                            "isConstant": false,
+                                            "isLValue": false,
+                                            "isPure": true,
+                                            "kind": "string",
+                                            "lValueRequested": false,
+                                            "nodeType": "Literal",
+                                            "src": "149:33:0",
+                                            "typeDescriptions": {
+                                                "typeIdentifier": "t_stringliteral_6923c1fe8e61bf386b6c2fc9844e539cf3898b64fc226aeac065d23929aaa245",
+                                                "typeString": "literal_string \"TOKEN_REGISTER_STORAGE_POSITION\""
+                                            },
+                                            "value": "TOKEN_REGISTER_STORAGE_POSITION"
+                                        }
+                                    ],
+                                    "expression": {
+                                        "argumentTypes": [
+                                            {
+                                                "typeIdentifier": "t_stringliteral_6923c1fe8e61bf386b6c2fc9844e539cf3898b64fc226aeac065d23929aaa245",
+                                                "typeString": "literal_string \"TOKEN_REGISTER_STORAGE_POSITION\""
+                                            }
+                                        ],
+                                        "id": 3,
+                                        "name": "keccak256",
+                                        "nodeType": "Identifier",
+                                        "overloadedDeclarations": [],
+                                        "referencedDeclaration": 4294967288,
+                                        "src": "139:9:0",
+                                        "typeDescriptions": {
+                                            "typeIdentifier": "t_function_keccak256_pure$_t_bytes_memory_ptr_$returns$_t_bytes32_$",
+                                            "typeString": "function (bytes memory) pure returns (bytes32)"
+                                        }
+                                    },
+                                    "id": 5,
+                                    "isConstant": false,
+                                    "isLValue": false,
+                                    "isPure": true,
+                                    "kind": "functionCall",
+                                    "lValueRequested": false,
+                                    "nameLocations": [],
+                                    "names": [],
+                                    "nodeType": "FunctionCall",
+                                    "src": "139:44:0",
+                                    "tryCall": false,
+                                    "typeDescriptions": {
+                                        "typeIdentifier": "t_bytes32",
+                                        "typeString": "bytes32"
+                                    }
+                                },
+                                "visibility": "internal"
+                            },
+                            {
+                                "canonicalName": "LibTokenRegister.TokenRegisterStorage",
+                                "id": 11,
+                                "members": [
+                                    {
+                                        "constant": false,
+                                        "id": 10,
+                                        "mutability": "mutable",
+                                        "name": "registeredToken",
+                                        "nameLocation": "253:15:0",
+                                        "nodeType": "VariableDeclaration",
+                                        "scope": 11,
+                                        "src": "228:40:0",
+                                        "stateVariable": false,
+                                        "storageLocation": "default",
+                                        "typeDescriptions": {
+                                            "typeIdentifier": "t_mapping$_t_address_$_t_bool_$",
+                                            "typeString": "mapping(address => bool)"
+                                        },
+                                        "typeName": {
+                                            "id": 9,
+                                            "keyType": {
+                                                "id": 7,
+                                                "name": "address",
+                                                "nodeType": "ElementaryTypeName",
+                                                "src": "236:7:0",
+                                                "typeDescriptions": {
+                                                    "typeIdentifier": "t_address",
+                                                    "typeString": "address"
+                                                }
+                                            },
+                                            "nodeType": "Mapping",
+                                            "src": "228:24:0",
+                                            "typeDescriptions": {
+                                                "typeIdentifier": "t_mapping$_t_address_$_t_bool_$",
+                                                "typeString": "mapping(address => bool)"
+                                            },
+                                            "valueType": {
+                                                "id": 8,
+                                                "name": "bool",
+                                                "nodeType": "ElementaryTypeName",
+                                                "src": "247:4:0",
+                                                "typeDescriptions": {
+                                                    "typeIdentifier": "t_bool",
+                                                    "typeString": "bool"
+                                                }
+                                            }
+                                        },
+                                        "visibility": "internal"
+                                    }
+                                ],
+                                "name": "TokenRegisterStorage",
+                                "nameLocation": "197:20:0",
+                                "nodeType": "StructDefinition",
+                                "scope": 89,
+                                "src": "190:85:0",
+                                "visibility": "public"
+                            },
+                            {
+                                "anonymous": false,
+                                "documentation": {
+                                    "id": 12,
+                                    "nodeType": "StructuredDocumentation",
+                                    "src": "281:186:0",
+                                    "text": " @notice Emitted when a token is registered or unregistered.\n @param token Address of the token to register.\n @param flag Whether to register or unregister."
+                                },
+                                "eventSelector": "6ddef15e23c7a1ef6cc3119886ed6be9960e1addc4685cfb9baec11b32784417",
+                                "id": 18,
+                                "name": "LogSetTokenRegister",
+                                "nameLocation": "478:19:0",
+                                "nodeType": "EventDefinition",
+                                "parameters": {
+                                    "id": 17,
+                                    "nodeType": "ParameterList",
+                                    "parameters": [
+                                        {
+                                            "constant": false,
+                                            "id": 14,
+                                            "indexed": true,
+                                            "mutability": "mutable",
+                                            "name": "token",
+                                            "nameLocation": "514:5:0",
+                                            "nodeType": "VariableDeclaration",
+                                            "scope": 18,
+                                            "src": "498:21:0",
+                                            "stateVariable": false,
+                                            "storageLocation": "default",
+                                            "typeDescriptions": {
+                                                "typeIdentifier": "t_address",
+                                                "typeString": "address"
+                                            },
+                                            "typeName": {
+                                                "id": 13,
+                                                "name": "address",
+                                                "nodeType": "ElementaryTypeName",
+                                                "src": "498:7:0",
+                                                "stateMutability": "nonpayable",
+                                                "typeDescriptions": {
+                                                    "typeIdentifier": "t_address",
+                                                    "typeString": "address"
+                                                }
+                                            },
+                                            "visibility": "internal"
+                                        },
+                                        {
+                                            "constant": false,
+                                            "id": 16,
+                                            "indexed": true,
+                                            "mutability": "mutable",
+                                            "name": "flag",
+                                            "nameLocation": "534:4:0",
+                                            "nodeType": "VariableDeclaration",
+                                            "scope": 18,
+                                            "src": "521:17:0",
+                                            "stateVariable": false,
+                                            "storageLocation": "default",
+                                            "typeDescriptions": {
+                                                "typeIdentifier": "t_bool",
+                                                "typeString": "bool"
+                                            },
+                                            "typeName": {
+                                                "id": 15,
+                                                "name": "bool",
+                                                "nodeType": "ElementaryTypeName",
+                                                "src": "521:4:0",
+                                                "typeDescriptions": {
+                                                    "typeIdentifier": "t_bool",
+                                                    "typeString": "bool"
+                                                }
+                                            },
+                                            "visibility": "internal"
+                                        }
+                                    ],
+                                    "src": "497:42:0"
+                                },
+                                "src": "472:68:0"
+                            },
+                            {
+                                "errorSelector": "d5d1a079",
+                                "id": 22,
+                                "name": "TokenNotRegisteredError",
+                                "nameLocation": "552:23:0",
+                                "nodeType": "ErrorDefinition",
+                                "parameters": {
+                                    "id": 21,
+                                    "nodeType": "ParameterList",
+                                    "parameters": [
+                                        {
+                                            "constant": false,
+                                            "id": 20,
+                                            "mutability": "mutable",
+                                            "name": "asset",
+                                            "nameLocation": "584:5:0",
+                                            "nodeType": "VariableDeclaration",
+                                            "scope": 22,
+                                            "src": "576:13:0",
+                                            "stateVariable": false,
+                                            "storageLocation": "default",
+                                            "typeDescriptions": {
+                                                "typeIdentifier": "t_address",
+                                                "typeString": "address"
+                                            },
+                                            "typeName": {
+                                                "id": 19,
+                                                "name": "address",
+                                                "nodeType": "ElementaryTypeName",
+                                                "src": "576:7:0",
+                                                "stateMutability": "nonpayable",
+                                                "typeDescriptions": {
+                                                    "typeIdentifier": "t_address",
+                                                    "typeString": "address"
+                                                }
+                                            },
+                                            "visibility": "internal"
+                                        }
+                                    ],
+                                    "src": "575:15:0"
+                                },
+                                "src": "546:45:0"
+                            },
+                            {
+                                "body": {
+                                    "id": 34,
+                                    "nodeType": "Block",
+                                    "src": "744:131:0",
+                                    "statements": [
+                                        {
+                                            "assignments": [
+                                                30
+                                            ],
+                                            "declarations": [
+                                                {
+                                                    "constant": false,
+                                                    "id": 30,
+                                                    "mutability": "mutable",
+                                                    "name": "position_",
+                                                    "nameLocation": "762:9:0",
+                                                    "nodeType": "VariableDeclaration",
+                                                    "scope": 34,
+                                                    "src": "754:17:0",
+                                                    "stateVariable": false,
+                                                    "storageLocation": "default",
+                                                    "typeDescriptions": {
+                                                        "typeIdentifier": "t_bytes32",
+                                                        "typeString": "bytes32"
+                                                    },
+                                                    "typeName": {
+                                                        "id": 29,
+                                                        "name": "bytes32",
+                                                        "nodeType": "ElementaryTypeName",
+                                                        "src": "754:7:0",
+                                                        "typeDescriptions": {
+                                                            "typeIdentifier": "t_bytes32",
+                                                            "typeString": "bytes32"
+                                                        }
+                                                    },
+                                                    "visibility": "internal"
+                                                }
+                                            ],
+                                            "id": 32,
+                                            "initialValue": {
+                                                "id": 31,
+                                                "name": "TOKEN_REGISTER_STORAGE_POSITION",
+                                                "nodeType": "Identifier",
+                                                "overloadedDeclarations": [],
+                                                "referencedDeclaration": 6,
+                                                "src": "774:31:0",
+                                                "typeDescriptions": {
+                                                    "typeIdentifier": "t_bytes32",
+                                                    "typeString": "bytes32"
+                                                }
+                                            },
+                                            "nodeType": "VariableDeclarationStatement",
+                                            "src": "754:51:0"
+                                        },
+                                        {
+                                            "AST": {
+                                                "nodeType": "YulBlock",
+                                                "src": "824:45:0",
+                                                "statements": [
+                                                    {
+                                                        "nodeType": "YulAssignment",
+                                                        "src": "838:21:0",
+                                                        "value": {
+                                                            "name": "position_",
+                                                            "nodeType": "YulIdentifier",
+                                                            "src": "850:9:0"
+                                                        },
+                                                        "variableNames": [
+                                                            {
+                                                                "name": "trs.slot",
+                                                                "nodeType": "YulIdentifier",
+                                                                "src": "838:8:0"
+                                                            }
+                                                        ]
+                                                    }
+                                                ]
+                                            },
+                                            "evmVersion": "london",
+                                            "externalReferences": [
+                                                {
+                                                    "declaration": 30,
+                                                    "isOffset": false,
+                                                    "isSlot": false,
+                                                    "src": "850:9:0",
+                                                    "valueSize": 1
+                                                },
+                                                {
+                                                    "declaration": 27,
+                                                    "isOffset": false,
+                                                    "isSlot": true,
+                                                    "src": "838:8:0",
+                                                    "suffix": "slot",
+                                                    "valueSize": 1
+                                                }
+                                            ],
+                                            "id": 33,
+                                            "nodeType": "InlineAssembly",
+                                            "src": "815:54:0"
+                                        }
+                                    ]
+                                },
+                                "documentation": {
+                                    "id": 23,
+                                    "nodeType": "StructuredDocumentation",
+                                    "src": "597:53:0",
+                                    "text": "@dev Storage of this facet using diamond storage."
+                                },
+                                "id": 35,
+                                "implemented": true,
+                                "kind": "function",
+                                "modifiers": [],
+                                "name": "tokenRegisterStorage",
+                                "nameLocation": "664:20:0",
+                                "nodeType": "FunctionDefinition",
+                                "parameters": {
+                                    "id": 24,
+                                    "nodeType": "ParameterList",
+                                    "parameters": [],
+                                    "src": "684:2:0"
+                                },
+                                "returnParameters": {
+                                    "id": 28,
+                                    "nodeType": "ParameterList",
+                                    "parameters": [
+                                        {
+                                            "constant": false,
+                                            "id": 27,
+                                            "mutability": "mutable",
+                                            "name": "trs",
+                                            "nameLocation": "739:3:0",
+                                            "nodeType": "VariableDeclaration",
+                                            "scope": 35,
+                                            "src": "710:32:0",
+                                            "stateVariable": false,
+                                            "storageLocation": "storage",
+                                            "typeDescriptions": {
+                                                "typeIdentifier": "t_struct$_TokenRegisterStorage_$11_storage_ptr",
+                                                "typeString": "struct LibTokenRegister.TokenRegisterStorage"
+                                            },
+                                            "typeName": {
+                                                "id": 26,
+                                                "nodeType": "UserDefinedTypeName",
+                                                "pathNode": {
+                                                    "id": 25,
+                                                    "name": "TokenRegisterStorage",
+                                                    "nameLocations": [
+                                                        "710:20:0"
+                                                    ],
+                                                    "nodeType": "IdentifierPath",
+                                                    "referencedDeclaration": 11,
+                                                    "src": "710:20:0"
+                                                },
+                                                "referencedDeclaration": 11,
+                                                "src": "710:20:0",
+                                                "typeDescriptions": {
+                                                    "typeIdentifier": "t_struct$_TokenRegisterStorage_$11_storage_ptr",
+                                                    "typeString": "struct LibTokenRegister.TokenRegisterStorage"
+                                                }
+                                            },
+                                            "visibility": "internal"
+                                        }
+                                    ],
+                                    "src": "709:34:0"
+                                },
+                                "scope": 89,
+                                "src": "655:220:0",
+                                "stateMutability": "pure",
+                                "virtual": false,
+                                "visibility": "internal"
+                            },
+                            {
+                                "body": {
+                                    "id": 56,
+                                    "nodeType": "Block",
+                                    "src": "1131:120:0",
+                                    "statements": [
+                                        {
+                                            "expression": {
+                                                "id": 49,
+                                                "isConstant": false,
+                                                "isLValue": false,
+                                                "isPure": false,
+                                                "lValueRequested": false,
+                                                "leftHandSide": {
+                                                    "baseExpression": {
+                                                        "expression": {
+                                                            "arguments": [],
+                                                            "expression": {
+                                                                "argumentTypes": [],
+                                                                "id": 43,
+                                                                "name": "tokenRegisterStorage",
+                                                                "nodeType": "Identifier",
+                                                                "overloadedDeclarations": [],
+                                                                "referencedDeclaration": 35,
+                                                                "src": "1141:20:0",
+                                                                "typeDescriptions": {
+                                                                    "typeIdentifier": "t_function_internal_pure$__$returns$_t_struct$_TokenRegisterStorage_$11_storage_ptr_$",
+                                                                    "typeString": "function () pure returns (struct LibTokenRegister.TokenRegisterStorage storage pointer)"
+                                                                }
+                                                            },
+                                                            "id": 44,
+                                                            "isConstant": false,
+                                                            "isLValue": false,
+                                                            "isPure": false,
+                                                            "kind": "functionCall",
+                                                            "lValueRequested": false,
+                                                            "nameLocations": [],
+                                                            "names": [],
+                                                            "nodeType": "FunctionCall",
+                                                            "src": "1141:22:0",
+                                                            "tryCall": false,
+                                                            "typeDescriptions": {
+                                                                "typeIdentifier": "t_struct$_TokenRegisterStorage_$11_storage_ptr",
+                                                                "typeString": "struct LibTokenRegister.TokenRegisterStorage storage pointer"
+                                                            }
+                                                        },
+                                                        "id": 45,
+                                                        "isConstant": false,
+                                                        "isLValue": true,
+                                                        "isPure": false,
+                                                        "lValueRequested": false,
+                                                        "memberLocation": "1164:15:0",
+                                                        "memberName": "registeredToken",
+                                                        "nodeType": "MemberAccess",
+                                                        "referencedDeclaration": 10,
+                                                        "src": "1141:38:0",
+                                                        "typeDescriptions": {
+                                                            "typeIdentifier": "t_mapping$_t_address_$_t_bool_$",
+                                                            "typeString": "mapping(address => bool)"
+                                                        }
+                                                    },
+                                                    "id": 47,
+                                                    "indexExpression": {
+                                                        "id": 46,
+                                                        "name": "token_",
+                                                        "nodeType": "Identifier",
+                                                        "overloadedDeclarations": [],
+                                                        "referencedDeclaration": 38,
+                                                        "src": "1180:6:0",
+                                                        "typeDescriptions": {
+                                                            "typeIdentifier": "t_address",
+                                                            "typeString": "address"
+                                                        }
+                                                    },
+                                                    "isConstant": false,
+                                                    "isLValue": true,
+                                                    "isPure": false,
+                                                    "lValueRequested": true,
+                                                    "nodeType": "IndexAccess",
+                                                    "src": "1141:46:0",
+                                                    "typeDescriptions": {
+                                                        "typeIdentifier": "t_bool",
+                                                        "typeString": "bool"
+                                                    }
+                                                },
+                                                "nodeType": "Assignment",
+                                                "operator": "=",
+                                                "rightHandSide": {
+                                                    "id": 48,
+                                                    "name": "flag_",
+                                                    "nodeType": "Identifier",
+                                                    "overloadedDeclarations": [],
+                                                    "referencedDeclaration": 40,
+                                                    "src": "1190:5:0",
+                                                    "typeDescriptions": {
+                                                        "typeIdentifier": "t_bool",
+                                                        "typeString": "bool"
+                                                    }
+                                                },
+                                                "src": "1141:54:0",
+                                                "typeDescriptions": {
+                                                    "typeIdentifier": "t_bool",
+                                                    "typeString": "bool"
+                                                }
+                                            },
+                                            "id": 50,
+                                            "nodeType": "ExpressionStatement",
+                                            "src": "1141:54:0"
+                                        },
+                                        {
+                                            "eventCall": {
+                                                "arguments": [
+                                                    {
+                                                        "id": 52,
+                                                        "name": "token_",
+                                                        "nodeType": "Identifier",
+                                                        "overloadedDeclarations": [],
+                                                        "referencedDeclaration": 38,
+                                                        "src": "1230:6:0",
+                                                        "typeDescriptions": {
+                                                            "typeIdentifier": "t_address",
+                                                            "typeString": "address"
+                                                        }
+                                                    },
+                                                    {
+                                                        "id": 53,
+                                                        "name": "flag_",
+                                                        "nodeType": "Identifier",
+                                                        "overloadedDeclarations": [],
+                                                        "referencedDeclaration": 40,
+                                                        "src": "1238:5:0",
+                                                        "typeDescriptions": {
+                                                            "typeIdentifier": "t_bool",
+                                                            "typeString": "bool"
+                                                        }
+                                                    }
+                                                ],
+                                                "expression": {
+                                                    "argumentTypes": [
+                                                        {
+                                                            "typeIdentifier": "t_address",
+                                                            "typeString": "address"
+                                                        },
+                                                        {
+                                                            "typeIdentifier": "t_bool",
+                                                            "typeString": "bool"
+                                                        }
+                                                    ],
+                                                    "id": 51,
+                                                    "name": "LogSetTokenRegister",
+                                                    "nodeType": "Identifier",
+                                                    "overloadedDeclarations": [],
+                                                    "referencedDeclaration": 18,
+                                                    "src": "1210:19:0",
+                                                    "typeDescriptions": {
+                                                        "typeIdentifier": "t_function_event_nonpayable$_t_address_$_t_bool_$returns$__$",
+                                                        "typeString": "function (address,bool)"
+                                                    }
+                                                },
+                                                "id": 54,
+                                                "isConstant": false,
+                                                "isLValue": false,
+                                                "isPure": false,
+                                                "kind": "functionCall",
+                                                "lValueRequested": false,
+                                                "nameLocations": [],
+                                                "names": [],
+                                                "nodeType": "FunctionCall",
+                                                "src": "1210:34:0",
+                                                "tryCall": false,
+                                                "typeDescriptions": {
+                                                    "typeIdentifier": "t_tuple$__$",
+                                                    "typeString": "tuple()"
+                                                }
+                                            },
+                                            "id": 55,
+                                            "nodeType": "EmitStatement",
+                                            "src": "1205:39:0"
+                                        }
+                                    ]
+                                },
+                                "documentation": {
+                                    "id": 36,
+                                    "nodeType": "StructuredDocumentation",
+                                    "src": "881:182:0",
+                                    "text": " @notice Registers or unregisters a token.\n @param token_ The address of the token to set the register.\n @param flag_ Whether to register or unregister."
+                                },
+                                "id": 57,
+                                "implemented": true,
+                                "kind": "function",
+                                "modifiers": [],
+                                "name": "setTokenRegister",
+                                "nameLocation": "1077:16:0",
+                                "nodeType": "FunctionDefinition",
+                                "parameters": {
+                                    "id": 41,
+                                    "nodeType": "ParameterList",
+                                    "parameters": [
+                                        {
+                                            "constant": false,
+                                            "id": 38,
+                                            "mutability": "mutable",
+                                            "name": "token_",
+                                            "nameLocation": "1102:6:0",
+                                            "nodeType": "VariableDeclaration",
+                                            "scope": 57,
+                                            "src": "1094:14:0",
+                                            "stateVariable": false,
+                                            "storageLocation": "default",
+                                            "typeDescriptions": {
+                                                "typeIdentifier": "t_address",
+                                                "typeString": "address"
+                                            },
+                                            "typeName": {
+                                                "id": 37,
+                                                "name": "address",
+                                                "nodeType": "ElementaryTypeName",
+                                                "src": "1094:7:0",
+                                                "stateMutability": "nonpayable",
+                                                "typeDescriptions": {
+                                                    "typeIdentifier": "t_address",
+                                                    "typeString": "address"
+                                                }
+                                            },
+                                            "visibility": "internal"
+                                        },
+                                        {
+                                            "constant": false,
+                                            "id": 40,
+                                            "mutability": "mutable",
+                                            "name": "flag_",
+                                            "nameLocation": "1115:5:0",
+                                            "nodeType": "VariableDeclaration",
+                                            "scope": 57,
+                                            "src": "1110:10:0",
+                                            "stateVariable": false,
+                                            "storageLocation": "default",
+                                            "typeDescriptions": {
+                                                "typeIdentifier": "t_bool",
+                                                "typeString": "bool"
+                                            },
+                                            "typeName": {
+                                                "id": 39,
+                                                "name": "bool",
+                                                "nodeType": "ElementaryTypeName",
+                                                "src": "1110:4:0",
+                                                "typeDescriptions": {
+                                                    "typeIdentifier": "t_bool",
+                                                    "typeString": "bool"
+                                                }
+                                            },
+                                            "visibility": "internal"
+                                        }
+                                    ],
+                                    "src": "1093:28:0"
+                                },
+                                "returnParameters": {
+                                    "id": 42,
+                                    "nodeType": "ParameterList",
+                                    "parameters": [],
+                                    "src": "1131:0:0"
+                                },
+                                "scope": 89,
+                                "src": "1068:183:0",
+                                "stateMutability": "nonpayable",
+                                "virtual": false,
+                                "visibility": "internal"
+                            },
+                            {
+                                "body": {
+                                    "id": 71,
+                                    "nodeType": "Block",
+                                    "src": "1488:70:0",
+                                    "statements": [
+                                        {
+                                            "expression": {
+                                                "baseExpression": {
+                                                    "expression": {
+                                                        "arguments": [],
+                                                        "expression": {
+                                                            "argumentTypes": [],
+                                                            "id": 65,
+                                                            "name": "tokenRegisterStorage",
+                                                            "nodeType": "Identifier",
+                                                            "overloadedDeclarations": [],
+                                                            "referencedDeclaration": 35,
+                                                            "src": "1505:20:0",
+                                                            "typeDescriptions": {
+                                                                "typeIdentifier": "t_function_internal_pure$__$returns$_t_struct$_TokenRegisterStorage_$11_storage_ptr_$",
+                                                                "typeString": "function () pure returns (struct LibTokenRegister.TokenRegisterStorage storage pointer)"
+                                                            }
+                                                        },
+                                                        "id": 66,
+                                                        "isConstant": false,
+                                                        "isLValue": false,
+                                                        "isPure": false,
+                                                        "kind": "functionCall",
+                                                        "lValueRequested": false,
+                                                        "nameLocations": [],
+                                                        "names": [],
+                                                        "nodeType": "FunctionCall",
+                                                        "src": "1505:22:0",
+                                                        "tryCall": false,
+                                                        "typeDescriptions": {
+                                                            "typeIdentifier": "t_struct$_TokenRegisterStorage_$11_storage_ptr",
+                                                            "typeString": "struct LibTokenRegister.TokenRegisterStorage storage pointer"
+                                                        }
+                                                    },
+                                                    "id": 67,
+                                                    "isConstant": false,
+                                                    "isLValue": true,
+                                                    "isPure": false,
+                                                    "lValueRequested": false,
+                                                    "memberLocation": "1528:15:0",
+                                                    "memberName": "registeredToken",
+                                                    "nodeType": "MemberAccess",
+                                                    "referencedDeclaration": 10,
+                                                    "src": "1505:38:0",
+                                                    "typeDescriptions": {
+                                                        "typeIdentifier": "t_mapping$_t_address_$_t_bool_$",
+                                                        "typeString": "mapping(address => bool)"
+                                                    }
+                                                },
+                                                "id": 69,
+                                                "indexExpression": {
+                                                    "id": 68,
+                                                    "name": "token_",
+                                                    "nodeType": "Identifier",
+                                                    "overloadedDeclarations": [],
+                                                    "referencedDeclaration": 60,
+                                                    "src": "1544:6:0",
+                                                    "typeDescriptions": {
+                                                        "typeIdentifier": "t_address",
+                                                        "typeString": "address"
+                                                    }
+                                                },
+                                                "isConstant": false,
+                                                "isLValue": true,
+                                                "isPure": false,
+                                                "lValueRequested": false,
+                                                "nodeType": "IndexAccess",
+                                                "src": "1505:46:0",
+                                                "typeDescriptions": {
+                                                    "typeIdentifier": "t_bool",
+                                                    "typeString": "bool"
+                                                }
+                                            },
+                                            "functionReturnParameters": 64,
+                                            "id": 70,
+                                            "nodeType": "Return",
+                                            "src": "1498:53:0"
+                                        }
+                                    ]
+                                },
+                                "documentation": {
+                                    "id": 58,
+                                    "nodeType": "StructuredDocumentation",
+                                    "src": "1257:154:0",
+                                    "text": " @notice Checks if a token is registered.\n @param token_ The address of the token.\n @return Whether it is registered or not."
+                                },
+                                "id": 72,
+                                "implemented": true,
+                                "kind": "function",
+                                "modifiers": [],
+                                "name": "isTokenRegistered",
+                                "nameLocation": "1425:17:0",
+                                "nodeType": "FunctionDefinition",
+                                "parameters": {
+                                    "id": 61,
+                                    "nodeType": "ParameterList",
+                                    "parameters": [
+                                        {
+                                            "constant": false,
+                                            "id": 60,
+                                            "mutability": "mutable",
+                                            "name": "token_",
+                                            "nameLocation": "1451:6:0",
+                                            "nodeType": "VariableDeclaration",
+                                            "scope": 72,
+                                            "src": "1443:14:0",
+                                            "stateVariable": false,
+                                            "storageLocation": "default",
+                                            "typeDescriptions": {
+                                                "typeIdentifier": "t_address",
+                                                "typeString": "address"
+                                            },
+                                            "typeName": {
+                                                "id": 59,
+                                                "name": "address",
+                                                "nodeType": "ElementaryTypeName",
+                                                "src": "1443:7:0",
+                                                "stateMutability": "nonpayable",
+                                                "typeDescriptions": {
+                                                    "typeIdentifier": "t_address",
+                                                    "typeString": "address"
+                                                }
+                                            },
+                                            "visibility": "internal"
+                                        }
+                                    ],
+                                    "src": "1442:16:0"
+                                },
+                                "returnParameters": {
+                                    "id": 64,
+                                    "nodeType": "ParameterList",
+                                    "parameters": [
+                                        {
+                                            "constant": false,
+                                            "id": 63,
+                                            "mutability": "mutable",
+                                            "name": "",
+                                            "nameLocation": "-1:-1:-1",
+                                            "nodeType": "VariableDeclaration",
+                                            "scope": 72,
+                                            "src": "1482:4:0",
+                                            "stateVariable": false,
+                                            "storageLocation": "default",
+                                            "typeDescriptions": {
+                                                "typeIdentifier": "t_bool",
+                                                "typeString": "bool"
+                                            },
+                                            "typeName": {
+                                                "id": 62,
+                                                "name": "bool",
+                                                "nodeType": "ElementaryTypeName",
+                                                "src": "1482:4:0",
+                                                "typeDescriptions": {
+                                                    "typeIdentifier": "t_bool",
+                                                    "typeString": "bool"
+                                                }
+                                            },
+                                            "visibility": "internal"
+                                        }
+                                    ],
+                                    "src": "1481:6:0"
+                                },
+                                "scope": 89,
+                                "src": "1416:142:0",
+                                "stateMutability": "view",
+                                "virtual": false,
+                                "visibility": "internal"
+                            },
+                            {
+                                "body": {
+                                    "id": 87,
+                                    "nodeType": "Block",
+                                    "src": "1796:87:0",
+                                    "statements": [
+                                        {
+                                            "condition": {
+                                                "id": 81,
+                                                "isConstant": false,
+                                                "isLValue": false,
+                                                "isPure": false,
+                                                "lValueRequested": false,
+                                                "nodeType": "UnaryOperation",
+                                                "operator": "!",
+                                                "prefix": true,
+                                                "src": "1810:26:0",
+                                                "subExpression": {
+                                                    "arguments": [
+                                                        {
+                                                            "id": 79,
+                                                            "name": "token_",
+                                                            "nodeType": "Identifier",
+                                                            "overloadedDeclarations": [],
+                                                            "referencedDeclaration": 75,
+                                                            "src": "1829:6:0",
+                                                            "typeDescriptions": {
+                                                                "typeIdentifier": "t_address",
+                                                                "typeString": "address"
+                                                            }
+                                                        }
+                                                    ],
+                                                    "expression": {
+                                                        "argumentTypes": [
+                                                            {
+                                                                "typeIdentifier": "t_address",
+                                                                "typeString": "address"
+                                                            }
+                                                        ],
+                                                        "id": 78,
+                                                        "name": "isTokenRegistered",
+                                                        "nodeType": "Identifier",
+                                                        "overloadedDeclarations": [],
+                                                        "referencedDeclaration": 72,
+                                                        "src": "1811:17:0",
+                                                        "typeDescriptions": {
+                                                            "typeIdentifier": "t_function_internal_view$_t_address_$returns$_t_bool_$",
+                                                            "typeString": "function (address) view returns (bool)"
+                                                        }
+                                                    },
+                                                    "id": 80,
+                                                    "isConstant": false,
+                                                    "isLValue": false,
+                                                    "isPure": false,
+                                                    "kind": "functionCall",
+                                                    "lValueRequested": false,
+                                                    "nameLocations": [],
+                                                    "names": [],
+                                                    "nodeType": "FunctionCall",
+                                                    "src": "1811:25:0",
+                                                    "tryCall": false,
+                                                    "typeDescriptions": {
+                                                        "typeIdentifier": "t_bool",
+                                                        "typeString": "bool"
+                                                    }
+                                                },
+                                                "typeDescriptions": {
+                                                    "typeIdentifier": "t_bool",
+                                                    "typeString": "bool"
+                                                }
+                                            },
+                                            "id": 86,
+                                            "nodeType": "IfStatement",
+                                            "src": "1806:70:0",
+                                            "trueBody": {
+                                                "errorCall": {
+                                                    "arguments": [
+                                                        {
+                                                            "id": 83,
+                                                            "name": "token_",
+                                                            "nodeType": "Identifier",
+                                                            "overloadedDeclarations": [],
+                                                            "referencedDeclaration": 75,
+                                                            "src": "1869:6:0",
+                                                            "typeDescriptions": {
+                                                                "typeIdentifier": "t_address",
+                                                                "typeString": "address"
+                                                            }
+                                                        }
+                                                    ],
+                                                    "expression": {
+                                                        "argumentTypes": [
+                                                            {
+                                                                "typeIdentifier": "t_address",
+                                                                "typeString": "address"
+                                                            }
+                                                        ],
+                                                        "id": 82,
+                                                        "name": "TokenNotRegisteredError",
+                                                        "nodeType": "Identifier",
+                                                        "overloadedDeclarations": [],
+                                                        "referencedDeclaration": 22,
+                                                        "src": "1845:23:0",
+                                                        "typeDescriptions": {
+                                                            "typeIdentifier": "t_function_error_pure$_t_address_$returns$__$",
+                                                            "typeString": "function (address) pure"
+                                                        }
+                                                    },
+                                                    "id": 84,
+                                                    "isConstant": false,
+                                                    "isLValue": false,
+                                                    "isPure": false,
+                                                    "kind": "functionCall",
+                                                    "lValueRequested": false,
+                                                    "nameLocations": [],
+                                                    "names": [],
+                                                    "nodeType": "FunctionCall",
+                                                    "src": "1845:31:0",
+                                                    "tryCall": false,
+                                                    "typeDescriptions": {
+                                                        "typeIdentifier": "t_tuple$__$",
+                                                        "typeString": "tuple()"
+                                                    }
+                                                },
+                                                "id": 85,
+                                                "nodeType": "RevertStatement",
+                                                "src": "1838:38:0"
+                                            }
+                                        }
+                                    ]
+                                },
+                                "documentation": {
+                                    "id": 73,
+                                    "nodeType": "StructuredDocumentation",
+                                    "src": "1564:168:0",
+                                    "text": " @notice Modifier helper to be called from \"src/modifiers\".\n @dev Reverts if not registered.\n @param token_ Address of the token to check."
+                                },
+                                "id": 88,
+                                "implemented": true,
+                                "kind": "function",
+                                "modifiers": [],
+                                "name": "onlyRegisteredToken",
+                                "nameLocation": "1746:19:0",
+                                "nodeType": "FunctionDefinition",
+                                "parameters": {
+                                    "id": 76,
+                                    "nodeType": "ParameterList",
+                                    "parameters": [
+                                        {
+                                            "constant": false,
+                                            "id": 75,
+                                            "mutability": "mutable",
+                                            "name": "token_",
+                                            "nameLocation": "1774:6:0",
+                                            "nodeType": "VariableDeclaration",
+                                            "scope": 88,
+                                            "src": "1766:14:0",
+                                            "stateVariable": false,
+                                            "storageLocation": "default",
+                                            "typeDescriptions": {
+                                                "typeIdentifier": "t_address",
+                                                "typeString": "address"
+                                            },
+                                            "typeName": {
+                                                "id": 74,
+                                                "name": "address",
+                                                "nodeType": "ElementaryTypeName",
+                                                "src": "1766:7:0",
+                                                "stateMutability": "nonpayable",
+                                                "typeDescriptions": {
+                                                    "typeIdentifier": "t_address",
+                                                    "typeString": "address"
+                                                }
+                                            },
+                                            "visibility": "internal"
+                                        }
+                                    ],
+                                    "src": "1765:16:0"
+                                },
+                                "returnParameters": {
+                                    "id": 77,
+                                    "nodeType": "ParameterList",
+                                    "parameters": [],
+                                    "src": "1796:0:0"
+                                },
+                                "scope": 89,
+                                "src": "1737:146:0",
+                                "stateMutability": "view",
+                                "virtual": false,
+                                "visibility": "internal"
+                            }
+                        ],
+                        "scope": 90,
+                        "src": "57:1828:0",
+                        "usedErrors": [
+                            22
+                        ]
+                    }
+                ],
+                "src": "32:1853:0"
+            },
+            "id": 0
+        }
+    }
+}

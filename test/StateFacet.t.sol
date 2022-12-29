@@ -31,6 +31,10 @@ contract StateFacetTest is BaseFixture {
         IStateFacet(_bridge).setOrderRoot(0);
     }
 
+    //==============================================================================//
+    //=== Internal Test Helpers                                                  ===//
+    //==============================================================================//
+
     function _call_setOrderRoot_and_validate(uint256 orderRoot) internal {
         // Arrange
         vm.expectEmit(true, false, false, true, _bridge);

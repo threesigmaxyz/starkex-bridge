@@ -33,6 +33,8 @@ contract ERC165FacetTest is BaseFixture {
     }
 
     function test_setSupportedInterface_notOwner(address intruder_) public {
+        vm.assume(intruder_ != _owner());
+        
         // Arrange
         vm.label(intruder_, "intruder");
         vm.expectRevert(abi.encodeWithSelector(LibAccessControl.UnauthorizedError.selector));

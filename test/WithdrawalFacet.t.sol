@@ -323,7 +323,7 @@ contract WithdrawalFacetTest is BaseFixture {
     function test_reclaimWithdrawal_ok(uint256 lockHash_, address recipient_) public {
         vm.assume(lockHash_ > 0);
         // Addresses 0 to 8 are reserved (precompiled).
-        vm.assume(recipient_ > address(8));
+        vm.assume(recipient_ > address(8) && recipient_ != _operator());
         vm.label(recipient_, "recipient");
 
         // Arrange

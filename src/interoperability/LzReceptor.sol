@@ -9,7 +9,7 @@ import { IStateFacet } from "src/interfaces/facets/IStateFacet.sol";
 import { ILzReceptor } from "src/interfaces/interoperability/ILzReceptor.sol";
 
 contract LzReceptor is ILzReceptor, NonblockingLzReceiver, Pausable {
-    /// @notice Address of the bridge.
+    /// @notice Address of the _bridge.
     address private immutable _bridge;
 
     /// @notice Last nonce received. Useful to ignore outdated received roots.
@@ -17,13 +17,12 @@ contract LzReceptor is ILzReceptor, NonblockingLzReceiver, Pausable {
 
     uint256 private _orderRoot;
 
-    constructor(address lzEndpoint_, address bridgeAddress_) NonblockingLzReceiver(lzEndpoint_) {
+    constructor(address lzEndpoint_, address bridge_) NonblockingLzReceiver(lzEndpoint_) {
         if (lzEndpoint_ == address(0)) revert ZeroLzEndpointAddressError();
-        if (bridgeAddress_ == address(0)) revert ZeroBridgeAddressError();
+        if (bridge_ == address(0)) revert ZeroBridgeAddressError();
 
-        _bridge = bridgeAddress_;
-
-        emit LogBridgeSet(bridgeAddress_);
+        _bridge = bridge_;
+        emit LogSetBridge(bridge_);
     }
 
     /// @inheritdoc ILzReceptor

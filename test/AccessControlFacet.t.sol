@@ -28,6 +28,8 @@ contract AccessControlFacetTest is BaseFixture {
     }
 
     function test_setPendingRole_UnauthorizedError(address intruder_, bytes32 role_) public {
+        vm.assume(intruder_ != _owner());
+        
         // Arrange
         vm.label(intruder_, "intruder");
         // And
@@ -39,6 +41,8 @@ contract AccessControlFacetTest is BaseFixture {
     }
 
     function test_acceptRole_NotPendingRoleError(address legitAccount_, address intruder_, bytes32 role_) public {
+        vm.assume(intruder_ != legitAccount_);
+        
         // Arrange
         vm.label(legitAccount_, "legitAccount");
         vm.label(intruder_, "intruder");

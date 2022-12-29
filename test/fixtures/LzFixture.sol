@@ -27,9 +27,9 @@ contract LzFixture is BaseFixture {
     //=== State Variables                                                        ===//
     //==============================================================================//
 
-    LzEndpointMock lzEndpoint;
-    LzTransmitter transmitter;
-    LzReceptor receptor;
+    LzEndpointMock _lzEndpoint;
+    LzTransmitter _transmitter;
+    LzReceptor _receptor;
 
     //==============================================================================//
     //=== Setup                                                                  ===//
@@ -39,29 +39,29 @@ contract LzFixture is BaseFixture {
         super.setUp();
 
         // Deploy mocked Layer Zero endpoint
-        lzEndpoint = new LzEndpointMock(MOCK_CHAIN_ID);
+        _lzEndpoint = new LzEndpointMock(MOCK_CHAIN_ID);
 
-        // Deploy transmitter interoperability contract
+        // Deploy _transmitter interoperability contract
         vm.prank(_owner());
-        transmitter = new LzTransmitter(address(lzEndpoint), STARKEX_ADDRESS);
+        _transmitter = new LzTransmitter(address(_lzEndpoint), STARKEX_ADDRESS);
 
-        // Deploy receptor interoperability contract
+        // Deploy _receptor interoperability contract
         vm.prank(_owner());
-        receptor = new LzReceptor(address(lzEndpoint), _bridge);
+        _receptor = new LzReceptor(address(_lzEndpoint), _bridge);
 
         vm.prank(_owner());
-        IAccessControlFacet(_bridge).setPendingRole(LibAccessControl.INTEROPERABILITY_CONTRACT_ROLE, address(receptor));
+        IAccessControlFacet(_bridge).setPendingRole(LibAccessControl.INTEROPERABILITY_CONTRACT_ROLE, address(_receptor));
 
-        receptor.acceptBridgeRole();
+        _receptor.acceptBridgeRole();
 
         // Register interoperability contracts on Layer Zero
-        lzEndpoint.setDestLzEndpoint(address(transmitter), address(lzEndpoint));
-        lzEndpoint.setDestLzEndpoint(address(receptor), address(lzEndpoint));
+        _lzEndpoint.setDestLzEndpoint(address(_transmitter), address(_lzEndpoint));
+        _lzEndpoint.setDestLzEndpoint(address(_receptor), address(_lzEndpoint));
 
         // Set trusted Layer Zero remote
         vm.startPrank(_owner());
-        transmitter.setTrustedRemote(MOCK_CHAIN_ID, abi.encodePacked(address(receptor), address(transmitter)));
-        receptor.setTrustedRemote(MOCK_CHAIN_ID, abi.encodePacked(address(transmitter), address(receptor)));
+        _transmitter.setTrustedRemote(MOCK_CHAIN_ID, abi.encodePacked(address(_receptor), address(_transmitter)));
+        _receptor.setTrustedRemote(MOCK_CHAIN_ID, abi.encodePacked(address(_transmitter), address(_receptor)));
         vm.stopPrank();
 
         // Setup global mocks

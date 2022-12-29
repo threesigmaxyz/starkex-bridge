@@ -35,15 +35,21 @@ contract TokenRegisterFacetTest is BaseFixture {
         assertEq(ITokenRegisterFacet(_bridge).isTokenRegistered(token2), false);
     }
 
-    function test_setTokenRegister_NotTokenAdmin() public {
+    function test_setTokenRegister_UnauthorizedError(address intruder_) public {
+        vm.assume(intruder_ != _tokenAdmin());
+        
         // Arrange
-        address token1 = vm.addr(12_345);
-        vm.label(token1, "token1");
+        address token = vm.addr(123456);
+        vm.label(intruder_, "intruder");
         vm.expectRevert(abi.encodeWithSelector(LibAccessControl.UnauthorizedError.selector));
 
         // Act + Assert
-        ITokenRegisterFacet(_bridge).setTokenRegister(token1, true);
+        ITokenRegisterFacet(_bridge).setTokenRegister(token, true);
     }
+
+    //==============================================================================//
+    //=== Internal Test Helpers                                                  ===//
+    //==============================================================================//
 
     function _call_setTokenRegister_and_Validate(address token, bool flag) internal {
         // Arrange

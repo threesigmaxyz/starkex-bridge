@@ -3,6 +3,12 @@ pragma solidity ^0.8.0;
 
 interface ILzReceptor {
     /**
+     * @notice Emitted when the bridge address is set.
+     * @param bridge The bridge address.
+     */
+    event LogSetBridge(address indexed bridge);
+
+    /**
      * @notice Emitted when an outdated root is received (lz messages sent in the wrong order).
      * @param orderRoot The order root.
      * @param nonce The nonce of the message.
@@ -24,12 +30,6 @@ interface ILzReceptor {
     /// @notice Emitted when the interoperability role in the bridge is accepted.
     event LogBridgeRoleAccepted();
 
-    /**
-     * @notice Emitted when the bridge contract is set.
-     * @param bridge The address of the bridge.
-     */
-    event LogBridgeSet(address indexed bridge);
-
     error ZeroBridgeAddressError();
     error ZeroLzEndpointAddressError();
 
@@ -38,7 +38,7 @@ interface ILzReceptor {
 
     /**
      * @notice The owner sets the root of the order tree.
-     *           This adds another layer of security, stopping layerZero from sending any message.
+     *         This adds another layer of security, stopping layerZero from sending any message.
      */
     function setOrderRoot() external;
 }
