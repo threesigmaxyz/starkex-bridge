@@ -150,14 +150,12 @@ contract WithdrawalFacetTest is BaseFixture {
         assertEq(IWithdrawalFacet(_bridge).getWithdrawalExpirationTimeout(), timeout_);
     }
 
-    function test_setWithdrawalExpirationTimeout_UnauthorizedError(address intruder_) public {
-        vm.assume(intruder_ != _owner());
-
+    function test_setWithdrawalExpirationTimeout_UnauthorizedError() public {
         // Arrange
-        vm.label(intruder_, "intruder");
         vm.expectRevert(abi.encodeWithSelector(LibAccessControl.UnauthorizedError.selector));
 
         // Act + Assert
+        vm.prank(_intruder());
         IWithdrawalFacet(_bridge).setWithdrawalExpirationTimeout(999);
     }
 
@@ -174,10 +172,10 @@ contract WithdrawalFacetTest is BaseFixture {
         _lockWithdrawal(starkKey_, address(_token), amount_, lockHash_);
     }
 
-    function test_lockWithdrawal_TokenNotRegisteredError(address token_) public {
-        vm.assume(token_ != address(_token));
-
+    function test_lockWithdrawal_TokenNotRegisteredError() public {
         // Arrange
+        address token_ = vm.addr(1);
+        vm.label(token_, "token");
         vm.expectRevert(abi.encodeWithSelector(LibTokenRegister.TokenNotRegisteredError.selector, token_));
 
         // Act + Assert
@@ -320,29 +318,22 @@ contract WithdrawalFacetTest is BaseFixture {
     //=== reclaimWithdrawal Tests                                                ===//
     //==============================================================================//
 
-    function test_reclaimWithdrawal_ok(uint256 lockHash_, address recipient_) public {
+    function test_reclaimWithdrawal_ok(uint256 lockHash_) public {
         vm.assume(lockHash_ > 0);
-        // Addresses 0 to 8 are reserved (precompiled).
-        vm.assume(recipient_ > address(8) && recipient_ != _operator());
-        vm.label(recipient_, "recipient");
 
         // Arrange
         _lockWithdrawal(STARK_KEY, address(_token), USER_TOKENS, lockHash_);
 
         // Arrange + Act + Assert
-        _reclaimWithdrawal(lockHash_, recipient_, USER_TOKENS);
+        _reclaimWithdrawal(lockHash_, _recipient(), USER_TOKENS);
     }
 
-    function test_reclaimWithdrawal_UnauthorizedError(address intruder_) public {
-        // Addresses 0 to 8 are reserved (precompiled).
-        vm.assume(intruder_ > address(8));
-        vm.label(intruder_, "intruder");
-
+    function test_reclaimWithdrawal_UnauthorizedError() public {
         // Arrange
         vm.expectRevert(abi.encodeWithSelector(LibAccessControl.UnauthorizedError.selector));
 
         // Act + Assert
-        IWithdrawalFacet(_bridge).reclaimWithdrawal(LOCK_HASH, intruder_);
+        IWithdrawalFacet(_bridge).reclaimWithdrawal(LOCK_HASH, _intruder());
     }
 
     function test_reclaimWithdrawal_InvalidLockHashError() public {

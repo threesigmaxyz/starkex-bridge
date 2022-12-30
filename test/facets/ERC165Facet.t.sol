@@ -32,15 +32,12 @@ contract ERC165FacetTest is BaseFixture {
         _call_setSupportedInterface_and_Validate(interfaceId2_, true);
     }
 
-    function test_setSupportedInterface_notOwner(address intruder_) public {
-        vm.assume(intruder_ != _owner());
-        
+    function test_setSupportedInterface_notOwner() public {
         // Arrange
-        vm.label(intruder_, "intruder");
         vm.expectRevert(abi.encodeWithSelector(LibAccessControl.UnauthorizedError.selector));
 
         // Act + Assert
-        vm.prank(intruder_);
+        vm.prank(_intruder());
         IERC165Facet(_bridge).setSupportedInterface(0x12345678, true);
     }
 

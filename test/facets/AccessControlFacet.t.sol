@@ -13,8 +13,10 @@ contract AccessControlFacetTest is BaseFixture {
     event LogRoleTransferred(bytes32 indexed role, address indexed previousAccount, address indexed newAccount);
     event LogSetPendingRole(bytes32 indexed role, address indexed newAccount);
 
-    function test_transferRole_ok(bytes32 role1_, bytes32 role2_, address account1_, address account2_) public {
+    function test_transferRole_ok(bytes32 role1_, bytes32 role2_) public {
         // Arrange
+        address account1_ = vm.addr(1);
+        address account2_ = vm.addr(2);
         vm.label(account1_, "account1");
         vm.label(account2_, "account2");
 
@@ -27,32 +29,26 @@ contract AccessControlFacetTest is BaseFixture {
         _transferRole_and_validate(role2_, account2_);
     }
 
-    function test_setPendingRole_UnauthorizedError(address intruder_, bytes32 role_) public {
-        vm.assume(intruder_ != _owner());
-        
+    function test_setPendingRole_UnauthorizedError(bytes32 role_) public {
         // Arrange
-        vm.label(intruder_, "intruder");
-        // And
         vm.expectRevert(abi.encodeWithSelector(LibAccessControl.UnauthorizedError.selector));
 
         // Act + Assert
-        vm.prank(intruder_);
-        IAccessControlFacet(_bridge).setPendingRole(role_, intruder_);
+        vm.prank(_intruder());
+        IAccessControlFacet(_bridge).setPendingRole(role_, _recipient());
     }
 
-    function test_acceptRole_NotPendingRoleError(address legitAccount_, address intruder_, bytes32 role_) public {
-        vm.assume(intruder_ != legitAccount_);
-        
+    function test_acceptRole_NotPendingRoleError(bytes32 role_) public {
         // Arrange
+        address legitAccount_ = vm.addr(1);
         vm.label(legitAccount_, "legitAccount");
-        vm.label(intruder_, "intruder");
         // And
         _call_setPendingRole_and_validate(role_, legitAccount_);
         // And
         vm.expectRevert(abi.encodeWithSelector(LibAccessControl.NotPendingRoleError.selector));
 
         // Act + Assert
-        vm.prank(intruder_);
+        vm.prank(_intruder());
         IAccessControlFacet(_bridge).acceptRole(role_);
     }
 

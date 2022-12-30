@@ -94,15 +94,12 @@ contract DepositFacetTest is BaseFixture {
         assertEq(IDepositFacet(_bridge).getDepositExpirationTimeout(), timeout_);
     }
 
-    function test_setDepositExpirationTimeout_UnauthorizedError(address intruder_) public {
-        vm.assume(intruder_ != _owner());
-
+    function test_setDepositExpirationTimeout_UnauthorizedError() public {
         // Arrange
-        vm.label(intruder_, "intruder");
         vm.expectRevert(abi.encodeWithSelector(LibAccessControl.UnauthorizedError.selector));
 
         // Act + Assert
-        vm.prank(intruder_);
+        vm.prank(_intruder());
         IDepositFacet(_bridge).setDepositExpirationTimeout(999);
     }
 
@@ -119,10 +116,10 @@ contract DepositFacetTest is BaseFixture {
         _lockDeposit(_user(), starkKey_, address(_token), amount_, lockHash_);
     }
 
-    function test_lockDeposit_TokenNotRegisteredError(address token_) public {
-        vm.assume(token_ != address(_token));
-
+    function test_lockDeposit_TokenNotRegisteredError() public {
         // Arrange
+        address token_ = vm.addr(1);
+        vm.label(token_, "token");
         vm.expectRevert(abi.encodeWithSelector(LibTokenRegister.TokenNotRegisteredError.selector, token_));
 
         // Act + Assert
@@ -200,14 +197,13 @@ contract DepositFacetTest is BaseFixture {
     //=== claimDeposit Tests                                                     ===//
     //==============================================================================//
 
-    function test_claimDeposit_ok(uint256 amount_, uint256 lockHash_, address recipient_) public {
+    function test_claimDeposit_ok(uint256 amount_, uint256 lockHash_) public {
         vm.assume(amount_ > 0);
         vm.assume(lockHash_ > 0);
-        vm.assume(recipient_ > address(0));
-
+        
         // Act + Assert
         _lockDeposit(_user(), STARK_KEY, address(_token), amount_, lockHash_);
-        _claimDeposit(address(_token), amount_, lockHash_, recipient_);
+        _claimDeposit(address(_token), amount_, lockHash_, _recipient());
     }
 
     function test_claimDeposit_ZeroAddressRecipientError() public {
@@ -336,9 +332,7 @@ contract DepositFacetTest is BaseFixture {
         assertEq(IDepositFacet(_bridge).getPendingDeposits(token_), initialPendingDeposits_ + amount_);
     }
 
-    function _claimDeposit(address token_, uint256 amount_, uint256 lockHash_, address recipient_)
-        internal
-    {
+    function _claimDeposit(address token_, uint256 amount_, uint256 lockHash_, address recipient_) internal {
         // Arrange
         uint256 initialPendingDeposits_ = IDepositFacet(_bridge).getPendingDeposits(token_);
         uint256 initialRecipientBalance_ = MockERC20(token_).balanceOf(recipient_);

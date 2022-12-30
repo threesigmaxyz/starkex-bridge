@@ -27,7 +27,6 @@ contract LzTransmitterTest is LzFixture {
         vm.prank(_owner());
         _receptor.setOrderRoot();
 
-        assertEq(_transmitter.getLastUpdatedSequenceNumber(MOCK_CHAIN_ID), STARKEX_MOCK_SEQUENCE_NUMBER);
         assertEq(IStateFacet(_bridge).getOrderRoot(), STARKEX_MOCK_ORDER_ROOT);
     }
 }

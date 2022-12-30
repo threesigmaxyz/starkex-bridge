@@ -15,7 +15,7 @@ library LibTokenRegister {
      */
     event LogSetTokenRegister(address indexed token, bool indexed flag);
 
-    error TokenNotRegisteredError(address asset);
+    error TokenNotRegisteredError(address token);
 
     /// @dev Storage of this facet using diamond storage.
     function tokenRegisterStorage() internal pure returns (TokenRegisterStorage storage trs) {

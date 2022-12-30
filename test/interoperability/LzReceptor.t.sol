@@ -2,8 +2,6 @@
 pragma solidity ^0.8.0;
 
 import { Test } from "@forge-std/Test.sol";
-
-import { LzEndpointMock } from "test/mocks/lz/LzEndpointMock.sol";
 import { Ownable } from "@openzeppelin/access/Ownable.sol";
 import { IStateFacet } from "src/interfaces/facets/IStateFacet.sol";
 import { ILzReceptor } from "src/interfaces/interoperability/ILzReceptor.sol";
@@ -15,7 +13,6 @@ import { IAccessControlFacet } from "src/interfaces/facets/IAccessControlFacet.s
 import { IStateFacet } from "src/interfaces/facets/IStateFacet.sol";
 
 contract LzReceptorTest is Test {
-
     uint16 private constant MOCK_CHAIN_ID = 1337;
 
     LzReceptor private _receptor;
@@ -33,6 +30,7 @@ contract LzReceptorTest is Test {
 
     function setUp() public {
         vm.label(_owner(), "owner");
+        vm.label(_intruder(), "intruder");
         vm.label(_lzEndpoint, "lzEndpoint");
         vm.label(_bridge, "bridge");
         vm.label(_transmitter, "transmitter");
@@ -48,7 +46,7 @@ contract LzReceptorTest is Test {
     function test_constructor_ok(address lzEndpoint_, address bridge_) public {
         vm.assume(lzEndpoint_ > address(0));
         vm.assume(bridge_ > address(0));
-        
+
         // Arrange
         vm.label(lzEndpoint_, "lzEndpoint");
         vm.label(bridge_, "bridge");
@@ -82,8 +80,8 @@ contract LzReceptorTest is Test {
     function test_acceptBridgeRole_ok() public {
         // Arrange
         vm.mockCall(
-            _bridge, 
-            abi.encodeWithSelector(IAccessControlFacet.acceptRole.selector), 
+            _bridge,
+            abi.encodeWithSelector(IAccessControlFacet.acceptRole.selector),
             abi.encode(LibAccessControl.INTEROPERABILITY_CONTRACT_ROLE)
         );
 
@@ -98,25 +96,18 @@ contract LzReceptorTest is Test {
     function test_setOrderRoot_ok() public {
         // Arrange
         uint256 orderRoot_ = 0;
-        vm.mockCall(
-            _bridge, 
-            abi.encodeWithSelector(IStateFacet.setOrderRoot.selector),
-            abi.encode(orderRoot_)
-        );
+        vm.mockCall(_bridge, abi.encodeWithSelector(IStateFacet.setOrderRoot.selector), abi.encode(orderRoot_));
 
         // Act + Assert
         _setOrderRoot(_owner(), address(_receptor), orderRoot_);
     }
 
-    function test_setOrderRoot_onlyOwner(address intruder_) public {
-        vm.assume(intruder_ != _owner());
-
+    function test_setOrderRoot_onlyOwner() public {
         // Arrange
-        vm.label(intruder_, "intruder");
         vm.expectRevert("Ownable: caller is not the owner");
 
         // Act + Assert
-        vm.prank(intruder_);
+        vm.prank(_intruder());
         _receptor.setOrderRoot();
     }
 
@@ -124,23 +115,17 @@ contract LzReceptorTest is Test {
     //=== setTrustedRemote Tests                                                 ===//
     //==============================================================================//
 
-    function test_setTrustedRemote_ok(address transmitter_) public {
-        // Arrange
-        vm.label(transmitter_, "transmitter");
-
+    function test_setTrustedRemote_ok() public {
         // Act + Assert
-        _setTrustedRemote(_owner(), transmitter_, address(_receptor));
+        _setTrustedRemote(_owner(), _transmitter, address(_receptor));
     }
 
-    function test_setTrustedRemote_onlyOwner(address intruder_) public {
-        vm.assume(intruder_ != _owner());
-
+    function test_setTrustedRemote_onlyOwner() public {
         // Arrange
-        vm.label(intruder_, "intruder");
         vm.expectRevert("Ownable: caller is not the owner");
 
         // Act + Assert
-        vm.prank(intruder_);
+        vm.prank(_intruder());
         _receptor.setTrustedRemote(MOCK_CHAIN_ID, abi.encode(0));
     }
 
@@ -153,7 +138,7 @@ contract LzReceptorTest is Test {
 
         // Arrange
         bytes memory path_ = abi.encodePacked(_transmitter, address(_receptor));
-        
+
         // Act + Assert
         _lzReceive(address(_receptor), _lzEndpoint, MOCK_CHAIN_ID, path_, nonce_, orderRoot_);
     }
@@ -174,7 +159,7 @@ contract LzReceptorTest is Test {
 
     function test_nonBlockingLzReceive_RemoteChainNotSecureError(uint16 srcChaindId_, bytes memory path_) public {
         vm.assume(keccak256(path_) != keccak256(abi.encodePacked(_transmitter, address(_receptor))));
-        
+
         // Arrange
         uint64 nonce_ = 1;
         uint256 orderRoot_ = 0;
@@ -186,11 +171,8 @@ contract LzReceptorTest is Test {
         LzReceptor(_receptor).lzReceive(srcChaindId_, path_, nonce_, payload_);
     }
 
-    function test_nonBlockingLzReceive_InvalidEndpointCallerError(address intruder_) public {
-        vm.assume(intruder_ != _lzEndpoint);
-        
+    function test_nonBlockingLzReceive_InvalidEndpointCallerError() public {
         // Arrange
-        vm.label(intruder_, "intruder");
         uint64 nonce_ = 1;
         uint256 orderRoot_ = 0;
         bytes memory path_ = abi.encodePacked(_transmitter, address(_receptor));
@@ -198,7 +180,7 @@ contract LzReceptorTest is Test {
         vm.expectRevert(abi.encodeWithSelector(ILzReceiver.InvalidEndpointCallerError.selector));
 
         // Act + Assert
-        vm.prank(intruder_);
+        vm.prank(_intruder());
         LzReceptor(_receptor).lzReceive(MOCK_CHAIN_ID, path_, nonce_, payload_);
     }
 
@@ -206,13 +188,13 @@ contract LzReceptorTest is Test {
     //=== Internal Test Helpers                                                  ===//
     //==============================================================================//
 
-    function _constructor(address owner_, address lzEndpoint_, address bridge_) internal returns(address receptor_) {
+    function _constructor(address owner_, address lzEndpoint_, address bridge_) internal returns (address receptor_) {
         // Arrange
         vm.expectEmit(true, true, false, true);
-        emit OwnershipTransferred(address(0), _owner());
-        vm.expectEmit(true, false,false, true);
+        emit OwnershipTransferred(address(0), owner_);
+        vm.expectEmit(true, false, false, true);
         emit LogSetBridge(bridge_);
-        
+
         // Act + Assert
         vm.prank(owner_);
         receptor_ = address(new LzReceptor(lzEndpoint_, bridge_));
@@ -222,7 +204,7 @@ contract LzReceptorTest is Test {
     function _setTrustedRemote(address owner_, address transmitter_, address receptor_) internal {
         // Arrange
         bytes memory path_ = abi.encodePacked(transmitter_, receptor_);
-        vm.expectEmit(true, true, false, true, address(receptor_));
+        vm.expectEmit(true, true, false, true, receptor_);
         emit LogSetTrustedRemote(MOCK_CHAIN_ID, path_);
 
         // Act + Assert
@@ -233,7 +215,7 @@ contract LzReceptorTest is Test {
 
     function _acceptBridgeRole(address receptor_) internal {
         // Arrange
-        vm.expectEmit(false, false, false, true, receptor_); 
+        vm.expectEmit(false, false, false, true, receptor_);
         emit LogBridgeRoleAccepted();
 
         // Act + Assert
@@ -251,14 +233,14 @@ contract LzReceptorTest is Test {
 
     function _lzReceive(
         address receptor_,
-        address lzEndpoint_, 
-        uint16 srcChaindId_, 
-        bytes memory path_, 
-        uint64 nonce_, 
+        address lzEndpoint_,
+        uint16 srcChaindId_,
+        bytes memory path_,
+        uint64 nonce_,
         uint256 orderRoot_
     ) internal {
         // Arrange
-        bytes memory payload_ = abi.encode(orderRoot_); 
+        bytes memory payload_ = abi.encode(orderRoot_);
         vm.expectEmit(true, false, false, true, receptor_);
         emit LogRootReceived(orderRoot_);
 
@@ -269,5 +251,9 @@ contract LzReceptorTest is Test {
 
     function _owner() internal pure returns (address) {
         return vm.addr(1337);
+    }
+
+    function _intruder() internal pure returns (address) {
+        return vm.addr(999);
     }
 }

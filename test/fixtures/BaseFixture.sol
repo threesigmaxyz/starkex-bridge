@@ -48,6 +48,7 @@ contract BaseFixture is Test {
         vm.label(_tokenDeployer(), "tokenDeployer");
         vm.label(_user(), "user");
         vm.label(_recipient(), "recipient");
+        vm.label(_intruder(), "intruder");
 
         // Deploy diamond
         _bridge = address(new BridgeDiamond(_owner(), address(diamondCutFacet)));
@@ -193,5 +194,9 @@ contract BaseFixture is Test {
 
     function _recipient() internal pure returns (address) {
         return vm.addr(777);
+    }
+
+    function _intruder() internal pure returns (address) {
+        return vm.addr(999);
     }
 }

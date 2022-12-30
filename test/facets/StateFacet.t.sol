@@ -19,14 +19,9 @@ contract StateFacetTest is BaseFixture {
         _call_setOrderRoot_and_validate(orderRoot2);
     }
 
-    function test_setOrderRoot_UnauthorizedError(address intruder_) public {
-        vm.assume(intruder_ != _mockInteropContract());
-
-        // Arrange
-        vm.label(intruder_, "intruder");
-
+    function test_setOrderRoot_UnauthorizedError() public {
         // Act + Assert
-        vm.prank(intruder_);
+        vm.prank(_intruder());
         vm.expectRevert(abi.encodeWithSelector(LibAccessControl.UnauthorizedError.selector));
         IStateFacet(_bridge).setOrderRoot(0);
     }

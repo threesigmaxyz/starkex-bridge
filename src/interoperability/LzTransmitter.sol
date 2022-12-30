@@ -23,28 +23,18 @@ contract LzTransmitter is ILzTransmitter, LzSender, Pausable {
     }
 
     /// @inheritdoc ILzTransmitter
-    function getStarkEx() external view override returns (address starkEx_) {
-        starkEx_ = address(_starkEx);
-    }
-
-    /// @inheritdoc ILzTransmitter
-    function getLastUpdatedSequenceNumber(uint16 chainId_) external view override returns (uint256 lastUpdated_) {
-        lastUpdated_ = _lastUpdated[chainId_];
-    }
-
-    /// @inheritdoc ILzTransmitter
     function getPayload() public view override returns (bytes memory payload_) {
         return abi.encode(_starkEx.getOrderRoot());
     }
 
     /// @inheritdoc ILzTransmitter
-    function getLayerZeroFee(uint16 dstChainId_, bool useZro_, bytes calldata adapterParams_)
+    function getLayerZeroFee(uint16 dstChainId_)
         public
         view
         override
         returns (uint256 nativeFee_, uint256 zroFee_)
     {
-        return lzEndpoint.estimateFees(dstChainId_, address(this), getPayload(), useZro_, adapterParams_);
+        return lzEndpoint.estimateFees(dstChainId_, address(this), getPayload(), false, "");
     }
 
     /**
@@ -59,46 +49,48 @@ contract LzTransmitter is ILzTransmitter, LzSender, Pausable {
 
     /// @inheritdoc ILzTransmitter
     function keep(uint16 dstChainId_, address payable refundAddress_) external payable override {
-        _keep(dstChainId_, refundAddress_, msg.value);
+        uint256 sequenceNumber_ = _starkEx.getSequenceNumber();
+        _updateSequenceNumber(dstChainId_, sequenceNumber_);
+        bytes memory orderRoot_ = getPayload();
+
+        _send(dstChainId_, orderRoot_, sequenceNumber_, refundAddress_, msg.value);
     }
 
     /// @inheritdoc ILzTransmitter
     function batchKeep(
         uint16[] calldata dstChainIds_,
-        uint256[] calldata valueToChainId_,
+        uint256[] calldata nativeFees_,
         address payable refundAddress_
     ) external payable override {
-        uint256 dstChainIdsLength = dstChainIds_.length;
-
         uint256 etherSent;
-        for (uint256 i = 0; i < valueToChainId_.length; i++) {
-            etherSent += valueToChainId_[i];
+        for (uint256 i = 0; i < nativeFees_.length; i++) {
+            etherSent += nativeFees_[i];
         }
         if (etherSent != msg.value) revert InvalidEtherSentError();
 
-        for (uint256 i = 0; i < dstChainIdsLength; i++) {
-            _keep(dstChainIds_[i], refundAddress_, valueToChainId_[i]);
+        bytes memory orderRoot_ = getPayload();
+        uint256 sequenceNumber_ = _starkEx.getSequenceNumber();
+
+        for (uint256 i = 0; i < dstChainIds_.length; i++) {
+            _updateSequenceNumber(dstChainIds_[i], sequenceNumber_);
+            _send(dstChainIds_[i], orderRoot_, sequenceNumber_, refundAddress_, nativeFees_[i]);
         }
     }
 
-    /**
-     * @notice Updates the order root of the interoperability contract in the sideChain.
-     * @param dstChainId_ The id of the destination chain.
-     * @param refundAddress_ The refund address of the unused ether sent.
-     * @param usableGasInEther_ The usable gas, in ether, to run code in the sidechain.
-     */
-    function _keep(uint16 dstChainId_, address payable refundAddress_, uint256 usableGasInEther_) internal {
-        uint256 sequenceNumber_ = _starkEx.getSequenceNumber();
+    function _send(
+        uint16 dstChainId_, 
+        bytes memory orderRoot_, 
+        uint256 sequenceNumber_,
+        address payable refundAddress_, 
+        uint256 nativeFee_
+    ) internal {
+        _lzSend(dstChainId_, orderRoot_, refundAddress_, address(0x0), "", nativeFee_);
+        emit LogNewOrderRootSent(dstChainId_, sequenceNumber_, orderRoot_);
+    }
+
+    function _updateSequenceNumber(uint16 dstChainId_, uint256 sequenceNumber_) internal {
         uint256 lastUpdated_ = _lastUpdated[dstChainId_];
-
-        /// Not worth sending the same or an old root.
         if (sequenceNumber_ <= lastUpdated_) revert StaleUpdateError(dstChainId_, lastUpdated_);
-
         _lastUpdated[dstChainId_] = sequenceNumber_;
-
-        uint256 orderRoot_ = _starkEx.getOrderRoot();
-
-        _lzSend(dstChainId_, abi.encode(orderRoot_), refundAddress_, address(0x0), "", usableGasInEther_);
-        emit LogNewOrderRootSent(dstChainId_, orderRoot_);
     }
 }
