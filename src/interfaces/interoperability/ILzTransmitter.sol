@@ -32,10 +32,7 @@ interface ILzTransmitter {
      * @return nativeFee_ The estimated fee in the chain native currency.
      * @return zroFee_ The estimated fee in Layer Zero's token (i.e., ZRO).
      */
-    function getLayerZeroFee(uint16 dstChainId_)
-        external
-        view
-        returns (uint256 nativeFee_, uint256 zroFee_);
+    function getLayerZeroFee(uint16 dstChainId_) external view returns (uint256 nativeFee_, uint256 zroFee_);
 
     /**
      *

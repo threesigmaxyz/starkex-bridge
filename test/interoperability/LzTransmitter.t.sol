@@ -84,7 +84,6 @@ contract LzTransmitterTest is Test {
     }
 
     function test_setTrustedRemote_onlyOwner() public {
-
         // Arrange
         vm.expectRevert("Ownable: caller is not the owner");
 
@@ -106,7 +105,7 @@ contract LzTransmitterTest is Test {
         _keep(MOCK_CHAIN_ID, sequenceNumber_, orderRoot_, nativeFee_);
     }
 
-    function test_keep_StaleUpdateError() public {    
+    function test_keep_StaleUpdateError() public {
         // Arrange
         vm.deal(_keeper(), 100 ether);
         // And
@@ -114,10 +113,9 @@ contract LzTransmitterTest is Test {
         // And
         _mock_starkEx_getSequenceNumber(sequenceNumber_);
         // And
-        vm.expectRevert(abi.encodeWithSelector(
-            ILzTransmitter.StaleUpdateError.selector, 
-            MOCK_CHAIN_ID, sequenceNumber_
-        ));
+        vm.expectRevert(
+            abi.encodeWithSelector(ILzTransmitter.StaleUpdateError.selector, MOCK_CHAIN_ID, sequenceNumber_)
+        );
 
         // Act + Assert
         vm.prank(_keeper());
@@ -145,7 +143,8 @@ contract LzTransmitterTest is Test {
         nativeFees_[1] = 0.3 ether;
         nativeFees_[2] = 0.5 ether;
         // And
-        for(uint i = 1; i < dstChainIds_.length; i++) { // dstChainIds_[0] is already trusted
+        for (uint256 i = 1; i < dstChainIds_.length; i++) {
+            // dstChainIds_[0] is already trusted
             _setTrustedRemote(_owner(), _receptor, address(_transmitter), dstChainIds_[i]);
         }
         // And
@@ -153,11 +152,11 @@ contract LzTransmitterTest is Test {
         // And
         _mock_starkEx_getOrderRoot(orderRoot_);
         // And
-        for(uint i = 0; i < dstChainIds_.length; i++) {
+        for (uint256 i = 0; i < dstChainIds_.length; i++) {
             _mock_lzEndpoint_send(dstChainIds_[i], orderRoot_, nativeFees_[i]);
         }
         // And
-        for(uint i = 0; i < dstChainIds_.length; i++) {
+        for (uint256 i = 0; i < dstChainIds_.length; i++) {
             vm.expectEmit(true, true, true, true, address(_transmitter));
             emit LogNewOrderRootSent(dstChainIds_[i], sequenceNumber_, abi.encode(orderRoot_));
         }
@@ -183,7 +182,8 @@ contract LzTransmitterTest is Test {
         nativeFees_[1] = 0.3 ether;
         nativeFees_[2] = 0.5 ether;
         // And
-        for(uint i = 1; i < dstChainIds_.length; i++) { // dstChainIds_[0] is already trusted.
+        for (uint256 i = 1; i < dstChainIds_.length; i++) {
+            // dstChainIds_[0] is already trusted.
             _setTrustedRemote(_owner(), _receptor, address(_transmitter), dstChainIds_[i]);
         }
         // And
@@ -194,14 +194,14 @@ contract LzTransmitterTest is Test {
         // And
         _mock_starkEx_getOrderRoot(orderRoot_);
         // And
-        for(uint i = 0; i < dstChainIds_.length - 1; i++) {  // Last chain will not be called because of stale Update Error.
+        for (uint256 i = 0; i < dstChainIds_.length - 1; i++) {
+            // Last chain will not be called because of stale Update Error.
             _mock_lzEndpoint_send(dstChainIds_[i], orderRoot_, nativeFees_[i]);
         }
         // And
-        vm.expectRevert(abi.encodeWithSelector(
-            ILzTransmitter.StaleUpdateError.selector, 
-            dstChainIds_[2], sequenceNumber_
-        ));
+        vm.expectRevert(
+            abi.encodeWithSelector(ILzTransmitter.StaleUpdateError.selector, dstChainIds_[2], sequenceNumber_)
+        );
 
         // Act + Assert
         _transmitter.batchKeep{value: totalValue}(dstChainIds_, nativeFees_, payable(_keeper()));
@@ -230,7 +230,7 @@ contract LzTransmitterTest is Test {
 
     //==============================================================================//
     //=== getPayload Tests                                                       ===//
-    //==============================================================================//   
+    //==============================================================================//
 
     function test_getPayload_ok(uint256 expectedOrderRoot_) public {
         // Arrange
@@ -242,7 +242,7 @@ contract LzTransmitterTest is Test {
 
     //==============================================================================//
     //=== getLayerZeroFee Tests                                                  ===//
-    //==============================================================================//   
+    //==============================================================================//
 
     function test_getLayerZeroFee_ok(uint256 orderRoot_, uint256 expectedNativeFee_) public {
         // Arrange
@@ -252,8 +252,8 @@ contract LzTransmitterTest is Test {
             _lzEndpoint,
             0,
             abi.encodeWithSelector(
-                ILayerZeroEndpoint.estimateFees.selector, 
-                MOCK_CHAIN_ID, 
+                ILayerZeroEndpoint.estimateFees.selector,
+                MOCK_CHAIN_ID,
                 address(_transmitter),
                 abi.encode(orderRoot_),
                 false,
@@ -262,7 +262,7 @@ contract LzTransmitterTest is Test {
             abi.encode(expectedNativeFee_, 0)
         );
 
-        // Act 
+        // Act
         (uint256 returnedNativeFee_,) = _transmitter.getLayerZeroFee(MOCK_CHAIN_ID);
 
         // Assert
@@ -273,7 +273,10 @@ contract LzTransmitterTest is Test {
     //=== Internal Test Helpers                                                  ===//
     //==============================================================================//
 
-    function _constructor(address owner_, address lzEndpoint_, address starkEx_) internal returns (address transmitter_) {
+    function _constructor(address owner_, address lzEndpoint_, address starkEx_)
+        internal
+        returns (address transmitter_)
+    {
         // Arrange
         vm.expectEmit(true, true, false, true);
         emit OwnershipTransferred(address(0), owner_);
@@ -328,25 +331,20 @@ contract LzTransmitterTest is Test {
             _lzEndpoint,
             nativeFee_,
             abi.encodeWithSelector(
-                ILayerZeroEndpoint.send.selector, 
-                dstChainId_, 
-                path_, 
-                abi.encode(orderRoot_), 
-                payable(_keeper()), 
-                address(0), 
-                ""     
+                ILayerZeroEndpoint.send.selector,
+                dstChainId_,
+                path_,
+                abi.encode(orderRoot_),
+                payable(_keeper()),
+                address(0),
+                ""
             ),
             bytes("")
         );
     }
 
     function _mock_starkEx_getOrderRoot(uint256 returnedOrderRoot_) internal {
-        vm.mockCall(
-            _starkEx,
-            0,
-            abi.encodeWithSelector(IStarkEx.getOrderRoot.selector),
-            abi.encode(returnedOrderRoot_)
-        );
+        vm.mockCall(_starkEx, 0, abi.encodeWithSelector(IStarkEx.getOrderRoot.selector), abi.encode(returnedOrderRoot_));
     }
 
     function _owner() internal pure returns (address) {

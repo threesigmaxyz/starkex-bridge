@@ -103,29 +103,6 @@ contract WithdrawalFacetTest is BaseFixture {
     event LogReclaimWithdrawal(uint256 indexed lockHash, address indexed receiver);
 
     //==============================================================================//
-    //=== State Variables                                                        ===//
-    //==============================================================================//
-
-    MockERC20 _token;
-
-    //==============================================================================//
-    //=== Setup                                                                  ===//
-    //==============================================================================//
-
-    function setUp() public override {
-        super.setUp();
-
-        // Deploy _token
-        vm.prank(_tokenDeployer());
-        _token = (new MockERC20){salt: "USDC"}("USD Coin", "USDC", 6); // 0xa33e385d3ab4a55cc949115bb5cb57fb16143d4b
-        _token.mint(_user(), USER_TOKENS);
-
-        // Register _token in _bridge
-        vm.prank(_tokenAdmin());
-        ITokenRegisterFacet(_bridge).setTokenRegister(address(_token), true);
-    }
-
-    //==============================================================================//
     //=== initialize Tests                                                       ===//
     //==============================================================================//
 

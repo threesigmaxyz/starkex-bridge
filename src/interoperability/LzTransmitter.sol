@@ -28,12 +28,7 @@ contract LzTransmitter is ILzTransmitter, LzSender, Pausable {
     }
 
     /// @inheritdoc ILzTransmitter
-    function getLayerZeroFee(uint16 dstChainId_)
-        public
-        view
-        override
-        returns (uint256 nativeFee_, uint256 zroFee_)
-    {
+    function getLayerZeroFee(uint16 dstChainId_) public view override returns (uint256 nativeFee_, uint256 zroFee_) {
         return lzEndpoint.estimateFees(dstChainId_, address(this), getPayload(), false, "");
     }
 
@@ -57,11 +52,11 @@ contract LzTransmitter is ILzTransmitter, LzSender, Pausable {
     }
 
     /// @inheritdoc ILzTransmitter
-    function batchKeep(
-        uint16[] calldata dstChainIds_,
-        uint256[] calldata nativeFees_,
-        address payable refundAddress_
-    ) external payable override {
+    function batchKeep(uint16[] calldata dstChainIds_, uint256[] calldata nativeFees_, address payable refundAddress_)
+        external
+        payable
+        override
+    {
         uint256 etherSent;
         for (uint256 i = 0; i < nativeFees_.length; i++) {
             etherSent += nativeFees_[i];
@@ -78,10 +73,10 @@ contract LzTransmitter is ILzTransmitter, LzSender, Pausable {
     }
 
     function _send(
-        uint16 dstChainId_, 
-        bytes memory orderRoot_, 
+        uint16 dstChainId_,
+        bytes memory orderRoot_,
         uint256 sequenceNumber_,
-        address payable refundAddress_, 
+        address payable refundAddress_,
         uint256 nativeFee_
     ) internal {
         _lzSend(dstChainId_, orderRoot_, refundAddress_, address(0x0), "", nativeFee_);

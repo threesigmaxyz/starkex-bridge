@@ -36,12 +36,6 @@ contract DepositFacetTest is BaseFixture {
         2_356_286_878_056_985_831_279_161_846_178_161_693_107_336_866_674_377_330_568_734_796_240_516_368_603;
 
     //==============================================================================//
-    //=== State Variables                                                        ===//
-    //==============================================================================//
-
-    MockERC20 _token;
-
-    //==============================================================================//
     //=== Events                                                                 ===//
     //==============================================================================//
 
@@ -49,24 +43,6 @@ contract DepositFacetTest is BaseFixture {
     event LogLockDeposit(uint256 indexed lockHash, uint256 indexed starkKey, address indexed token, uint256 amount);
     event LogClaimDeposit(uint256 indexed lockHash, address indexed recipient);
     event LogReclaimDeposit(uint256 indexed lockHash);
-
-    //==============================================================================//
-    //=== Setup                                                                  ===//
-    //==============================================================================//
-
-    function setUp() public override {
-        super.setUp();
-
-        // Deploy _token
-        vm.prank(_tokenDeployer());
-        _token = (new MockERC20){salt: "USDC"}("USD Coin", "USDC", 6); // 0xa33e385d3ab4a55cc949115bb5cb57fb16143d4b
-
-        _token.mint(_user(), USER_TOKENS);
-
-        // Register _token in _bridge
-        vm.prank(_tokenAdmin());
-        ITokenRegisterFacet(_bridge).setTokenRegister(address(_token), true);
-    }
 
     //==============================================================================//
     //=== initialize Tests                                                       ===//
@@ -200,7 +176,7 @@ contract DepositFacetTest is BaseFixture {
     function test_claimDeposit_ok(uint256 amount_, uint256 lockHash_) public {
         vm.assume(amount_ > 0);
         vm.assume(lockHash_ > 0);
-        
+
         // Act + Assert
         _lockDeposit(_user(), STARK_KEY, address(_token), amount_, lockHash_);
         _claimDeposit(address(_token), amount_, lockHash_, _recipient());

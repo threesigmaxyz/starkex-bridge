@@ -5,6 +5,8 @@ import { Test } from "@forge-std/Test.sol";
 
 import { Constants } from "src/constants/Constants.sol";
 
+import { MockERC20 } from "test/mocks/MockERC20.sol";
+
 import { BridgeDiamond } from "src/BridgeDiamond.sol";
 
 import { LibAccessControl } from "src/libraries/LibAccessControl.sol";
@@ -28,19 +30,173 @@ import { IDiamondLoupe } from "src/interfaces/facets/IDiamondLoupe.sol";
 import { IERC165 } from "@openzeppelin/interfaces/IERC165.sol";
 
 contract BaseFixture is Test {
+    struct Facets {
+        address accessControl;
+        address deposit;
+        address diamondCut;
+        address tokenRegister;
+        address withdrawal;
+        address state;
+        address erc165;
+    }
+
     uint256 internal constant USER_TOKENS = type(uint256).max;
 
     address _bridge;
-
-    AccessControlFacet accessControlFacet = new AccessControlFacet();
-    DepositFacet depositFacet = new DepositFacet();
-    DiamondCutFacet diamondCutFacet = new DiamondCutFacet();
-    TokenRegisterFacet tokenRegisterFacet = new TokenRegisterFacet();
-    WithdrawalFacet withdrawalFacet = new WithdrawalFacet();
-    StateFacet stateFacet = new StateFacet();
-    ERC165Facet erc165Facet = new ERC165Facet();
+    MockERC20 _token;
 
     function setUp() public virtual {
+        _setLabels();
+
+        Facets memory facets_;
+
+        facets_.accessControl = address(new AccessControlFacet());
+        facets_.deposit = address(new DepositFacet());
+        facets_.diamondCut = address(new DiamondCutFacet());
+        facets_.tokenRegister = address(new TokenRegisterFacet());
+        facets_.withdrawal = address(new WithdrawalFacet());
+        facets_.state = address(new StateFacet());
+        facets_.erc165 = address(new ERC165Facet());
+
+        vm.startPrank(_owner());
+        _bridge = _deployBridge(_owner(), facets_);
+        _setPendingRoles(_bridge, _mockInteropContract());
+        vm.stopPrank();
+
+        _acceptPendingRoles(_bridge);
+
+        // Has to be separate from the above because the interop role might be a contract.
+        vm.prank(_mockInteropContract());
+        IAccessControlFacet(_bridge).acceptRole(LibAccessControl.INTEROPERABILITY_CONTRACT_ROLE);
+
+        // Deploy _token
+        vm.prank(_tokenDeployer());
+        _token = (new MockERC20){salt: "USDC"}("USD Coin", "USDC", 6); // 0xa33e385d3ab4a55cc949115bb5cb57fb16143d4b
+
+        _token.mint(_user(), USER_TOKENS);
+
+        // Register _token in _bridge
+        vm.prank(_tokenAdmin());
+        ITokenRegisterFacet(_bridge).setTokenRegister(address(_token), true);
+    }
+
+    function _deployBridge(address owner_, Facets memory facets_) internal returns (address) {
+        // Deploy diamond
+        address bridge_ = address(new BridgeDiamond(owner_, facets_.diamondCut));
+
+        /// @dev Cut the deposit facet alone to initialize it.
+        IDiamondCut.FacetCut[] memory depositCut_ = new IDiamondCut.FacetCut[](1);
+        // Deposit facet.
+        bytes4[] memory depositFacet_Selectors_ = new bytes4[](7);
+        depositFacet_Selectors_[0] = IDepositFacet.setDepositExpirationTimeout.selector;
+        depositFacet_Selectors_[1] = IDepositFacet.lockDeposit.selector;
+        depositFacet_Selectors_[2] = IDepositFacet.claimDeposit.selector;
+        depositFacet_Selectors_[3] = IDepositFacet.reclaimDeposit.selector;
+        depositFacet_Selectors_[4] = IDepositFacet.getDeposit.selector;
+        depositFacet_Selectors_[5] = IDepositFacet.getPendingDeposits.selector;
+        depositFacet_Selectors_[6] = IDepositFacet.getDepositExpirationTimeout.selector;
+        depositCut_[0] = IDiamondCut.FacetCut({
+            facetAddress: facets_.deposit,
+            action: IDiamondCut.FacetCutAction.Add,
+            functionSelectors: depositFacet_Selectors_
+        });
+        bytes memory depositInitializer = abi.encodeWithSelector(
+            IDepositFacet.setDepositExpirationTimeout.selector, Constants.DEPOSIT_ONCHAIN_EXPIRATION_TIMEOUT
+        );
+        IDiamondCut(bridge_).diamondCut(depositCut_, facets_.deposit, depositInitializer);
+
+        /// @dev Cut the withdrawal facet alone to initialize it.
+        IDiamondCut.FacetCut[] memory withdrawalCut_ = new IDiamondCut.FacetCut[](1);
+        /// Withdrawal facet.
+        bytes4[] memory withdrawalFacet_Selectors_ = new bytes4[](7);
+        withdrawalFacet_Selectors_[0] = IWithdrawalFacet.setWithdrawalExpirationTimeout.selector;
+        withdrawalFacet_Selectors_[1] = IWithdrawalFacet.lockWithdrawal.selector;
+        withdrawalFacet_Selectors_[2] = IWithdrawalFacet.claimWithdrawal.selector;
+        withdrawalFacet_Selectors_[3] = IWithdrawalFacet.reclaimWithdrawal.selector;
+        withdrawalFacet_Selectors_[4] = IWithdrawalFacet.getWithdrawal.selector;
+        withdrawalFacet_Selectors_[5] = IWithdrawalFacet.getPendingWithdrawals.selector;
+        withdrawalFacet_Selectors_[6] = IWithdrawalFacet.getWithdrawalExpirationTimeout.selector;
+        withdrawalCut_[0] = IDiamondCut.FacetCut({
+            facetAddress: facets_.withdrawal,
+            action: IDiamondCut.FacetCutAction.Add,
+            functionSelectors: withdrawalFacet_Selectors_
+        });
+        bytes memory withdrawalInitializer = abi.encodeWithSelector(
+            IWithdrawalFacet.setWithdrawalExpirationTimeout.selector, Constants.WITHDRAWAL_ONCHAIN_EXPIRATION_TIMEOUT
+        );
+        IDiamondCut(bridge_).diamondCut(withdrawalCut_, facets_.withdrawal, withdrawalInitializer);
+
+        /// @dev cut access control, token register, state and ERC165 facets.
+        IDiamondCut.FacetCut[] memory cut_ = new IDiamondCut.FacetCut[](4);
+
+        // Access Control facet.
+        bytes4[] memory accessControlFacet_Selectors_ = new bytes4[](3);
+        accessControlFacet_Selectors_[0] = IAccessControlFacet.acceptRole.selector;
+        accessControlFacet_Selectors_[1] = IAccessControlFacet.setPendingRole.selector;
+        accessControlFacet_Selectors_[2] = IAccessControlFacet.getRole.selector;
+        cut_[0] = IDiamondCut.FacetCut({
+            facetAddress: facets_.accessControl,
+            action: IDiamondCut.FacetCutAction.Add,
+            functionSelectors: accessControlFacet_Selectors_
+        });
+
+        // Token Register facet
+        bytes4[] memory tokenRegisterFacet_Selectors_ = new bytes4[](2);
+        tokenRegisterFacet_Selectors_[0] = ITokenRegisterFacet.setTokenRegister.selector;
+        tokenRegisterFacet_Selectors_[1] = ITokenRegisterFacet.isTokenRegistered.selector;
+        cut_[1] = IDiamondCut.FacetCut({
+            facetAddress: facets_.tokenRegister,
+            action: IDiamondCut.FacetCutAction.Add,
+            functionSelectors: tokenRegisterFacet_Selectors_
+        });
+
+        // State facet
+        bytes4[] memory stateFacet_Selectors_ = new bytes4[](2);
+        stateFacet_Selectors_[0] = IStateFacet.getOrderRoot.selector;
+        stateFacet_Selectors_[1] = IStateFacet.setOrderRoot.selector;
+        cut_[2] = IDiamondCut.FacetCut({
+            facetAddress: facets_.state,
+            action: IDiamondCut.FacetCutAction.Add,
+            functionSelectors: stateFacet_Selectors_
+        });
+
+        // State facet
+        bytes4[] memory erc165Facet_Selectors_ = new bytes4[](2);
+        erc165Facet_Selectors_[0] = IERC165Facet.supportsInterface.selector;
+        erc165Facet_Selectors_[1] = IERC165Facet.setSupportedInterface.selector;
+        cut_[3] = IDiamondCut.FacetCut({
+            facetAddress: facets_.erc165,
+            action: IDiamondCut.FacetCutAction.Add,
+            functionSelectors: erc165Facet_Selectors_
+        });
+
+        /// Cut diamond finalize.
+        IDiamondCut(bridge_).diamondCut(cut_, address(0), "");
+
+        // Add ERC165 interfaces
+        IERC165Facet(bridge_).setSupportedInterface(type(IERC165).interfaceId, true);
+        IERC165Facet(bridge_).setSupportedInterface(type(IDiamondCut).interfaceId, true);
+        IERC165Facet(bridge_).setSupportedInterface(type(IDiamondLoupe).interfaceId, true);
+
+        return bridge_;
+    }
+
+    function _setPendingRoles(address bridge_, address interoperabilityContract_) internal {
+        IAccessControlFacet(bridge_).setPendingRole(LibAccessControl.STARKEX_OPERATOR_ROLE, _operator());
+        IAccessControlFacet(bridge_).setPendingRole(
+            LibAccessControl.INTEROPERABILITY_CONTRACT_ROLE, interoperabilityContract_
+        );
+        IAccessControlFacet(bridge_).setPendingRole(LibAccessControl.TOKEN_ADMIN_ROLE, _tokenAdmin());
+    }
+
+    function _acceptPendingRoles(address bridge_) internal {
+        vm.prank(_operator());
+        IAccessControlFacet(bridge_).acceptRole(LibAccessControl.STARKEX_OPERATOR_ROLE);
+        vm.prank(_tokenAdmin());
+        IAccessControlFacet(bridge_).acceptRole(LibAccessControl.TOKEN_ADMIN_ROLE);
+    }
+
+    function _setLabels() internal {
         vm.label(_owner(), "owner");
         vm.label(_operator(), "operator");
         vm.label(_mockInteropContract(), "mockInteropContract");
@@ -49,123 +205,6 @@ contract BaseFixture is Test {
         vm.label(_user(), "user");
         vm.label(_recipient(), "recipient");
         vm.label(_intruder(), "intruder");
-
-        // Deploy diamond
-        _bridge = address(new BridgeDiamond(_owner(), address(diamondCutFacet)));
-
-        /// @dev Cut the deposit facet alone to initialize it.
-        IDiamondCut.FacetCut[] memory depositCut_ = new IDiamondCut.FacetCut[](1);
-        // Deposit facet.
-        bytes4[] memory depositFacetSelectors_ = new bytes4[](7);
-        depositFacetSelectors_[0] = IDepositFacet.setDepositExpirationTimeout.selector;
-        depositFacetSelectors_[1] = IDepositFacet.lockDeposit.selector;
-        depositFacetSelectors_[2] = IDepositFacet.claimDeposit.selector;
-        depositFacetSelectors_[3] = IDepositFacet.reclaimDeposit.selector;
-        depositFacetSelectors_[4] = IDepositFacet.getDeposit.selector;
-        depositFacetSelectors_[5] = IDepositFacet.getPendingDeposits.selector;
-        depositFacetSelectors_[6] = IDepositFacet.getDepositExpirationTimeout.selector;
-        depositCut_[0] = IDiamondCut.FacetCut({
-            facetAddress: address(depositFacet),
-            action: IDiamondCut.FacetCutAction.Add,
-            functionSelectors: depositFacetSelectors_
-        });
-        bytes memory depositInitializer = abi.encodeWithSelector(
-            depositFacet.setDepositExpirationTimeout.selector, Constants.DEPOSIT_ONCHAIN_EXPIRATION_TIMEOUT
-        );
-        vm.startPrank(_owner());
-        IDiamondCut(address(_bridge)).diamondCut(depositCut_, address(depositFacet), depositInitializer);
-
-        /// @dev Cut the withdrawal facet alone to initialize it.
-        IDiamondCut.FacetCut[] memory withdrawalCut_ = new IDiamondCut.FacetCut[](1);
-        /// Withdrawal facet.
-        bytes4[] memory withdrawalFacetSelectors_ = new bytes4[](7);
-        withdrawalFacetSelectors_[0] = IWithdrawalFacet.setWithdrawalExpirationTimeout.selector;
-        withdrawalFacetSelectors_[1] = IWithdrawalFacet.lockWithdrawal.selector;
-        withdrawalFacetSelectors_[2] = IWithdrawalFacet.claimWithdrawal.selector;
-        withdrawalFacetSelectors_[3] = IWithdrawalFacet.reclaimWithdrawal.selector;
-        withdrawalFacetSelectors_[4] = IWithdrawalFacet.getWithdrawal.selector;
-        withdrawalFacetSelectors_[5] = IWithdrawalFacet.getPendingWithdrawals.selector;
-        withdrawalFacetSelectors_[6] = IWithdrawalFacet.getWithdrawalExpirationTimeout.selector;
-        withdrawalCut_[0] = IDiamondCut.FacetCut({
-            facetAddress: address(withdrawalFacet),
-            action: IDiamondCut.FacetCutAction.Add,
-            functionSelectors: withdrawalFacetSelectors_
-        });
-        bytes memory withdrawalInitializer = abi.encodeWithSelector(
-            withdrawalFacet.setWithdrawalExpirationTimeout.selector, Constants.WITHDRAWAL_ONCHAIN_EXPIRATION_TIMEOUT
-        );
-        IDiamondCut(address(_bridge)).diamondCut(withdrawalCut_, address(withdrawalFacet), withdrawalInitializer);
-
-        /// @dev cut access control, token register, state and ERC165 facets.
-        IDiamondCut.FacetCut[] memory cut_ = new IDiamondCut.FacetCut[](4);
-
-        // Access Control facet.
-        bytes4[] memory accessControlFacetSelectors_ = new bytes4[](3);
-        accessControlFacetSelectors_[0] = IAccessControlFacet.acceptRole.selector;
-        accessControlFacetSelectors_[1] = IAccessControlFacet.setPendingRole.selector;
-        accessControlFacetSelectors_[2] = IAccessControlFacet.getRole.selector;
-        cut_[0] = IDiamondCut.FacetCut({
-            facetAddress: address(accessControlFacet),
-            action: IDiamondCut.FacetCutAction.Add,
-            functionSelectors: accessControlFacetSelectors_
-        });
-
-        // Token Register facet
-        bytes4[] memory tokenRegisterFacetSelectors_ = new bytes4[](2);
-        tokenRegisterFacetSelectors_[0] = ITokenRegisterFacet.setTokenRegister.selector;
-        tokenRegisterFacetSelectors_[1] = ITokenRegisterFacet.isTokenRegistered.selector;
-        cut_[1] = IDiamondCut.FacetCut({
-            facetAddress: address(tokenRegisterFacet),
-            action: IDiamondCut.FacetCutAction.Add,
-            functionSelectors: tokenRegisterFacetSelectors_
-        });
-
-        // State facet
-        bytes4[] memory stateFacetSelectors_ = new bytes4[](2);
-        stateFacetSelectors_[0] = IStateFacet.getOrderRoot.selector;
-        stateFacetSelectors_[1] = IStateFacet.setOrderRoot.selector;
-        cut_[2] = IDiamondCut.FacetCut({
-            facetAddress: address(stateFacet),
-            action: IDiamondCut.FacetCutAction.Add,
-            functionSelectors: stateFacetSelectors_
-        });
-
-        // State facet
-        bytes4[] memory erc165FacetSelectors_ = new bytes4[](2);
-        erc165FacetSelectors_[0] = IERC165Facet.supportsInterface.selector;
-        erc165FacetSelectors_[1] = IERC165Facet.setSupportedInterface.selector;
-        cut_[3] = IDiamondCut.FacetCut({
-            facetAddress: address(erc165Facet),
-            action: IDiamondCut.FacetCutAction.Add,
-            functionSelectors: erc165FacetSelectors_
-        });
-
-        /// Cut diamond finalize.
-        IDiamondCut(address(_bridge)).diamondCut(cut_, address(0), "");
-
-        /// Set pending roles.
-        IAccessControlFacet(_bridge).setPendingRole(LibAccessControl.STARKEX_OPERATOR_ROLE, _operator());
-        IAccessControlFacet(_bridge).setPendingRole(
-            LibAccessControl.INTEROPERABILITY_CONTRACT_ROLE, _mockInteropContract()
-        );
-        IAccessControlFacet(_bridge).setPendingRole(LibAccessControl.TOKEN_ADMIN_ROLE, _tokenAdmin());
-
-        vm.stopPrank();
-
-        /// Accept pending roles.
-        vm.prank(_operator());
-        IAccessControlFacet(_bridge).acceptRole(LibAccessControl.STARKEX_OPERATOR_ROLE);
-        vm.prank(_mockInteropContract());
-        IAccessControlFacet(_bridge).acceptRole(LibAccessControl.INTEROPERABILITY_CONTRACT_ROLE);
-        vm.prank(_tokenAdmin());
-        IAccessControlFacet(_bridge).acceptRole(LibAccessControl.TOKEN_ADMIN_ROLE);
-
-        // Add ERC165 interfaces
-        vm.startPrank(_owner());
-        IERC165Facet(_bridge).setSupportedInterface(type(IERC165).interfaceId, true);
-        IERC165Facet(_bridge).setSupportedInterface(type(IDiamondCut).interfaceId, true);
-        IERC165Facet(_bridge).setSupportedInterface(type(IDiamondLoupe).interfaceId, true);
-        vm.stopPrank();
     }
 
     function _owner() internal pure returns (address) {

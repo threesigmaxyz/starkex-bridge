@@ -54,7 +54,7 @@ contract TokenRegisterFacetTest is BaseFixture {
         // Arrange
         vm.expectEmit(true, true, false, true, bridge_);
         emit LogSetTokenRegister(token_, flag_);
-        
+
         // Act + Assert
         vm.prank(_tokenAdmin());
         ITokenRegisterFacet(_bridge).setTokenRegister(token_, flag_);
