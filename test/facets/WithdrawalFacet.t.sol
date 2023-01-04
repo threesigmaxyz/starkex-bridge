@@ -45,9 +45,9 @@ contract WithdrawalFacetTest is BaseFixture {
     uint256 internal constant LOCK_HASH =
         2_356_286_878_056_985_831_279_161_846_178_161_693_107_336_866_674_377_330_568_734_796_240_516_368_603;
 
-    uint256 internal SIGNATURE_R =
+    uint256 internal constant SIGNATURE_R =
         595_786_754_653_736_406_426_889_615_487_225_077_940_077_177_382_942_628_692_506_542_715_327_069_361;
-    uint256 internal SIGNATURE_S =
+    uint256 internal constant SIGNATURE_S =
         1_089_493_324_092_646_311_927_517_238_061_643_471_633_017_553_425_201_144_689_187_441_352_003_681_763;
 
     // R: 151340ef2d746eeba6e124262b50e52f0ceaedf4395c05e511fe671eb71bcb1
