@@ -30,7 +30,9 @@ import { LibAccessControl } from "src/libraries/LibAccessControl.sol";
 
 import { LzReceptor } from "src/interoperability/LzReceptor.sol";
 
-contract DeployBridgeAndReceptorModuleScript is Script {
+import { DataIO } from "script/data/DataIO.sol";
+
+contract DeployBridgeAndReceptorModuleScript is Script, DataIO {
     struct Facets {
         address accessControl;
         address deposit;
@@ -73,11 +75,11 @@ contract DeployBridgeAndReceptorModuleScript is Script {
 
         // Deploy bridge.
         _bridge = _deployBridge(_owner, facets_);
-        _writeToFile("bridge", vm.toString(abi.encodePacked((_bridge))));
+        _writeData("bridge", vm.toString(abi.encodePacked((_bridge))));
 
         // Deploy recepetor
         _receptor = new LzReceptor(_lzEndpoint, _bridge);
-        _writeToFile("receptor", vm.toString(address(_receptor)));
+        _writeData("receptor", vm.toString(address(_receptor)));
 
         // Set pending roles.
         IAccessControlFacet(_bridge).setPendingRole(LibAccessControl.STARKEX_OPERATOR_ROLE, _operator);
@@ -190,11 +192,5 @@ contract DeployBridgeAndReceptorModuleScript is Script {
         IERC165Facet(bridge_).setSupportedInterface(type(IDiamondLoupe).interfaceId, true);
 
         return bridge_;
-    }
-
-    function _writeToFile(string memory name, string memory _data) internal {
-        bytes memory root_ = bytes(vm.projectRoot());
-        string memory path_ = string(bytes.concat(root_, "/script/data/", bytes(name)));
-        vm.writeFile(path_, _data);
     }
 }

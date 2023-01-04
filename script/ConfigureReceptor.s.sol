@@ -5,14 +5,16 @@ import { Script } from "@forge-std/Script.sol";
 
 import { LzReceptor } from "src/interoperability/LzReceptor.sol";
 
-contract ConfigureReceptorModuleScript is Script {
+import { DataIO } from "script/data/DataIO.sol";
+
+contract ConfigureReceptorModuleScript is Script, DataIO {
     address public _transmitter;
     address public _owner;
     LzReceptor public _receptor;
 
     function setUp() public {
-        _receptor = LzReceptor(vm.parseAddress(_readFromFile("transmitter")));
-        _transmitter = vm.parseAddress(_readFromFile("transmitter"));
+        _receptor = LzReceptor(vm.parseAddress(_readData("receptor")));
+        _transmitter = vm.parseAddress(_readData("transmitter"));
         _owner = vm.rememberKey(vm.envUint("OWNER_PRIVATE_KEY"));
     }
 
@@ -27,12 +29,5 @@ contract ConfigureReceptorModuleScript is Script {
 
         // Stop recording calls.
         vm.stopBroadcast();
-    }
-
-    function _readFromFile(string memory name_) internal view returns (string memory) {
-        bytes memory root_ = bytes(vm.projectRoot());
-        string memory dirPath_ = string(bytes.concat(root_, "/script/data/"));
-        string memory path_ = string(bytes.concat(bytes(dirPath_), bytes(name_)));
-        return vm.readFile(path_);
     }
 }
