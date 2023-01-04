@@ -6,7 +6,6 @@ import { Constants } from "src/constants/Constants.sol";
 import { HelpersERC20 } from "src/helpers/HelpersERC20.sol";
 import { HelpersECDSA } from "src/helpers/HelpersECDSA.sol";
 import { LibTokenRegister } from "src/libraries/LibTokenRegister.sol";
-import { LibAccessControl } from "src/libraries/LibAccessControl.sol";
 import { OnlyOwner } from "src/modifiers/OnlyOwner.sol";
 import { OnlyStarkExOperator } from "src/modifiers/OnlyStarkExOperator.sol";
 import { OnlyRegisteredToken } from "src/modifiers/OnlyRegisteredToken.sol";
