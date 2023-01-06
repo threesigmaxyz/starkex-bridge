@@ -16,11 +16,19 @@ contract ERC165FacetTest is BaseFixture {
 
     event LogSetSupportedInterface(bytes4 indexed interfaceId, bool indexed flag);
 
+    //==============================================================================//
+    //=== initialize Tests                                                      ===//
+    //==============================================================================//
+
     function test_initialize_ok() public {
         assertEq(IERC165Facet(_bridge).supportsInterface(type(IERC165).interfaceId), true);
         assertEq(IERC165Facet(_bridge).supportsInterface(type(IDiamondCut).interfaceId), true);
         assertEq(IERC165Facet(_bridge).supportsInterface(type(IDiamondLoupe).interfaceId), true);
     }
+
+    //==============================================================================//
+    //=== setSupportedInterface Tests                                            ===//
+    //==============================================================================//
 
     function test_setSupportedInterface_ok(bytes4 interfaceId1_, bytes4 interfaceId2_) public {
         // Act + Assert

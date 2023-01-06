@@ -12,6 +12,10 @@ contract StateFacetTest is BaseFixture {
 
     event LogSetOrderRoot(uint256 indexed orderRoot);
 
+    //==============================================================================//
+    //=== setOrderRoot Tests                                                     ===//
+    //==============================================================================//
+
     function test_setOrderRoot_ok(uint256 orderRoot1, uint256 orderRoot2) public {
         // Act + Assert
         assertEq(IStateFacet(_bridge).getOrderRoot(), 0);

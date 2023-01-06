@@ -13,7 +13,11 @@ contract TokenRegisterFacetTest is BaseFixture {
 
     event LogSetTokenRegister(address indexed token, bool indexed flag);
 
-    function test_setTokenRegister_And_isTokenRegistered_Ok() public {
+    //==============================================================================//
+    //=== setTokenRegister and isTokenRegisteredTests                            ===//
+    //==============================================================================//
+
+    function test_setTokenRegister_and_isTokenRegistered_ok() public {
         // Arrange
         address token1_ = vm.addr(1);
         address token2_ = vm.addr(2);

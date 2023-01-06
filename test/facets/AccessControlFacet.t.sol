@@ -13,6 +13,10 @@ contract AccessControlFacetTest is BaseFixture {
     event LogRoleTransferred(bytes32 indexed role, address indexed previousAccount, address indexed newAccount);
     event LogSetPendingRole(bytes32 indexed role, address indexed newAccount);
 
+    //==============================================================================//
+    //=== setPendingRole and acceptRole Tests                                    ===//
+    //==============================================================================//
+
     function test_transferRole_ok(bytes32 role1_, bytes32 role2_) public {
         // Arrange
         address account1_ = vm.addr(1);
