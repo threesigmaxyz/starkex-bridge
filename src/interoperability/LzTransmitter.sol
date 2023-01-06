@@ -1,12 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import { Pausable } from "@openzeppelin/security/Pausable.sol";
 import { IStarkEx } from "src/interfaces/interoperability/IStarkEx.sol";
 import { LzSender } from "src/interoperability/lz/LzSender.sol";
 import { ILzTransmitter } from "src/interfaces/interoperability/ILzTransmitter.sol";
 
-contract LzTransmitter is ILzTransmitter, LzSender, Pausable {
+contract LzTransmitter is ILzTransmitter, LzSender {
     /// @notice Address of the starkEx contract.
     IStarkEx private immutable _starkEx;
 

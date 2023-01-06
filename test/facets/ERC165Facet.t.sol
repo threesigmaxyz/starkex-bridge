@@ -2,11 +2,10 @@
 pragma solidity ^0.8.0;
 
 import { IERC165 } from "@openzeppelin/interfaces/IERC165.sol";
-
 import { BaseFixture } from "test/fixtures/BaseFixture.sol";
-import { IERC165Facet } from "src/interfaces/facets/IERC165Facet.sol";
 import { IDiamondCut } from "src/interfaces/facets/IDiamondCut.sol";
 import { IDiamondLoupe } from "src/interfaces/facets/IDiamondLoupe.sol";
+import { IERC165Facet } from "src/interfaces/facets/IERC165Facet.sol";
 import { LibAccessControl } from "src/libraries/LibAccessControl.sol";
 
 contract ERC165FacetTest is BaseFixture {

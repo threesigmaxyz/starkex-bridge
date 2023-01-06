@@ -4,7 +4,6 @@ pragma solidity ^0.8.0;
 import { BaseFixture } from "test/fixtures/BaseFixture.sol";
 import { LibAccessControl } from "src/libraries/LibAccessControl.sol";
 import { ITokenRegisterFacet } from "src/interfaces/facets/ITokenRegisterFacet.sol";
-import { console } from "@forge-std/Test.sol";
 
 contract TokenRegisterFacetTest is BaseFixture {
     //==============================================================================//

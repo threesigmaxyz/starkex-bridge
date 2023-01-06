@@ -2,6 +2,7 @@
 pragma solidity ^0.8.0;
 
 import { Test } from "@forge-std/Test.sol";
+import { IERC165 } from "@openzeppelin/interfaces/IERC165.sol";
 
 import { Constants } from "src/constants/Constants.sol";
 
@@ -27,7 +28,6 @@ import { IWithdrawalFacet } from "src/interfaces/facets/IWithdrawalFacet.sol";
 import { IStateFacet } from "src/interfaces/facets/IStateFacet.sol";
 import { IERC165Facet } from "src/interfaces/facets/IERC165Facet.sol";
 import { IDiamondLoupe } from "src/interfaces/facets/IDiamondLoupe.sol";
-import { IERC165 } from "@openzeppelin/interfaces/IERC165.sol";
 
 contract BaseFixture is Test {
     struct Facets {

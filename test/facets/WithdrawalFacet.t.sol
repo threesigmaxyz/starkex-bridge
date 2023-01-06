@@ -3,18 +3,15 @@ pragma solidity ^0.8.0;
 
 import { IERC20 } from "@openzeppelin/interfaces/IERC20.sol";
 import { ECDSA } from "src/dependencies/ecdsa/ECDSA.sol";
-
+import { HelpersECDSA } from "src/helpers/HelpersECDSA.sol";
+import { MockERC20 } from "test/mocks/MockERC20.sol";
 import { BaseFixture } from "test/fixtures/BaseFixture.sol";
 import { Constants } from "src/constants/Constants.sol";
 import { LibDiamond } from "src/libraries/LibDiamond.sol";
 import { LibAccessControl } from "src/libraries/LibAccessControl.sol";
 import { LibTokenRegister } from "src/libraries/LibTokenRegister.sol";
-
 import { ITokenRegisterFacet } from "src/interfaces/facets/ITokenRegisterFacet.sol";
 import { IWithdrawalFacet } from "src/interfaces/facets/IWithdrawalFacet.sol";
-
-import { MockERC20 } from "test/mocks/MockERC20.sol";
-import { HelpersECDSA } from "src/helpers/HelpersECDSA.sol";
 
 contract WithdrawalFacetTest is BaseFixture {
     //==============================================================================//

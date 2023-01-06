@@ -1,16 +1,16 @@
 //SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import { BaseFixture } from "test/fixtures/BaseFixture.sol";
+import { PatriciaTree } from "src/dependencies/mpt/v2/PatriciaTree.sol";
+import { HelpersECDSA } from "src/helpers/HelpersECDSA.sol";
 import { Constants } from "src/constants/Constants.sol";
+import { MockERC20 } from "test/mocks/MockERC20.sol";
+import { BaseFixture } from "test/fixtures/BaseFixture.sol";
 import { IDepositFacet } from "src/interfaces/facets/IDepositFacet.sol";
 import { IStateFacet } from "src/interfaces/facets/IStateFacet.sol";
 import { ITokenRegisterFacet } from "src/interfaces/facets/ITokenRegisterFacet.sol";
-import { PatriciaTree } from "src/dependencies/mpt/v2/PatriciaTree.sol";
 import { LibAccessControl } from "src/libraries/LibAccessControl.sol";
 import { LibTokenRegister } from "src/libraries/LibTokenRegister.sol";
-import { MockERC20 } from "test/mocks/MockERC20.sol";
-import { HelpersECDSA } from "src/helpers/HelpersECDSA.sol";
 
 contract DepositFacetTest is BaseFixture {
     //==============================================================================//

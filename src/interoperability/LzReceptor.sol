@@ -1,14 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import { Pausable } from "@openzeppelin/security/Pausable.sol";
 import { NonblockingLzReceiver } from "src/interoperability/lz/NonblockingLzReceiver.sol";
 import { LibAccessControl } from "src/libraries/LibAccessControl.sol";
 import { IAccessControlFacet } from "src/interfaces/facets/IAccessControlFacet.sol";
 import { IStateFacet } from "src/interfaces/facets/IStateFacet.sol";
 import { ILzReceptor } from "src/interfaces/interoperability/ILzReceptor.sol";
 
-contract LzReceptor is ILzReceptor, NonblockingLzReceiver, Pausable {
+contract LzReceptor is ILzReceptor, NonblockingLzReceiver {
     /// @notice Address of the _bridge.
     address private immutable _bridge;
 
