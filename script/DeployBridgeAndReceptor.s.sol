@@ -74,6 +74,7 @@ contract DeployBridgeAndReceptorModuleScript is Script, DataIO {
         facets_.withdrawal = address(new WithdrawalFacet());
         facets_.state = address(new StateFacet());
         facets_.erc165 = address(new ERC165Facet());
+        facets_.diamondLoupe = address(new DiamondLoupeFacet());
 
         // Deploy bridge.
         _bridge = _deployBridge(_owner, facets_);
