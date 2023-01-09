@@ -27,6 +27,9 @@ contract LzReceptorTest is Test {
     event LogRootReceived(uint256 indexed orderRoot);
     event LogOutdatedRootReceived(uint256 indexed orderRoot, uint64 indexed nonce);
     event LogOrderRootUpdate(uint256 indexed orderRoot);
+    event LogMessageFailed(
+        uint16 indexed srcChainId, bytes indexed path, uint64 indexed nonce, bytes payload, bytes reason
+    );
 
     function setUp() public {
         vm.label(_owner(), "owner");
@@ -182,6 +185,20 @@ contract LzReceptorTest is Test {
         // Act + Assert
         vm.prank(_intruder());
         LzReceptor(_receptor).lzReceive(MOCK_CHAIN_ID, path_, nonce_, payload_);
+    }
+
+    function test_nonBlockingLzReceive_messageFail_wrongPayload() public {
+        // Arrange
+        // Wrong payload will make message revert.
+        bytes memory payload_ = "";
+        bytes memory path_ = abi.encodePacked(_transmitter, address(_receptor));
+        uint64 nonce_ = 1;
+
+        // Act + Assert
+        vm.prank(_lzEndpoint);
+        vm.expectEmit(true, true, false, true, address(_receptor));
+        emit LogMessageFailed(MOCK_CHAIN_ID, path_, nonce_, payload_, "");
+        _receptor.lzReceive(MOCK_CHAIN_ID, path_, nonce_, payload_);
     }
 
     //==============================================================================//
