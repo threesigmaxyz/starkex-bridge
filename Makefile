@@ -37,6 +37,14 @@ lint:
 tests :;
 	@forge test -vvv
 
+# Run tests with coverage
+coverage :;
+	@forge coverage
+
+# Run tests with coverage and generate lcov.info
+coverage-report :;
+	@forge coverage --report lcov
+
 # Run slither static analysis
 slither :;
 	@slither ./src

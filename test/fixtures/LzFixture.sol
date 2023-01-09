@@ -21,6 +21,7 @@ import { TokenRegisterFacet } from "src/facets/TokenRegisterFacet.sol";
 import { WithdrawalFacet } from "src/facets/WithdrawalFacet.sol";
 import { StateFacet } from "src/facets/StateFacet.sol";
 import { ERC165Facet } from "src/facets/ERC165Facet.sol";
+import { DiamondLoupeFacet } from "src/facets/DiamondLoupeFacet.sol";
 
 contract LzFixture is BaseFixture {
     //==============================================================================//
@@ -71,6 +72,7 @@ contract LzFixture is BaseFixture {
         facets_.withdrawal = address(new WithdrawalFacet());
         facets_.state = address(new StateFacet());
         facets_.erc165 = address(new ERC165Facet());
+        facets_.diamondLoupe = address(new DiamondLoupeFacet());
 
         vm.startPrank(_owner());
         // Deploy bridges to side chains.
