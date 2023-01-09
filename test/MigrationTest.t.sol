@@ -19,9 +19,7 @@ import { StateFacet } from "src/facets/StateFacet.sol";
 import { ERC165Facet } from "src/facets/ERC165Facet.sol";
 import { DiamondLoupeFacet } from "src/facets/DiamondLoupeFacet.sol";
 
-
 contract MigrationTest is BaseFixture {
-
     function testMigration() public {
         Facets memory facets_;
 
@@ -33,7 +31,7 @@ contract MigrationTest is BaseFixture {
         facets_.state = address(new StateFacet());
         facets_.erc165 = address(new ERC165Facet());
         facets_.diamondLoupe = address(new DiamondLoupeFacet());
-        
+
         vm.startPrank(_owner());
         _replaceBridgeFacets(_bridge, facets_);
         vm.stopPrank();

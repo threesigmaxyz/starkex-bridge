@@ -175,7 +175,7 @@ contract DeployBridgeAndReceptorModuleScript is Script, DataIO {
         return bridge_;
     }
 
-    function _getDepositFacetFunctionSelectors() internal pure returns(bytes4[] memory) {
+    function _getDepositFacetFunctionSelectors() internal pure returns (bytes4[] memory) {
         bytes4[] memory depositFacetSelectors_ = new bytes4[](7);
         depositFacetSelectors_[0] = IDepositFacet.setDepositExpirationTimeout.selector;
         depositFacetSelectors_[1] = IDepositFacet.lockDeposit.selector;
@@ -187,7 +187,7 @@ contract DeployBridgeAndReceptorModuleScript is Script, DataIO {
         return depositFacetSelectors_;
     }
 
-    function _getWithdrawalFacetFunctionSelectors() pure internal returns(bytes4[] memory) {
+    function _getWithdrawalFacetFunctionSelectors() internal pure returns (bytes4[] memory) {
         bytes4[] memory withdrawalFacetSelectors_ = new bytes4[](7);
         withdrawalFacetSelectors_[0] = IWithdrawalFacet.setWithdrawalExpirationTimeout.selector;
         withdrawalFacetSelectors_[1] = IWithdrawalFacet.lockWithdrawal.selector;
@@ -199,7 +199,7 @@ contract DeployBridgeAndReceptorModuleScript is Script, DataIO {
         return withdrawalFacetSelectors_;
     }
 
-    function _getAccessControlFacetFunctionSelectors() pure internal returns(bytes4[] memory) {
+    function _getAccessControlFacetFunctionSelectors() internal pure returns (bytes4[] memory) {
         bytes4[] memory accessControlFacetSelectors_ = new bytes4[](3);
         accessControlFacetSelectors_[0] = IAccessControlFacet.acceptRole.selector;
         accessControlFacetSelectors_[1] = IAccessControlFacet.setPendingRole.selector;
@@ -207,28 +207,28 @@ contract DeployBridgeAndReceptorModuleScript is Script, DataIO {
         return accessControlFacetSelectors_;
     }
 
-    function _getTokenRegisterFacetFunctionSelectors() pure internal returns(bytes4[] memory) {
+    function _getTokenRegisterFacetFunctionSelectors() internal pure returns (bytes4[] memory) {
         bytes4[] memory tokenRegisterFacetSelectors_ = new bytes4[](2);
         tokenRegisterFacetSelectors_[0] = ITokenRegisterFacet.setTokenRegister.selector;
         tokenRegisterFacetSelectors_[1] = ITokenRegisterFacet.isTokenRegistered.selector;
         return tokenRegisterFacetSelectors_;
     }
 
-    function _getStateFacetFunctionSelectors() internal pure returns(bytes4[] memory) {
+    function _getStateFacetFunctionSelectors() internal pure returns (bytes4[] memory) {
         bytes4[] memory stateFacetSelectors_ = new bytes4[](2);
         stateFacetSelectors_[0] = IStateFacet.getOrderRoot.selector;
         stateFacetSelectors_[1] = IStateFacet.setOrderRoot.selector;
         return stateFacetSelectors_;
     }
 
-    function _getErc165FacetFunctionSelectors() internal pure returns(bytes4[] memory) {
+    function _getErc165FacetFunctionSelectors() internal pure returns (bytes4[] memory) {
         bytes4[] memory erc165FacetSelectors_ = new bytes4[](2);
         erc165FacetSelectors_[0] = IERC165Facet.supportsInterface.selector;
         erc165FacetSelectors_[1] = IERC165Facet.setSupportedInterface.selector;
         return erc165FacetSelectors_;
     }
 
-    function _getDiamondLoupeFacetFunctionSelectors() internal pure returns(bytes4[] memory) {
+    function _getDiamondLoupeFacetFunctionSelectors() internal pure returns (bytes4[] memory) {
         bytes4[] memory diamondLoupeFacetSelectors_ = new bytes4[](4);
         diamondLoupeFacetSelectors_[0] = IDiamondLoupe.facets.selector;
         diamondLoupeFacetSelectors_[1] = IDiamondLoupe.facetFunctionSelectors.selector;
