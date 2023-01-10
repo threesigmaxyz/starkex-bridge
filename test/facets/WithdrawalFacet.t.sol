@@ -8,10 +8,8 @@ import { HelpersECDSA } from "src/helpers/HelpersECDSA.sol";
 import { MockERC20 } from "test/mocks/MockERC20.sol";
 import { BaseFixture } from "test/fixtures/BaseFixture.sol";
 import { Constants } from "src/constants/Constants.sol";
-import { LibDiamond } from "src/libraries/LibDiamond.sol";
 import { LibAccessControl } from "src/libraries/LibAccessControl.sol";
 import { LibTokenRegister } from "src/libraries/LibTokenRegister.sol";
-import { ITokenRegisterFacet } from "src/interfaces/facets/ITokenRegisterFacet.sol";
 import { IWithdrawalFacet } from "src/interfaces/facets/IWithdrawalFacet.sol";
 
 contract WithdrawalFacetTest is BaseFixture {
@@ -138,7 +136,7 @@ contract WithdrawalFacetTest is BaseFixture {
     //=== lockWithdrawal Tests                                                   ===//
     //==============================================================================//
 
-    function test_lockWithdrawal_ok(uint256 starkKey_, uint256 amount_, uint256 lockHash_) public {
+    function test_lockWithdrawal_ERC20_ok(uint256 starkKey_, uint256 amount_, uint256 lockHash_) public {
         vm.assume(starkKey_ < Constants.K_MODULUS && HelpersECDSA.isOnCurve(starkKey_));
         vm.assume(amount_ > 0);
         vm.assume(lockHash_ > 0);
@@ -211,10 +209,23 @@ contract WithdrawalFacetTest is BaseFixture {
     }
 
     //==============================================================================//
+    //=== lockEthWithdrawal Tests                                                ===//
+    //==============================================================================//
+
+    function test_lockWithdrawal_ETH_ok(uint256 starkKey_, uint256 amount_, uint256 lockHash_) public {
+        vm.assume(starkKey_ < Constants.K_MODULUS && HelpersECDSA.isOnCurve(starkKey_));
+        vm.assume(amount_ > 0);
+        vm.assume(lockHash_ > 0);
+
+        // Act + Assert
+        _lockWithdrawal(starkKey_, Constants.ETH, amount_, lockHash_);
+    }
+
+    //==============================================================================//
     //=== claimWithdrawal Tests                                                  ===//
     //==============================================================================//
 
-    function test_claimWithdrawal_ok() public {
+    function test_claimWithdrawal_ERC20_ok() public {
         // Arrange
         bytes memory realTransferSignature_ = abi.encode(SIGNATURE_R, SIGNATURE_S, STARK_KEY_Y);
 
@@ -222,16 +233,27 @@ contract WithdrawalFacetTest is BaseFixture {
         // LOCK_HASH corresponds to real transfer.
         _lockWithdrawal(STARK_KEY, address(_token), USER_TOKENS, LOCK_HASH);
         // Set the user as the recipient to repeat the tests afterwards.
-        _claimWithdrawal(LOCK_HASH, realTransferSignature_, _user(), USER_TOKENS);
+        _claimWithdrawal(LOCK_HASH, realTransferSignature_, _user(), USER_TOKENS, address(_token));
         // Test 1
         _lockWithdrawal(TEST1_STARK_KEY, address(_token), USER_TOKENS, TEST1_LOCK_HASH);
-        _claimWithdrawal(TEST1_LOCK_HASH, TEST1_SIGNATURE, _user(), USER_TOKENS);
+        _claimWithdrawal(TEST1_LOCK_HASH, TEST1_SIGNATURE, _user(), USER_TOKENS, address(_token));
         // Test 2
         _lockWithdrawal(TEST2_STARK_KEY, address(_token), USER_TOKENS, TEST2_LOCK_HASH);
-        _claimWithdrawal(TEST2_LOCK_HASH, TEST2_SIGNATURE, _user(), USER_TOKENS);
+        _claimWithdrawal(TEST2_LOCK_HASH, TEST2_SIGNATURE, _user(), USER_TOKENS, address(_token));
         // Test 3
         _lockWithdrawal(TEST3_STARK_KEY, address(_token), USER_TOKENS, TEST3_LOCK_HASH);
-        _claimWithdrawal(TEST3_LOCK_HASH, TEST3_SIGNATURE, _user(), USER_TOKENS);
+        _claimWithdrawal(TEST3_LOCK_HASH, TEST3_SIGNATURE, _user(), USER_TOKENS, address(_token));
+    }
+
+    function test_claimWithdrawal_ETH_ok() public {
+        // Arrange
+        bytes memory realTransferSignature_ = abi.encode(SIGNATURE_R, SIGNATURE_S, STARK_KEY_Y);
+
+        // Act + Assert
+        // LOCK_HASH corresponds to real transfer.
+        _lockWithdrawal(STARK_KEY, Constants.ETH, USER_TOKENS, LOCK_HASH);
+        // Set the user as the recipient to repeat the tests afterwards.
+        _claimWithdrawal(LOCK_HASH, realTransferSignature_, _user(), USER_TOKENS, Constants.ETH);
     }
 
     function test_claimWithdrawal_InvalidLockHashError() public {
@@ -293,14 +315,24 @@ contract WithdrawalFacetTest is BaseFixture {
     //=== reclaimWithdrawal Tests                                                ===//
     //==============================================================================//
 
-    function test_reclaimWithdrawal_ok(uint256 lockHash_) public {
+    function test_reclaimWithdrawal_ERC20_ok(uint256 lockHash_) public {
         vm.assume(lockHash_ > 0);
 
         // Arrange
         _lockWithdrawal(STARK_KEY, address(_token), USER_TOKENS, lockHash_);
 
         // Arrange + Act + Assert
-        _reclaimWithdrawal(lockHash_, _recipient(), USER_TOKENS);
+        _reclaimWithdrawal(lockHash_, _recipient(), USER_TOKENS, address(_token));
+    }
+
+    function test_reclaimWithdrawal_ETH_ok(uint256 lockHash_) public {
+        vm.assume(lockHash_ > 0);
+
+        // Arrange
+        _lockWithdrawal(STARK_KEY, Constants.ETH, USER_TOKENS, lockHash_);
+
+        // Arrange + Act + Assert
+        _reclaimWithdrawal(lockHash_, _recipient(), USER_TOKENS, Constants.ETH);
     }
 
     function test_reclaimWithdrawal_UnauthorizedError() public {
@@ -363,18 +395,27 @@ contract WithdrawalFacetTest is BaseFixture {
     function _lockWithdrawal(uint256 starkKey_, address token_, uint256 amount_, uint256 lockHash_) private {
         // Arrange
         uint256 initialPendingWithdrawals_ = IWithdrawalFacet(_bridge).getPendingWithdrawals(token_);
-        uint256 initialBalance_ = IERC20(token_).balanceOf(_bridge);
+        uint256 initialBridgeBalance_ = _getEthOrERC20Balance(token_, _bridge);
+        // Operator balance will increase in lines 404 or 408.
+        uint256 initialOperatorBalance_ = _getEthOrERC20Balance(token_, _operator()) + amount_;
+
         // And
         vm.prank(_user());
-        MockERC20(token_).transfer(_operator(), amount_);
-        vm.prank(_operator());
-        IERC20(token_).approve(address(_bridge), amount_);
-
+        if(token_ != Constants.ETH) {
+            MockERC20(token_).transfer(_operator(), amount_);
+            vm.prank(_operator());
+            IERC20(token_).approve(address(_bridge), amount_);
+        } else {
+            payable(_operator()).transfer(amount_);
+        }
+            
         // Act + Assert
         vm.expectEmit(true, true, true, true);
         emit LogLockWithdrawal(lockHash_, starkKey_, token_, amount_);
         vm.prank(_operator());
-        IWithdrawalFacet(_bridge).lockWithdrawal(starkKey_, token_, amount_, lockHash_);
+        token_ != Constants.ETH 
+            ? IWithdrawalFacet(_bridge).lockWithdrawal(starkKey_, token_, amount_, lockHash_)
+            : IWithdrawalFacet(_bridge).lockEthWithdrawal{value: amount_}(starkKey_, lockHash_);
 
         // Assert
         // A withdrawal request was created.
@@ -385,18 +426,24 @@ contract WithdrawalFacetTest is BaseFixture {
         assertEq(
             withdrawal_.expirationDate, block.timestamp + IWithdrawalFacet(_bridge).getWithdrawalExpirationTimeout()
         );
-        // The accounting of pending withdrawals was updated.
+
+        // All balances were corretly updated
+        assertEq(_getEthOrERC20Balance(token_, _bridge), initialBridgeBalance_ + amount_);
+        assertEq(_getEthOrERC20Balance(token_, _operator()), initialOperatorBalance_ - amount_);
         assertEq(IWithdrawalFacet(_bridge).getPendingWithdrawals(token_), initialPendingWithdrawals_ + amount_);
-        assertEq(IERC20(token_).balanceOf(_bridge), initialBalance_ + amount_);
     }
 
-    function _claimWithdrawal(uint256 lockHash_, bytes memory signature_, address recipient_, uint256 amount_)
-        private
-    {
+    function _claimWithdrawal(
+        uint256 lockHash_, 
+        bytes memory signature_, 
+        address recipient_, 
+        uint256 amount_,
+        address token_
+    ) private {
         // Arrange
-        uint256 initialBridgeBalance_ = _token.balanceOf(_bridge);
-        uint256 initialRecipientBalance_ = _token.balanceOf(recipient_);
-        uint256 initialPendingWithdrawals_ = IWithdrawalFacet(_bridge).getPendingWithdrawals(address(_token));
+        uint256 initialBridgeBalance_ = _getEthOrERC20Balance(token_, _bridge);
+        uint256 initialRecipientBalance_ = _getEthOrERC20Balance(token_, recipient_);
+        uint256 initialPendingWithdrawals_ = IWithdrawalFacet(_bridge).getPendingWithdrawals(token_);
         // And
         vm.expectEmit(true, true, false, true);
         emit LogClaimWithdrawal(lockHash_, signature_, recipient_);
@@ -410,16 +457,16 @@ contract WithdrawalFacetTest is BaseFixture {
         _validateWithdrawalDeleted(lockHash_);
 
         // All balances were corretly updated
-        assertEq(_token.balanceOf(_bridge), initialBridgeBalance_ - amount_);
-        assertEq(_token.balanceOf(recipient_), initialRecipientBalance_ + amount_);
-        assertEq(IWithdrawalFacet(_bridge).getPendingWithdrawals(address(_token)), initialPendingWithdrawals_ - amount_);
+        assertEq(_getEthOrERC20Balance(token_, _bridge), initialBridgeBalance_ - amount_);
+        assertEq(_getEthOrERC20Balance(token_, recipient_), initialRecipientBalance_ + amount_);
+        assertEq(IWithdrawalFacet(_bridge).getPendingWithdrawals(token_), initialPendingWithdrawals_ - amount_);
     }
 
-    function _reclaimWithdrawal(uint256 lockHash_, address recipient_, uint256 amount_) private {
+    function _reclaimWithdrawal(uint256 lockHash_, address recipient_, uint256 amount_, address token_) private {
         // Arrange
-        uint256 initialBridgeBalance_ = _token.balanceOf(_bridge);
-        uint256 initialRecipientBalance_ = _token.balanceOf(recipient_);
-        uint256 initialPendingWithdrawals_ = IWithdrawalFacet(_bridge).getPendingWithdrawals(address(_token));
+        uint256 initialBridgeBalance_ = _getEthOrERC20Balance(token_, _bridge);
+        uint256 initialRecipientBalance_ = _getEthOrERC20Balance(token_, recipient_);
+        uint256 initialPendingWithdrawals_ = IWithdrawalFacet(_bridge).getPendingWithdrawals(token_);
         // And
         vm.expectEmit(true, true, false, true);
         emit LogReclaimWithdrawal(lockHash_, recipient_);
@@ -432,10 +479,11 @@ contract WithdrawalFacetTest is BaseFixture {
         // Assert
         // The withdrawal request was deleted
         _validateWithdrawalDeleted(lockHash_);
-        // The expected _token amount was recalimed by the recipient
-        assertEq(_token.balanceOf(recipient_), initialRecipientBalance_ + amount_);
-        assertEq(_token.balanceOf(_bridge), initialBridgeBalance_ - amount_);
-        assertEq(IWithdrawalFacet(_bridge).getPendingWithdrawals(address(_token)), initialPendingWithdrawals_ - amount_);
+        
+        // All balances were corretly updated
+        assertEq(_getEthOrERC20Balance(token_, _bridge), initialBridgeBalance_ - amount_);
+        assertEq(_getEthOrERC20Balance(token_, recipient_), initialRecipientBalance_ + amount_);
+        assertEq(IWithdrawalFacet(_bridge).getPendingWithdrawals(token_), initialPendingWithdrawals_ - amount_);
     }
 
     function _validateWithdrawalDeleted(uint256 lockHash_) internal {

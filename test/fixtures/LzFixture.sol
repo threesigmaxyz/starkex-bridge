@@ -14,14 +14,7 @@ import { LzTransmitter } from "src/interoperability/LzTransmitter.sol";
 
 import { IStarkEx } from "src/interfaces/interoperability/IStarkEx.sol";
 
-import { AccessControlFacet } from "src/facets/AccessControlFacet.sol";
-import { DepositFacet } from "src/facets/DepositFacet.sol";
-import { DiamondCutFacet } from "src/facets/DiamondCutFacet.sol";
-import { TokenRegisterFacet } from "src/facets/TokenRegisterFacet.sol";
-import { WithdrawalFacet } from "src/facets/WithdrawalFacet.sol";
-import { StateFacet } from "src/facets/StateFacet.sol";
-import { ERC165Facet } from "src/facets/ERC165Facet.sol";
-import { DiamondLoupeFacet } from "src/facets/DiamondLoupeFacet.sol";
+import { LibDeployBridge } from "common/LibDeployBridge.sol";
 
 contract LzFixture is BaseFixture {
     //==============================================================================//
@@ -63,20 +56,10 @@ contract LzFixture is BaseFixture {
         vm.label(_keeper(), "keeper");
 
         // Deploy the other bridge to the other side chain.
-        Facets memory facets_;
-
-        facets_.accessControl = address(new AccessControlFacet());
-        facets_.deposit = address(new DepositFacet());
-        facets_.diamondCut = address(new DiamondCutFacet());
-        facets_.tokenRegister = address(new TokenRegisterFacet());
-        facets_.withdrawal = address(new WithdrawalFacet());
-        facets_.state = address(new StateFacet());
-        facets_.erc165 = address(new ERC165Facet());
-        facets_.diamondLoupe = address(new DiamondLoupeFacet());
 
         vm.startPrank(_owner());
         // Deploy bridges to side chains.
-        _bridgeSideChain2 = _deployBridge(_owner(), facets_);
+        _bridgeSideChain2 = LibDeployBridge.deployBridge(_owner());
 
         // Deploy mocked Layer Zero endpoint.
         _lzEndpoint = new LzEndpointMock(MOCK_CHAIN_ID);
