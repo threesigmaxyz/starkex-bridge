@@ -318,7 +318,7 @@ contract DepositFacetTest is BaseFixture {
         uint256 initialBridgeBalance_ = _getEthOrERC20Balance(token_, _bridge);
         uint256 initialUserBalance_ = _getEthOrERC20Balance(token_, user_);
         uint256 initialPendingDeposits_ = IDepositFacet(_bridge).getPendingDeposits(token_);
-        
+
         // Act + Assert
         if (token_ != Constants.ETH) {
             vm.prank(user_);
@@ -329,7 +329,7 @@ contract DepositFacetTest is BaseFixture {
         emit LogLockDeposit(lockHash_, starkKey_, token_, amount_);
         // And
         vm.prank(user_);
-        token_ != Constants.ETH 
+        token_ != Constants.ETH
             ? IDepositFacet(_bridge).lockDeposit(starkKey_, token_, amount_, lockHash_)
             : IDepositFacet(_bridge).lockEthDeposit{value: amount_}(starkKey_, lockHash_);
 

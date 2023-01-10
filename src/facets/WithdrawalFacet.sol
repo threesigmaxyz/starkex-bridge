@@ -68,7 +68,7 @@ contract WithdrawalFacet is OnlyRegisteredToken, OnlyStarkExOperator, OnlyOwner,
         _validateAndAddWithdrawal(starkKey_, token_, amount_, lockHash_);
 
         // Transfer funds.
-        HelpersERC20.transferFrom(token_, msg.sender, address(this), amount_); 
+        HelpersERC20.transferFrom(token_, msg.sender, address(this), amount_);
     }
 
     /// @inheritdoc IWithdrawalFacet
@@ -141,7 +141,9 @@ contract WithdrawalFacet is OnlyRegisteredToken, OnlyStarkExOperator, OnlyOwner,
         return withdrawalStorage().withdrawalExpirationTimeout;
     }
 
-    function _validateAndAddWithdrawal(uint256 starkKey_, address token_, uint256 amount_, uint256 lockHash_) internal {
+    function _validateAndAddWithdrawal(uint256 starkKey_, address token_, uint256 amount_, uint256 lockHash_)
+        internal
+    {
         // Validate keys and availability.
         if (lockHash_ == 0) revert InvalidLockHashError();
         if (!HelpersECDSA.isOnCurve(starkKey_) || starkKey_ > Constants.K_MODULUS) revert InvalidStarkKeyError();
@@ -159,6 +161,6 @@ contract WithdrawalFacet is OnlyRegisteredToken, OnlyStarkExOperator, OnlyOwner,
         ws.pendingWithdrawals[token_] += amount_;
 
         // Emit new Lock.
-        emit LogLockWithdrawal(lockHash_, starkKey_, token_, amount_);        
+        emit LogLockWithdrawal(lockHash_, starkKey_, token_, amount_);
     }
 }

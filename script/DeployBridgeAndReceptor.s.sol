@@ -18,7 +18,6 @@ import { LzReceptor } from "src/interoperability/LzReceptor.sol";
 import { DataIO } from "script/data/DataIO.sol";
 
 contract DeployBridgeAndReceptorModuleScript is Script, DataIO {
-
     address public _owner;
     address public _operator;
     address public _tokenAdmin;

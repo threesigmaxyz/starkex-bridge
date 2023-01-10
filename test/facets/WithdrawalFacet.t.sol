@@ -401,19 +401,19 @@ contract WithdrawalFacetTest is BaseFixture {
 
         // And
         vm.prank(_user());
-        if(token_ != Constants.ETH) {
+        if (token_ != Constants.ETH) {
             MockERC20(token_).transfer(_operator(), amount_);
             vm.prank(_operator());
             IERC20(token_).approve(address(_bridge), amount_);
         } else {
             payable(_operator()).transfer(amount_);
         }
-            
+
         // Act + Assert
         vm.expectEmit(true, true, true, true);
         emit LogLockWithdrawal(lockHash_, starkKey_, token_, amount_);
         vm.prank(_operator());
-        token_ != Constants.ETH 
+        token_ != Constants.ETH
             ? IWithdrawalFacet(_bridge).lockWithdrawal(starkKey_, token_, amount_, lockHash_)
             : IWithdrawalFacet(_bridge).lockEthWithdrawal{value: amount_}(starkKey_, lockHash_);
 
@@ -434,9 +434,9 @@ contract WithdrawalFacetTest is BaseFixture {
     }
 
     function _claimWithdrawal(
-        uint256 lockHash_, 
-        bytes memory signature_, 
-        address recipient_, 
+        uint256 lockHash_,
+        bytes memory signature_,
+        address recipient_,
         uint256 amount_,
         address token_
     ) private {
@@ -479,7 +479,7 @@ contract WithdrawalFacetTest is BaseFixture {
         // Assert
         // The withdrawal request was deleted
         _validateWithdrawalDeleted(lockHash_);
-        
+
         // All balances were corretly updated
         assertEq(_getEthOrERC20Balance(token_, _bridge), initialBridgeBalance_ - amount_);
         assertEq(_getEthOrERC20Balance(token_, recipient_), initialRecipientBalance_ + amount_);

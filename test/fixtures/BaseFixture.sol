@@ -18,7 +18,6 @@ import { ITokenRegisterFacet } from "src/interfaces/facets/ITokenRegisterFacet.s
 import { LibDeployBridge } from "common/LibDeployBridge.sol";
 
 contract BaseFixture is Test {
-
     uint256 internal constant USER_TOKENS = type(uint256).max;
     uint256 internal constant USER_ETH = type(uint256).max;
 

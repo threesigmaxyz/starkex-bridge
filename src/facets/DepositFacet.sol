@@ -58,11 +58,7 @@ contract DepositFacet is OnlyRegisteredToken, OnlyStarkExOperator, OnlyOwner, ID
     }
 
     /// @inheritdoc IDepositFacet
-    function lockEthDeposit(uint256 starkKey_, uint256 lockHash_)
-        external
-        payable
-        override
-    {
+    function lockEthDeposit(uint256 starkKey_, uint256 lockHash_) external payable override {
         validateAndAddDeposit(starkKey_, Constants.ETH, msg.value, lockHash_);
         // The eth is transferred to the contract, no need to call any transfer function like lockDeposit.
     }
@@ -122,7 +118,7 @@ contract DepositFacet is OnlyRegisteredToken, OnlyStarkExOperator, OnlyOwner, ID
         // Check if deposit exists or has expired.
         if (deposit_.expirationDate == 0) revert DepositNotFoundError();
         if (block.timestamp <= deposit_.expirationDate) revert DepositNotExpiredError();
-        
+
         // State update.
         delete ds.deposits[lockHash_];
         ds.pendingDeposits[deposit_.token] -= deposit_.amount;
@@ -163,7 +159,7 @@ contract DepositFacet is OnlyRegisteredToken, OnlyStarkExOperator, OnlyOwner, ID
 
         // Check if the deposit is already pending.
         if (ds.deposits[lockHash_].expirationDate != 0) revert DepositPendingError();
-        
+
         // Register the deposit.
         ds.deposits[lockHash_] = Deposit({
             receiver: msg.sender,
