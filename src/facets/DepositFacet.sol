@@ -10,6 +10,7 @@ import { OnlyOwner } from "src/modifiers/OnlyOwner.sol";
 import { OnlyStarkExOperator } from "src/modifiers/OnlyStarkExOperator.sol";
 import { OnlyRegisteredToken } from "src/modifiers/OnlyRegisteredToken.sol";
 import { IDepositFacet } from "src/interfaces/facets/IDepositFacet.sol";
+import { HelpersTransferEthOrERC20 } from "src/helpers/HelpersTransferEthOrERC20.sol";
 
 /**
  * Step 1: The user locks their funds in the sidechain account in the interoperability
@@ -57,36 +58,22 @@ contract DepositFacet is OnlyRegisteredToken, OnlyStarkExOperator, OnlyOwner, ID
     }
 
     /// @inheritdoc IDepositFacet
+    function lockEthDeposit(uint256 starkKey_, uint256 lockHash_)
+        external
+        payable
+        override
+    {
+        validateAndAddDeposit(starkKey_, Constants.ETH, msg.value, lockHash_);
+        // The eth is transferred to the contract, no need to call any transfer function like lockDeposit.
+    }
+
+    /// @inheritdoc IDepositFacet
     function lockDeposit(uint256 starkKey_, address token_, uint256 amount_, uint256 lockHash_)
         external
         override
         onlyRegisteredToken(token_)
     {
-        // Stateless argument validation.
-        if (!HelpersECDSA.isOnCurve(starkKey_) || starkKey_ > Constants.K_MODULUS) revert InvalidStarkKeyError();
-        if (amount_ == 0) revert ZeroAmountError();
-        if (lockHash_ == 0) revert InvalidDepositLockError();
-
-        DepositStorage storage ds = depositStorage();
-
-        // Check if the deposit is already pending.
-        if (ds.deposits[lockHash_].expirationDate != 0) {
-            revert DepositPendingError();
-        }
-
-        // Register the deposit.
-        ds.deposits[lockHash_] = Deposit({
-            receiver: msg.sender,
-            starkKey: starkKey_,
-            token: token_,
-            amount: amount_,
-            expirationDate: (block.timestamp + ds.depositExpirationTimeout)
-        });
-        // Increment the pending deposit amount for the token.
-        ds.pendingDeposits[token_] += amount_;
-
-        // Emit event.
-        emit LogLockDeposit(lockHash_, starkKey_, token_, amount_);
+        validateAndAddDeposit(starkKey_, token_, amount_, lockHash_);
 
         // Transfer deposited funds to the contract.
         HelpersERC20.transferFrom(token_, msg.sender, address(this), amount_);
@@ -120,7 +107,7 @@ contract DepositFacet is OnlyRegisteredToken, OnlyStarkExOperator, OnlyOwner, ID
         emit LogClaimDeposit(lockHash_, recipient_);
 
         // Transfer funds
-        HelpersERC20.transfer(deposit_.token, recipient_, deposit_.amount);
+        HelpersTransferEthOrERC20.transfer(deposit_.token, recipient_, deposit_.amount);
     }
 
     /// @inheritdoc IDepositFacet
@@ -131,12 +118,11 @@ contract DepositFacet is OnlyRegisteredToken, OnlyStarkExOperator, OnlyOwner, ID
         DepositStorage storage ds = depositStorage();
 
         Deposit memory deposit_ = ds.deposits[lockHash_];
+
         // Check if deposit exists or has expired.
         if (deposit_.expirationDate == 0) revert DepositNotFoundError();
-        if (block.timestamp <= deposit_.expirationDate) {
-            revert DepositNotExpiredError();
-        }
-
+        if (block.timestamp <= deposit_.expirationDate) revert DepositNotExpiredError();
+        
         // State update.
         delete ds.deposits[lockHash_];
         ds.pendingDeposits[deposit_.token] -= deposit_.amount;
@@ -145,7 +131,7 @@ contract DepositFacet is OnlyRegisteredToken, OnlyStarkExOperator, OnlyOwner, ID
         emit LogReclaimDeposit(lockHash_);
 
         // Transfer funds.
-        HelpersERC20.transfer(deposit_.token, deposit_.receiver, deposit_.amount);
+        HelpersTransferEthOrERC20.transfer(deposit_.token, deposit_.receiver, deposit_.amount);
     }
 
     //==============================================================================//
@@ -166,5 +152,31 @@ contract DepositFacet is OnlyRegisteredToken, OnlyStarkExOperator, OnlyOwner, ID
     /// @inheritdoc IDepositFacet
     function getDepositExpirationTimeout() external view override returns (uint256) {
         return depositStorage().depositExpirationTimeout;
+    }
+
+    function validateAndAddDeposit(uint256 starkKey_, address token_, uint256 amount_, uint256 lockHash_) internal {
+        if (!HelpersECDSA.isOnCurve(starkKey_) || starkKey_ > Constants.K_MODULUS) revert InvalidStarkKeyError();
+        if (amount_ == 0) revert ZeroAmountError();
+        if (lockHash_ == 0) revert InvalidDepositLockError();
+
+        DepositStorage storage ds = depositStorage();
+
+        // Check if the deposit is already pending.
+        if (ds.deposits[lockHash_].expirationDate != 0) revert DepositPendingError();
+        
+        // Register the deposit.
+        ds.deposits[lockHash_] = Deposit({
+            receiver: msg.sender,
+            starkKey: starkKey_,
+            token: token_,
+            amount: amount_,
+            expirationDate: (block.timestamp + ds.depositExpirationTimeout)
+        });
+
+        // Increment the pending deposit amount for the token.
+        ds.pendingDeposits[token_] += amount_;
+
+        // Emit event.
+        emit LogLockDeposit(lockHash_, starkKey_, token_, amount_);
     }
 }
