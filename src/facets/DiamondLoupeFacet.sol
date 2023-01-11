@@ -1,14 +1,12 @@
-// SPDX-License-Identifier: MIT
+/// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
 import { LibDiamond } from "src/libraries/LibDiamond.sol";
-import { IDiamondLoupe } from "src/interfaces/IDiamondLoupe.sol";
-// TODO why is this needded? chceck original impl in diamond-2 > import { IERC165 } from "../interfaces/IERC165.sol";
+import { IDiamondLoupe } from "src/interfaces/facets/IDiamondLoupe.sol";
 
-// The functions in DiamondLoupeFacet MUST be added to a diamond.
-// @dev The EIP-2535 Diamond standard requires these functions.
+/// The functions in DiamondLoupeFacet MUST be added to a diamond.
+/// @dev The EIP-2535 Diamond standard requires these functions.
 contract DiamondLoupeFacet is IDiamondLoupe {
-    
     /// @inheritdoc IDiamondLoupe
     function facets() external view override returns (Facet[] memory facets_) {
         LibDiamond.DiamondStorage storage ds = LibDiamond.diamondStorage();
@@ -16,7 +14,7 @@ contract DiamondLoupeFacet is IDiamondLoupe {
         uint16[] memory numFacetSelectors = new uint16[](ds.selectorCount);
         uint256 numFacets;
         uint256 selectorIndex;
-        // loop through function selectors
+        // Loop through function selectors.
         for (uint256 slotIndex; selectorIndex < ds.selectorCount; slotIndex++) {
             bytes32 slot = ds.selectorSlots[slotIndex];
             for (uint256 selectorSlotIndex; selectorSlotIndex < 8; selectorSlotIndex++) {
@@ -24,14 +22,14 @@ contract DiamondLoupeFacet is IDiamondLoupe {
                 if (selectorIndex > ds.selectorCount) {
                     break;
                 }
-                // " << 5 is the same as multiplying by 32 ( * 32)
+                // " << 5 is the same as multiplying by 32 ( * 32).
                 bytes4 selector = bytes4(slot << (selectorSlotIndex << 5));
                 address facetAddress_ = address(bytes20(ds.facets[selector]));
                 bool continueLoop;
                 for (uint256 facetIndex; facetIndex < numFacets; facetIndex++) {
                     if (facets_[facetIndex].facetAddress == facetAddress_) {
                         facets_[facetIndex].functionSelectors[numFacetSelectors[facetIndex]] = selector;
-                        // probably will never have more than 256 functions from one facet contract
+                        // Probably will never have more than 256 functions from one facet contract.
                         require(numFacetSelectors[facetIndex] < 255);
                         numFacetSelectors[facetIndex]++;
                         continueLoop = true;
@@ -51,12 +49,12 @@ contract DiamondLoupeFacet is IDiamondLoupe {
         for (uint256 facetIndex; facetIndex < numFacets; facetIndex++) {
             uint256 numSelectors = numFacetSelectors[facetIndex];
             bytes4[] memory selectors = facets_[facetIndex].functionSelectors;
-            // setting the number of selectors
+            // Setting the number of selectors.
             assembly {
                 mstore(selectors, numSelectors)
             }
         }
-        // setting the number of facets
+        // Setting the number of facets.
         assembly {
             mstore(facets_, numFacets)
         }
@@ -73,7 +71,7 @@ contract DiamondLoupeFacet is IDiamondLoupe {
         uint256 numSelectors;
         _facetFunctionSelectors = new bytes4[](ds.selectorCount);
         uint256 selectorIndex;
-        // loop through function selectors
+        // Loop through function selectors.
         for (uint256 slotIndex; selectorIndex < ds.selectorCount; slotIndex++) {
             bytes32 slot = ds.selectorSlots[slotIndex];
             for (uint256 selectorSlotIndex; selectorSlotIndex < 8; selectorSlotIndex++) {
@@ -81,7 +79,7 @@ contract DiamondLoupeFacet is IDiamondLoupe {
                 if (selectorIndex > ds.selectorCount) {
                     break;
                 }
-                // " << 5 is the same as multiplying by 32 ( * 32)
+                /// " << 5 is the same as multiplying by 32 ( * 32).
                 bytes4 selector = bytes4(slot << (selectorSlotIndex << 5));
                 address facet = address(bytes20(ds.facets[selector]));
                 if (_facet == facet) {
@@ -90,7 +88,7 @@ contract DiamondLoupeFacet is IDiamondLoupe {
                 }
             }
         }
-        // Set the number of selectors in the array
+        // Set the number of selectors in the array.
         assembly {
             mstore(_facetFunctionSelectors, numSelectors)
         }
@@ -102,7 +100,7 @@ contract DiamondLoupeFacet is IDiamondLoupe {
         facetAddresses_ = new address[](ds.selectorCount);
         uint256 numFacets;
         uint256 selectorIndex;
-        // loop through function selectors
+        // Loop through function selectors.
         for (uint256 slotIndex; selectorIndex < ds.selectorCount; slotIndex++) {
             bytes32 slot = ds.selectorSlots[slotIndex];
             for (uint256 selectorSlotIndex; selectorSlotIndex < 8; selectorSlotIndex++) {
@@ -110,7 +108,7 @@ contract DiamondLoupeFacet is IDiamondLoupe {
                 if (selectorIndex > ds.selectorCount) {
                     break;
                 }
-                // " << 5 is the same as multiplying by 32 ( * 32)
+                // " << 5 is the same as multiplying by 32 ( * 32).
                 bytes4 selector = bytes4(slot << (selectorSlotIndex << 5));
                 address facetAddress_ = address(bytes20(ds.facets[selector]));
                 bool continueLoop;
@@ -127,7 +125,7 @@ contract DiamondLoupeFacet is IDiamondLoupe {
                 numFacets++;
             }
         }
-        // Set the number of facet addresses in the array
+        // Set the number of facet addresses in the array.
         assembly {
             mstore(facetAddresses_, numFacets)
         }
@@ -138,10 +136,4 @@ contract DiamondLoupeFacet is IDiamondLoupe {
         LibDiamond.DiamondStorage storage ds = LibDiamond.diamondStorage();
         facetAddress_ = address(bytes20(ds.facets[_functionSelector]));
     }
-
-    // TODO check comment on import: This implements ERC-165.
-    //function supportsInterface(bytes4 _interfaceId) external override view returns (bool) {
-    //    LibDiamond.DiamondStorage storage ds = LibDiamond.diamondStorage();
-    //    return ds.supportedInterfaces[_interfaceId];
-    //}
 }

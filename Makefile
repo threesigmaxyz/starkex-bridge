@@ -37,6 +37,14 @@ lint:
 tests :;
 	@forge test -vvv
 
+# Run tests with coverage
+coverage :;
+	@forge coverage
+
+# Run tests with coverage and generate lcov.info
+coverage-report :;
+	@forge coverage --report lcov
+
 # Run slither static analysis
 slither :;
 	@slither ./src
@@ -50,7 +58,9 @@ anvil :;
 
 # This is the private key of account from the mnemonic from the "make anvil" command
 deploy-anvil :;
-	@forge script script/01_Deploy.s.sol:Deploy --rpc-url http://localhost:8545 --private-key 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80 --broadcast
+	@forge script script/DeployBridgeAndReceptor.s.sol:DeployBridgeAndReceptorModuleScript --rpc-url http://localhost:8545 --broadcast && \
+	forge script script/DeployTransmitter.s.sol:DeployTransmitterModuleScript --rpc-url http://localhost:8545 --broadcast && \
+	forge script script/ConfigureReceptor.s.sol:ConfigureReceptorModuleScript --rpc-url http://localhost:8545 --broadcast 
 
 # Deploy the contract to remote network and verify the code
 deploy-network :;

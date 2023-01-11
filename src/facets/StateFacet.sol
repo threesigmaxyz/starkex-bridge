@@ -1,19 +1,18 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import { Modifiers }     from "src/Modifiers.sol";
-import { IStateFacet } from "src/interfaces/IStateFacet.sol";
-import { AppStorage }    from "src/storage/AppStorage.sol";
+import { LibState } from "src/libraries/LibState.sol";
+import { OnlyInteroperabilityContract } from "src/modifiers/OnlyInteroperabilityContract.sol";
+import { IStateFacet } from "src/interfaces/facets/IStateFacet.sol";
 
-contract StateFacet is Modifiers, IStateFacet {
-
-    AppStorage.AppStorage s;
-
+contract StateFacet is OnlyInteroperabilityContract, IStateFacet {
+    /// @inheritdoc IStateFacet
     function getOrderRoot() external view override returns (uint256 orderRoot_) {
-        orderRoot_ = s.orderRoot;
+        orderRoot_ = LibState.getOrderRoot();
     }
 
+    /// @inheritdoc IStateFacet
     function setOrderRoot(uint256 orderRoot_) external override onlyInteroperabilityContract {
-        s.orderRoot = orderRoot_;
+        LibState.setOrderRoot(orderRoot_);
     }
 }

@@ -2,13 +2,13 @@
 pragma solidity >=0.5.0;
 
 /**
-    MIT License
-    Original author: chriseth
-*/
+ * MIT License
+ *     Original author: chriseth
+ */
 library D {
     struct Label {
         bytes32 data;
-        uint length;
+        uint256 length;
     }
 
     struct Edge {

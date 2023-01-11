@@ -1,49 +1,58 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import { Pausable } from "@openzeppelin/security/Pausable.sol";
+import { NonblockingLzReceiver } from "src/interoperability/lz/NonblockingLzReceiver.sol";
+import { LibAccessControl } from "src/libraries/LibAccessControl.sol";
+import { IAccessControlFacet } from "src/interfaces/facets/IAccessControlFacet.sol";
+import { IStateFacet } from "src/interfaces/facets/IStateFacet.sol";
+import { ILzReceptor } from "src/interfaces/interoperability/ILzReceptor.sol";
 
-import { NonblockingLzApp } from "src/dependencies/lz/NonblockingLzApp.sol";
+contract LzReceptor is ILzReceptor, NonblockingLzReceiver {
+    /// @notice Address of the _bridge.
+    address private immutable _bridge;
 
-interface IBridge {
-    function setOrderRoot(uint256 orderRoot_) external;
-}
+    /// @notice Last nonce received. Useful to ignore outdated received roots.
+    uint256 private _lastNonce;
 
-contract LzReceptor is NonblockingLzApp, Pausable {
-    
-    IBridge immutable private _bridge;
+    uint256 private _orderRoot;
 
-    constructor(
-        address lzEndpoint_,
-        address bridgeAddress_
-    ) NonblockingLzApp(lzEndpoint_) {
-        _bridge = IBridge(bridgeAddress_);
+    constructor(address lzEndpoint_, address bridge_) NonblockingLzReceiver(lzEndpoint_) {
+        if (lzEndpoint_ == address(0)) revert ZeroLzEndpointAddressError();
+        if (bridge_ == address(0)) revert ZeroBridgeAddressError();
+
+        _bridge = bridge_;
+        emit LogSetBridge(bridge_);
     }
 
-    function _nonblockingLzReceive(
-        uint16 srcChainId_,
-        bytes memory srcAddress_,
-        uint64 nonce_,
-        bytes memory payload_
-    ) internal override {
-        // TODO validate srcAddress_
-        // TODO validate nonce as sequence number?
-        // use assembly to extract the address from the bytes memory parameter
-        // address sendBackToAddress;
-        // assembly {
-        //     sendBackToAddress := mload(add(_srcAddress, 20))
-        // }
+    /// @inheritdoc ILzReceptor
+    function acceptBridgeRole() public override {
+        IAccessControlFacet(_bridge).acceptRole(LibAccessControl.INTEROPERABILITY_CONTRACT_ROLE);
+        emit LogBridgeRoleAccepted();
+    }
 
-        // decode the number of pings sent thus far
-        (
-            uint256 validiumVaultRoot_,
-            uint256 validiumTreeHeight_,
-            uint256 rollupVaultRoot_,
-            uint256 rollupTreeHeight_,
-            uint256 orderRoot_,
-            uint256 orderTreeHeight_
-        ) = abi.decode(payload_, (uint256, uint256, uint256, uint256, uint256, uint256));
+    /// @inheritdoc ILzReceptor
+    function setOrderRoot() external override onlyOwner {
+        uint256 orderRoot_ = _orderRoot;
+        IStateFacet(_bridge).setOrderRoot(orderRoot_);
+        emit LogOrderRootUpdate(orderRoot_);
+    }
 
-        _bridge.setOrderRoot(orderRoot_);
+    /**
+     * @notice Receives the root update.
+     * @param nonce_ The nonce of the message.
+     * @param payload_ Contains the roots.
+     */
+    function _nonblockingLzReceive(uint16, bytes memory, uint64 nonce_, bytes memory payload_) internal override {
+        (uint256 orderRoot_) = abi.decode(payload_, (uint256));
+
+        /// Return because the most recent order tree contains all the old info.
+        if (nonce_ <= _lastNonce) {
+            emit LogOutdatedRootReceived(orderRoot_, nonce_);
+            return;
+        }
+        _lastNonce = nonce_;
+
+        _orderRoot = orderRoot_;
+        emit LogRootReceived(orderRoot_);
     }
 }

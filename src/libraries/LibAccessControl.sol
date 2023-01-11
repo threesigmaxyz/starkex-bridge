@@ -1,52 +1,88 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import { IAccessControlFacet } from "src/interfaces/IAccessControlFacet.sol";
+import { LibTokenRegister } from "src/libraries/LibTokenRegister.sol";
 
 library LibAccessControl {
-    bytes32 constant ACESS_CONTROL_STORAGE_POSITION = keccak256("ACESS_CONTROL_STORAGE_POSITION");
+    bytes32 constant ACCESS_CONTROL_STORAGE_POSITION = keccak256("ACCESS_CONTROL_STORAGE_POSITION");
+
+    bytes32 constant OWNER_ROLE = keccak256("OWNER_ROLE");
+    bytes32 constant STARKEX_OPERATOR_ROLE = keccak256("STARKEX_OPERATOR_ROLE");
+    bytes32 constant INTEROPERABILITY_CONTRACT_ROLE = keccak256("INTEROPERABILITY_CONTRACT_ROLE");
+    bytes32 constant TOKEN_ADMIN_ROLE = keccak256("TOKEN_ADMIN_ROLE");
 
     struct AccessControlStorage {
-        address owner;
-        address starkExOperator;
-        address interoperabilityContract;
+        mapping(bytes32 => address) roles;
+        mapping(bytes32 => address) pendingRoles;
     }
 
-    function diamondStorage() internal pure returns (AccessControlStorage storage ds) {
-        bytes32 position_ = ACESS_CONTROL_STORAGE_POSITION;
+    /**
+     * @notice Emits that a role was set for an account.
+     * @param role The role.
+     * @param previousAccount The previous account assigned to the role.
+     * @param newAccount The new account assigned.
+     */
+    event LogRoleTransferred(bytes32 indexed role, address indexed previousAccount, address indexed newAccount);
+
+    /**
+     * @notice Emits that a pending role was set for an account.
+     * @param role The role.
+     * @param newAccount The new account assigned.
+     */
+    event LogSetPendingRole(bytes32 indexed role, address indexed newAccount);
+
+    error UnauthorizedError();
+    error NotPendingRoleError();
+
+    /// @dev Storage of this facet using diamond storage.
+    function accessControlStorage() internal pure returns (AccessControlStorage storage acs) {
+        bytes32 position_ = ACCESS_CONTROL_STORAGE_POSITION;
         assembly {
-            ds.slot := position_
+            acs.slot := position_
         }
     }
 
-    function setOwner(address owner_) internal {
-        AccessControlStorage storage ds = diamondStorage();
-        
-        address prevOwner_ = ds.owner;
-        ds.owner = owner_;
-        
-        //emit IAccessControlFacet.OwnershipTransferred(prevOwner_, owner_);
+    /**
+     * @notice Accepts the given role.
+     * @param role_ The role.
+     */
+    function acceptRole(bytes32 role_) internal {
+        AccessControlStorage storage acs = accessControlStorage();
+
+        if (msg.sender != acs.pendingRoles[role_]) revert NotPendingRoleError();
+
+        address prevAccount_ = acs.roles[role_];
+        acs.roles[role_] = msg.sender;
+
+        acs.pendingRoles[role_] = address(0);
+
+        emit LogRoleTransferred(role_, prevAccount_, msg.sender);
     }
 
-    function setStarkExOperator(address operator_) internal {
-        diamondStorage().starkExOperator = operator_;
-        // TODO emit IAccessControlFacet.LogSetStarkExOperator(operator_);
+    /**
+     * @notice Sets the role to a pending account.
+     * @param role_ The role.
+     * @param account_ The address of the pending account.
+     */
+    function setPendingRole(bytes32 role_, address account_) internal {
+        accessControlStorage().pendingRoles[role_] = account_;
+        emit LogSetPendingRole(role_, account_);
     }
 
-    function setInteroperabilityContract(address interop_) internal {
-        diamondStorage().interoperabilityContract = interop_;
-        // TODO emit IAccessControlFacet.LogSetInteroperabilityContract(interop_);
+    /**
+     * @notice Gets the account assigned to a role.
+     * @param role_ The role.
+     * @return The address.
+     */
+    function getRole(bytes32 role_) internal view returns (address) {
+        return accessControlStorage().roles[role_];
     }
 
-    function getOwner() internal view returns (address owner_) {
-        owner_ = diamondStorage().owner;
-    }
-
-    function getStarkExOperator() internal view returns (address operator_) {
-        operator_ = diamondStorage().starkExOperator;
-    }
-
-    function getInteroperabilityContract() internal view returns (address interop_) {
-        interop_ = diamondStorage().interoperabilityContract;
+    /**
+     * @notice Throws if called by any account other than the one assigned to the role.
+     * @param role_ The role.
+     */
+    function onlyRole(bytes32 role_) internal view {
+        if (msg.sender != accessControlStorage().roles[role_]) revert UnauthorizedError();
     }
 }
