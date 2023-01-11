@@ -2,8 +2,10 @@
 pragma solidity ^0.8.0;
 
 import { ECDSA } from "src/dependencies/ecdsa/ECDSA.sol";
-import { HelpersERC20 } from "src/helpers/HelpersERC20.sol";
 import { HelpersECDSA } from "src/helpers/HelpersECDSA.sol";
+
+import { HelpersERC20 } from "src/helpers/HelpersERC20.sol";
+import { HelpersTransferNativeOrERC20 } from "src/helpers/HelpersTransferNativeOrERC20.sol";
 import { Constants } from "src/constants/Constants.sol";
 import { LibTokenRegister } from "src/libraries/LibTokenRegister.sol";
 import { OnlyOwner } from "src/modifiers/OnlyOwner.sol";
@@ -52,6 +54,11 @@ contract WithdrawalFacet is OnlyRegisteredToken, OnlyStarkExOperator, OnlyOwner,
         emit LogSetWithdrawalExpirationTimeout(timeout_);
     }
 
+    function lockNativeWithdrawal(uint256 starkKey_, uint256 lockHash_) external payable override onlyStarkExOperator {
+        _validateAndAddWithdrawal(starkKey_, Constants.NATIVE, msg.value, lockHash_);
+        // The native is transferred to the contract, no need to call any transfer function like lockDeposit
+    }
+
     /// @inheritdoc IWithdrawalFacet
     function lockWithdrawal(uint256 starkKey_, address token_, uint256 amount_, uint256 lockHash_)
         external
@@ -59,27 +66,10 @@ contract WithdrawalFacet is OnlyRegisteredToken, OnlyStarkExOperator, OnlyOwner,
         onlyStarkExOperator
         onlyRegisteredToken(token_)
     {
-        // Validate keys and availability.
-        if (lockHash_ == 0) revert InvalidLockHashError();
-        if (!HelpersECDSA.isOnCurve(starkKey_) || starkKey_ > Constants.K_MODULUS) revert InvalidStarkKeyError();
-        if (amount_ == 0) revert ZeroAmountError();
-
-        WithdrawalStorage storage ws = withdrawalStorage();
-
-        // Create a withdrawal lock for the funds.
-        ws.withdrawals[lockHash_] = Withdrawal({
-            starkKey: starkKey_,
-            token: token_,
-            amount: amount_,
-            expirationDate: (block.timestamp + ws.withdrawalExpirationTimeout)
-        });
-        ws.pendingWithdrawals[token_] += amount_;
+        _validateAndAddWithdrawal(starkKey_, token_, amount_, lockHash_);
 
         // Transfer funds.
-        HelpersERC20.transferFrom(token_, msg.sender, address(this), amount_); // TODO is this safe?
-
-        // Emit new Lock.
-        emit LogLockWithdrawal(lockHash_, starkKey_, token_, amount_);
+        HelpersERC20.transferFrom(token_, msg.sender, address(this), amount_);
     }
 
     /// @inheritdoc IWithdrawalFacet
@@ -106,7 +96,7 @@ contract WithdrawalFacet is OnlyRegisteredToken, OnlyStarkExOperator, OnlyOwner,
         emit LogClaimWithdrawal(lockHash_, signature_, recipient_);
 
         // Transfer funds.
-        HelpersERC20.transfer(withdrawal_.token, recipient_, withdrawal_.amount);
+        HelpersTransferNativeOrERC20.transfer(withdrawal_.token, recipient_, withdrawal_.amount);
     }
 
     /// @inheritdoc IWithdrawalFacet
@@ -129,7 +119,7 @@ contract WithdrawalFacet is OnlyRegisteredToken, OnlyStarkExOperator, OnlyOwner,
         emit LogReclaimWithdrawal(lockHash_, recipient_);
 
         // Transfer funds.
-        HelpersERC20.transfer(withdrawal_.token, recipient_, withdrawal_.amount);
+        HelpersTransferNativeOrERC20.transfer(withdrawal_.token, recipient_, withdrawal_.amount);
     }
 
     //==============================================================================//
@@ -150,5 +140,28 @@ contract WithdrawalFacet is OnlyRegisteredToken, OnlyStarkExOperator, OnlyOwner,
     /// @inheritdoc IWithdrawalFacet
     function getWithdrawalExpirationTimeout() external view override returns (uint256) {
         return withdrawalStorage().withdrawalExpirationTimeout;
+    }
+
+    function _validateAndAddWithdrawal(uint256 starkKey_, address token_, uint256 amount_, uint256 lockHash_)
+        internal
+    {
+        // Validate keys and availability.
+        if (lockHash_ == 0) revert InvalidLockHashError();
+        if (!HelpersECDSA.isOnCurve(starkKey_) || starkKey_ > Constants.K_MODULUS) revert InvalidStarkKeyError();
+        if (amount_ == 0) revert ZeroAmountError();
+
+        WithdrawalStorage storage ws = withdrawalStorage();
+
+        // Create a withdrawal lock for the funds.
+        ws.withdrawals[lockHash_] = Withdrawal({
+            starkKey: starkKey_,
+            token: token_,
+            amount: amount_,
+            expirationDate: (block.timestamp + ws.withdrawalExpirationTimeout)
+        });
+        ws.pendingWithdrawals[token_] += amount_;
+
+        // Emit new Lock.
+        emit LogLockWithdrawal(lockHash_, starkKey_, token_, amount_);
     }
 }

@@ -71,6 +71,13 @@ interface IDepositFacet {
     function lockDeposit(uint256 starkKey_, address token_, uint256 amount_, uint256 lockHash_) external;
 
     /**
+     * @notice Locks a native deposit until the hash of the transfer is included in the Merkle Tree.
+     * @param starkKey_ The public starkKey of the user.
+     * @param lockHash_ The hash of the transfer to the user.
+     */
+    function lockNativeDeposit(uint256 starkKey_, uint256 lockHash_) external payable;
+
+    /**
      * @notice Claim a deposit if the hash of the transfer was included in the Merkle Tree.
      * @param lockHash_ The hash of the transfer to the user.
      * @param branchMask_ Bits defining the path to the correct node.

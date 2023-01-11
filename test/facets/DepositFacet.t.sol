@@ -9,7 +9,6 @@ import { MockERC20 } from "test/mocks/MockERC20.sol";
 import { BaseFixture } from "test/fixtures/BaseFixture.sol";
 import { IDepositFacet } from "src/interfaces/facets/IDepositFacet.sol";
 import { IStateFacet } from "src/interfaces/facets/IStateFacet.sol";
-import { ITokenRegisterFacet } from "src/interfaces/facets/ITokenRegisterFacet.sol";
 import { LibAccessControl } from "src/libraries/LibAccessControl.sol";
 import { LibTokenRegister } from "src/libraries/LibTokenRegister.sol";
 
@@ -84,7 +83,7 @@ contract DepositFacetTest is BaseFixture {
     //=== lockDeposit Tests                                                      ===//
     //==============================================================================//
 
-    function test_lockDeposit_ok(uint256 starkKey_, uint256 amount_, uint256 lockHash_) public {
+    function test_lockDeposit_ERC20_ok(uint256 starkKey_, uint256 amount_, uint256 lockHash_) public {
         vm.assume(starkKey_ < Constants.K_MODULUS && HelpersECDSA.isOnCurve(starkKey_));
         vm.assume(amount_ > 0);
         vm.assume(lockHash_ > 0);
@@ -171,16 +170,39 @@ contract DepositFacetTest is BaseFixture {
     }
 
     //==============================================================================//
+    //=== lockNativeDeposit Tests                                                   ===//
+    //==============================================================================//
+
+    function test_lockNativeDeposit_ok(uint256 starkKey_, uint256 amount_, uint256 lockHash_) public {
+        vm.assume(starkKey_ < Constants.K_MODULUS && HelpersECDSA.isOnCurve(starkKey_));
+        vm.assume(amount_ > 0);
+        vm.assume(lockHash_ > 0);
+
+        // Act + Assert
+        // The lockNativeDeposit function is called in _lockDeposit when the given token is the NATIVE address.
+        _lockDeposit(_user(), starkKey_, Constants.NATIVE, amount_, lockHash_);
+    }
+
+    //==============================================================================//
     //=== claimDeposit Tests                                                     ===//
     //==============================================================================//
 
-    function test_claimDeposit_ok(uint256 amount_, uint256 lockHash_) public {
+    function test_claimDeposit_ERC20_ok(uint256 amount_, uint256 lockHash_) public {
         vm.assume(amount_ > 0);
         vm.assume(lockHash_ > 0);
 
         // Act + Assert
         _lockDeposit(_user(), STARK_KEY, address(_token), amount_, lockHash_);
         _claimDeposit(address(_token), amount_, lockHash_, _recipient());
+    }
+
+    function test_claimDeposit_NATIVE_ok(uint256 amount_, uint256 lockHash_) public {
+        vm.assume(amount_ > 0);
+        vm.assume(lockHash_ > 0);
+
+        // Act + Assert
+        _lockDeposit(_user(), STARK_KEY, Constants.NATIVE, amount_, lockHash_);
+        _claimDeposit(Constants.NATIVE, amount_, lockHash_, _recipient());
     }
 
     function test_claimDeposit_ZeroAddressRecipientError() public {
@@ -218,7 +240,7 @@ contract DepositFacetTest is BaseFixture {
     //=== reclaimDeposit Tests                                                   ===//
     //==============================================================================//
 
-    function test_reclaimDeposit_ok(uint256 lockHash_) public {
+    function test_reclaimDeposit_ERC20_ok(uint256 lockHash_) public {
         vm.assume(lockHash_ > 0);
 
         // Arrange
@@ -226,6 +248,16 @@ contract DepositFacetTest is BaseFixture {
 
         // Act + Assert
         _reclaimDeposit(_user(), address(_token), USER_TOKENS, lockHash_);
+    }
+
+    function test_reclaimDeposit_NATIVE_ok(uint256 lockHash_) public {
+        vm.assume(lockHash_ > 0);
+
+        // Arrange
+        _lockDeposit(_user(), STARK_KEY, Constants.NATIVE, USER_TOKENS, lockHash_);
+
+        // Act + Assert
+        _reclaimDeposit(_user(), Constants.NATIVE, USER_TOKENS, lockHash_);
     }
 
     function test_reclaimDeposit_depositNotExpiredError(uint256 timePassed_) public {
@@ -283,19 +315,23 @@ contract DepositFacetTest is BaseFixture {
     function _lockDeposit(address user_, uint256 starkKey_, address token_, uint256 amount_, uint256 lockHash_)
         internal
     {
-        // Arrange
-        uint256 initialUserBalance_ = MockERC20(token_).balanceOf(user_);
+        uint256 initialBridgeBalance_ = _getNativeOrERC20Balance(token_, _bridge);
+        uint256 initialUserBalance_ = _getNativeOrERC20Balance(token_, user_);
         uint256 initialPendingDeposits_ = IDepositFacet(_bridge).getPendingDeposits(token_);
 
         // Act + Assert
-        vm.prank(user_);
-        MockERC20(token_).approve(_bridge, amount_);
+        if (token_ != Constants.NATIVE) {
+            vm.prank(user_);
+            MockERC20(token_).approve(_bridge, amount_);
+        }
         // And
         vm.expectEmit(true, true, true, true);
         emit LogLockDeposit(lockHash_, starkKey_, token_, amount_);
         // And
         vm.prank(user_);
-        IDepositFacet(_bridge).lockDeposit(starkKey_, token_, amount_, lockHash_);
+        token_ != Constants.NATIVE
+            ? IDepositFacet(_bridge).lockDeposit(starkKey_, token_, amount_, lockHash_)
+            : IDepositFacet(_bridge).lockNativeDeposit{value: amount_}(starkKey_, lockHash_);
 
         // Assert
         IDepositFacet.Deposit memory deposit_ = IDepositFacet(_bridge).getDeposit(lockHash_);
@@ -305,14 +341,17 @@ contract DepositFacetTest is BaseFixture {
         assertEq(deposit_.amount, amount_);
         assertEq(deposit_.expirationDate, block.timestamp + IDepositFacet(_bridge).getDepositExpirationTimeout());
         // And
-        assertEq(MockERC20(token_).balanceOf(user_), initialUserBalance_ - amount_);
+        assertEq(_getNativeOrERC20Balance(token_, _bridge), initialBridgeBalance_ + amount_);
+        assertEq(_getNativeOrERC20Balance(token_, user_), initialUserBalance_ - amount_);
         assertEq(IDepositFacet(_bridge).getPendingDeposits(token_), initialPendingDeposits_ + amount_);
     }
 
     function _claimDeposit(address token_, uint256 amount_, uint256 lockHash_, address recipient_) internal {
         // Arrange
+        uint256 initialBridgeBalance_ = _getNativeOrERC20Balance(token_, _bridge);
+        uint256 initialRecipientBalance_ = _getNativeOrERC20Balance(token_, recipient_);
         uint256 initialPendingDeposits_ = IDepositFacet(_bridge).getPendingDeposits(token_);
-        uint256 initialRecipientBalance_ = MockERC20(token_).balanceOf(recipient_);
+
         // And
         PatriciaTree mpt_ = new PatriciaTree();
         mpt_.insert(abi.encode(lockHash_), abi.encode(1));
@@ -331,13 +370,15 @@ contract DepositFacetTest is BaseFixture {
         // Assert
         _validateDepositDeleted(lockHash_);
         // And
-        assertEq(MockERC20(token_).balanceOf(recipient_), initialRecipientBalance_ + amount_);
+        assertEq(_getNativeOrERC20Balance(token_, _bridge), initialBridgeBalance_ - amount_);
+        assertEq(_getNativeOrERC20Balance(token_, recipient_), initialRecipientBalance_ + amount_);
         assertEq(IDepositFacet(_bridge).getPendingDeposits(token_), initialPendingDeposits_ - amount_);
     }
 
     function _reclaimDeposit(address user_, address token_, uint256 amount_, uint256 lockHash_) internal {
         // Arrange
-        uint256 initialUserBalance_ = MockERC20(token_).balanceOf(user_);
+        uint256 initialBridgeBalance_ = _getNativeOrERC20Balance(token_, _bridge);
+        uint256 initialUserBalance_ = _getNativeOrERC20Balance(token_, user_);
         uint256 initialPendingDeposits_ = IDepositFacet(_bridge).getPendingDeposits(token_);
         // And
         vm.warp(block.timestamp + IDepositFacet(_bridge).getDepositExpirationTimeout() + 1);
@@ -350,9 +391,8 @@ contract DepositFacetTest is BaseFixture {
 
         // Assert
         _validateDepositDeleted(lockHash_);
-        // And
-        assertEq(MockERC20(token_).balanceOf(user_), initialUserBalance_ + amount_);
-        // And
+        assertEq(_getNativeOrERC20Balance(token_, _bridge), initialBridgeBalance_ - amount_);
+        assertEq(_getNativeOrERC20Balance(token_, user_), initialUserBalance_ + amount_);
         assertEq(IDepositFacet(_bridge).getPendingDeposits(token_), initialPendingDeposits_ - amount_);
     }
 

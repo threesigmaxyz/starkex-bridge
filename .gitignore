@@ -6,6 +6,8 @@
 broadcast/
 
 # files
+script/data/*
+!script/data/*.sol
 *.env
 *.log
 .DS_Store

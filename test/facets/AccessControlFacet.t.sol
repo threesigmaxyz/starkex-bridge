@@ -19,6 +19,9 @@ contract AccessControlFacetTest is BaseFixture {
 
     function test_transferRole_ok(bytes32 role1_, bytes32 role2_) public {
         // Arrange
+        // If roles are set to owner, the test will fail because _owner() won't be the owner anymore.
+        vm.assume(role1_ != LibAccessControl.OWNER_ROLE);
+        vm.assume(role2_ != LibAccessControl.OWNER_ROLE);
         address account1_ = vm.addr(1);
         address account2_ = vm.addr(2);
         vm.label(account1_, "account1");
