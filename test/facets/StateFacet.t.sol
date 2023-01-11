@@ -19,8 +19,8 @@ contract StateFacetTest is BaseFixture {
     function test_setOrderRoot_ok(uint256 orderRoot1, uint256 orderRoot2) public {
         // Act + Assert
         assertEq(IStateFacet(_bridge).getOrderRoot(), 0);
-        _call_setOrderRoot_and_validate(orderRoot1);
-        _call_setOrderRoot_and_validate(orderRoot2);
+        _setOrderRoot(orderRoot1);
+        _setOrderRoot(orderRoot2);
     }
 
     function test_setOrderRoot_UnauthorizedError() public {
@@ -34,7 +34,7 @@ contract StateFacetTest is BaseFixture {
     //=== Internal Test Helpers                                                  ===//
     //==============================================================================//
 
-    function _call_setOrderRoot_and_validate(uint256 orderRoot) internal {
+    function _setOrderRoot(uint256 orderRoot) internal {
         // Arrange
         vm.expectEmit(true, false, false, true, _bridge);
         emit LogSetOrderRoot(orderRoot);

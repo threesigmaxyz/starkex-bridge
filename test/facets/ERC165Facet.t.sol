@@ -31,15 +31,15 @@ contract ERC165FacetTest is BaseFixture {
 
     function test_setSupportedInterface_ok(bytes4 interfaceId1_, bytes4 interfaceId2_) public {
         // Act + Assert
-        _call_setSupportedInterface_and_Validate(interfaceId1_, true);
-        _call_setSupportedInterface_and_Validate(interfaceId2_, true);
-        _call_setSupportedInterface_and_Validate(interfaceId1_, false);
-        _call_setSupportedInterface_and_Validate(interfaceId2_, false);
-        _call_setSupportedInterface_and_Validate(interfaceId1_, true);
-        _call_setSupportedInterface_and_Validate(interfaceId2_, true);
+        _setSupportedInterface(interfaceId1_, true);
+        _setSupportedInterface(interfaceId2_, true);
+        _setSupportedInterface(interfaceId1_, false);
+        _setSupportedInterface(interfaceId2_, false);
+        _setSupportedInterface(interfaceId1_, true);
+        _setSupportedInterface(interfaceId2_, true);
     }
 
-    function test_setSupportedInterface_notOwner() public {
+    function test_setSupportedInterface_UnauthorizedError() public {
         // Arrange
         vm.expectRevert(abi.encodeWithSelector(LibAccessControl.UnauthorizedError.selector));
 
@@ -52,7 +52,7 @@ contract ERC165FacetTest is BaseFixture {
     //=== Internal Test Helpers                                                  ===//
     //==============================================================================//
 
-    function _call_setSupportedInterface_and_Validate(bytes4 interfaceId_, bool flag_) internal {
+    function _setSupportedInterface(bytes4 interfaceId_, bool flag_) internal {
         // Arrange
         vm.expectEmit(true, true, false, true, _bridge);
         emit LogSetSupportedInterface(interfaceId_, flag_);

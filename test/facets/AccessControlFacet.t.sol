@@ -25,12 +25,12 @@ contract AccessControlFacetTest is BaseFixture {
         vm.label(account2_, "account2");
 
         // Act + Assert
-        _transferRole_and_validate(role1_, account1_);
-        _transferRole_and_validate(role2_, account2_);
-        _transferRole_and_validate(role1_, address(0));
-        _transferRole_and_validate(role2_, address(0));
-        _transferRole_and_validate(role1_, account1_);
-        _transferRole_and_validate(role2_, account2_);
+        _setPendingRole_and_acceptRole(role1_, account1_);
+        _setPendingRole_and_acceptRole(role2_, account2_);
+        _setPendingRole_and_acceptRole(role1_, address(0));
+        _setPendingRole_and_acceptRole(role2_, address(0));
+        _setPendingRole_and_acceptRole(role1_, account1_);
+        _setPendingRole_and_acceptRole(role2_, account2_);
     }
 
     function test_setPendingRole_UnauthorizedError(bytes32 role_) public {
@@ -47,7 +47,7 @@ contract AccessControlFacetTest is BaseFixture {
         address legitAccount_ = vm.addr(1);
         vm.label(legitAccount_, "legitAccount");
         // And
-        _call_setPendingRole_and_validate(role_, legitAccount_);
+        _setPendingRole(role_, legitAccount_);
         // And
         vm.expectRevert(abi.encodeWithSelector(LibAccessControl.NotPendingRoleError.selector));
 
@@ -60,7 +60,7 @@ contract AccessControlFacetTest is BaseFixture {
     //=== Internal Test Helpers                                                  ===//
     //==============================================================================//
 
-    function _call_setPendingRole_and_validate(bytes32 role_, address account_) internal {
+    function _setPendingRole(bytes32 role_, address account_) internal {
         // Arrange
         vm.expectEmit(true, true, false, true, _bridge);
         emit LogSetPendingRole(role_, account_);
@@ -70,9 +70,9 @@ contract AccessControlFacetTest is BaseFixture {
         IAccessControlFacet(_bridge).setPendingRole(role_, account_);
     }
 
-    function _transferRole_and_validate(bytes32 role_, address account_) internal {
+    function _setPendingRole_and_acceptRole(bytes32 role_, address account_) internal {
         // Arrange
-        _call_setPendingRole_and_validate(role_, account_);
+        _setPendingRole(role_, account_);
         // And
         vm.expectEmit(true, true, true, true, _bridge);
         address previousAccount_ = IAccessControlFacet(_bridge).getRole(role_);

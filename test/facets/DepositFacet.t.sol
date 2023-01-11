@@ -260,7 +260,7 @@ contract DepositFacetTest is BaseFixture {
     //=== getPendingDeposits Tests                                               ===//
     //==============================================================================//
 
-    function test_getPendingDeposits(uint256 amount1_, uint256 amount2_) public {
+    function test_getPendingDeposits_ok(uint256 amount1_, uint256 amount2_) public {
         vm.assume(amount1_ > 0);
         vm.assume(amount2_ > 0 && amount2_ <= type(uint256).max - amount1_);
 

@@ -27,14 +27,14 @@ contract TokenRegisterFacetTest is BaseFixture {
         assertEq(ITokenRegisterFacet(_bridge).isTokenRegistered(token1_), false);
         assertEq(ITokenRegisterFacet(_bridge).isTokenRegistered(token2_), false);
         // And
-        _call_setTokenRegister_and_Validate(_bridge, token1_, true);
-        _call_setTokenRegister_and_Validate(_bridge, token2_, true);
+        _setTokenRegister(_bridge, token1_, true);
+        _setTokenRegister(_bridge, token2_, true);
         // And
         assertEq(ITokenRegisterFacet(_bridge).isTokenRegistered(token1_), true);
         assertEq(ITokenRegisterFacet(_bridge).isTokenRegistered(token2_), true);
         // And
-        _call_setTokenRegister_and_Validate(_bridge, token1_, false);
-        _call_setTokenRegister_and_Validate(_bridge, token2_, false);
+        _setTokenRegister(_bridge, token1_, false);
+        _setTokenRegister(_bridge, token2_, false);
         // And
         assertEq(ITokenRegisterFacet(_bridge).isTokenRegistered(token1_), false);
         assertEq(ITokenRegisterFacet(_bridge).isTokenRegistered(token2_), false);
@@ -53,7 +53,7 @@ contract TokenRegisterFacetTest is BaseFixture {
     //=== Internal Test Helpers                                                  ===//
     //==============================================================================//
 
-    function _call_setTokenRegister_and_Validate(address bridge_, address token_, bool flag_) internal {
+    function _setTokenRegister(address bridge_, address token_, bool flag_) internal {
         // Arrange
         vm.expectEmit(true, true, false, true, bridge_);
         emit LogSetTokenRegister(token_, flag_);

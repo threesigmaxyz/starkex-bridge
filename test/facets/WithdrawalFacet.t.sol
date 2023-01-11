@@ -269,7 +269,7 @@ contract WithdrawalFacetTest is BaseFixture {
         );
     }
 
-    function test_claimWithdrawal_WhenSignatureWrongLength_InvalidSignatureError() public {
+    function test_claimWithdrawal_whenSignatureWrongLength_InvalidSignatureError() public {
         // Arrange
         vm.expectRevert(IWithdrawalFacet.InvalidSignatureError.selector);
 
