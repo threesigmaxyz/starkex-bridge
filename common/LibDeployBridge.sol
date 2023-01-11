@@ -140,7 +140,7 @@ library LibDeployBridge {
         bytes4[] memory depositFacetSelectors_ = new bytes4[](8);
         depositFacetSelectors_[0] = IDepositFacet.setDepositExpirationTimeout.selector;
         depositFacetSelectors_[1] = IDepositFacet.lockDeposit.selector;
-        depositFacetSelectors_[2] = IDepositFacet.lockEthDeposit.selector;
+        depositFacetSelectors_[2] = IDepositFacet.lockNativeDeposit.selector;
         depositFacetSelectors_[3] = IDepositFacet.claimDeposit.selector;
         depositFacetSelectors_[4] = IDepositFacet.reclaimDeposit.selector;
         depositFacetSelectors_[5] = IDepositFacet.getDeposit.selector;
@@ -153,7 +153,7 @@ library LibDeployBridge {
         bytes4[] memory withdrawalFacetSelectors_ = new bytes4[](8);
         withdrawalFacetSelectors_[0] = IWithdrawalFacet.setWithdrawalExpirationTimeout.selector;
         withdrawalFacetSelectors_[1] = IWithdrawalFacet.lockWithdrawal.selector;
-        withdrawalFacetSelectors_[2] = IWithdrawalFacet.lockEthWithdrawal.selector;
+        withdrawalFacetSelectors_[2] = IWithdrawalFacet.lockNativeWithdrawal.selector;
         withdrawalFacetSelectors_[3] = IWithdrawalFacet.claimWithdrawal.selector;
         withdrawalFacetSelectors_[4] = IWithdrawalFacet.reclaimWithdrawal.selector;
         withdrawalFacetSelectors_[5] = IWithdrawalFacet.getWithdrawal.selector;

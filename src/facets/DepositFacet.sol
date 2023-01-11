@@ -2,15 +2,16 @@
 pragma solidity ^0.8.0;
 
 import { LibMPT as MerklePatriciaTree } from "src/dependencies/mpt/v2/LibMPT.sol";
-import { HelpersERC20 } from "src/helpers/HelpersERC20.sol";
 import { HelpersECDSA } from "src/helpers/HelpersECDSA.sol";
+
+import { HelpersERC20 } from "src/helpers/HelpersERC20.sol";
+import { HelpersTransferNativeOrERC20 } from "src/helpers/HelpersTransferNativeOrERC20.sol";
 import { Constants } from "src/constants/Constants.sol";
 import { LibState } from "src/libraries/LibState.sol";
 import { OnlyOwner } from "src/modifiers/OnlyOwner.sol";
 import { OnlyStarkExOperator } from "src/modifiers/OnlyStarkExOperator.sol";
 import { OnlyRegisteredToken } from "src/modifiers/OnlyRegisteredToken.sol";
 import { IDepositFacet } from "src/interfaces/facets/IDepositFacet.sol";
-import { HelpersTransferEthOrERC20 } from "src/helpers/HelpersTransferEthOrERC20.sol";
 
 /**
  * Step 1: The user locks their funds in the sidechain account in the interoperability
@@ -58,9 +59,9 @@ contract DepositFacet is OnlyRegisteredToken, OnlyStarkExOperator, OnlyOwner, ID
     }
 
     /// @inheritdoc IDepositFacet
-    function lockEthDeposit(uint256 starkKey_, uint256 lockHash_) external payable override {
-        validateAndAddDeposit(starkKey_, Constants.ETH, msg.value, lockHash_);
-        // The eth is transferred to the contract, no need to call any transfer function like lockDeposit.
+    function lockNativeDeposit(uint256 starkKey_, uint256 lockHash_) external payable override {
+        validateAndAddDeposit(starkKey_, Constants.NATIVE, msg.value, lockHash_);
+        // The native is transferred to the contract, no need to call any transfer function like lockDeposit.
     }
 
     /// @inheritdoc IDepositFacet
@@ -103,7 +104,7 @@ contract DepositFacet is OnlyRegisteredToken, OnlyStarkExOperator, OnlyOwner, ID
         emit LogClaimDeposit(lockHash_, recipient_);
 
         // Transfer funds
-        HelpersTransferEthOrERC20.transfer(deposit_.token, recipient_, deposit_.amount);
+        HelpersTransferNativeOrERC20.transfer(deposit_.token, recipient_, deposit_.amount);
     }
 
     /// @inheritdoc IDepositFacet
@@ -127,7 +128,7 @@ contract DepositFacet is OnlyRegisteredToken, OnlyStarkExOperator, OnlyOwner, ID
         emit LogReclaimDeposit(lockHash_);
 
         // Transfer funds.
-        HelpersTransferEthOrERC20.transfer(deposit_.token, deposit_.receiver, deposit_.amount);
+        HelpersTransferNativeOrERC20.transfer(deposit_.token, deposit_.receiver, deposit_.amount);
     }
 
     //==============================================================================//

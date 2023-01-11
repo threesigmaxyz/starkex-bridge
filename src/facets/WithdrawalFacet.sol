@@ -2,15 +2,16 @@
 pragma solidity ^0.8.0;
 
 import { ECDSA } from "src/dependencies/ecdsa/ECDSA.sol";
-import { HelpersERC20 } from "src/helpers/HelpersERC20.sol";
 import { HelpersECDSA } from "src/helpers/HelpersECDSA.sol";
+
+import { HelpersERC20 } from "src/helpers/HelpersERC20.sol";
+import { HelpersTransferNativeOrERC20 } from "src/helpers/HelpersTransferNativeOrERC20.sol";
 import { Constants } from "src/constants/Constants.sol";
 import { LibTokenRegister } from "src/libraries/LibTokenRegister.sol";
 import { OnlyOwner } from "src/modifiers/OnlyOwner.sol";
 import { OnlyStarkExOperator } from "src/modifiers/OnlyStarkExOperator.sol";
 import { OnlyRegisteredToken } from "src/modifiers/OnlyRegisteredToken.sol";
 import { IWithdrawalFacet } from "src/interfaces/facets/IWithdrawalFacet.sol";
-import { HelpersTransferEthOrERC20 } from "src/helpers/HelpersTransferEthOrERC20.sol";
 
 /**
  * Step 1: The user sends an off-chain request to the App, specifying the amount and
@@ -53,9 +54,9 @@ contract WithdrawalFacet is OnlyRegisteredToken, OnlyStarkExOperator, OnlyOwner,
         emit LogSetWithdrawalExpirationTimeout(timeout_);
     }
 
-    function lockEthWithdrawal(uint256 starkKey_, uint256 lockHash_) external payable override onlyStarkExOperator {
-        _validateAndAddWithdrawal(starkKey_, Constants.ETH, msg.value, lockHash_);
-        // The eth is transferred to the contract, no need to call any transfer function like lockDeposit
+    function lockNativeWithdrawal(uint256 starkKey_, uint256 lockHash_) external payable override onlyStarkExOperator {
+        _validateAndAddWithdrawal(starkKey_, Constants.NATIVE, msg.value, lockHash_);
+        // The native is transferred to the contract, no need to call any transfer function like lockDeposit
     }
 
     /// @inheritdoc IWithdrawalFacet
@@ -95,7 +96,7 @@ contract WithdrawalFacet is OnlyRegisteredToken, OnlyStarkExOperator, OnlyOwner,
         emit LogClaimWithdrawal(lockHash_, signature_, recipient_);
 
         // Transfer funds.
-        HelpersTransferEthOrERC20.transfer(withdrawal_.token, recipient_, withdrawal_.amount);
+        HelpersTransferNativeOrERC20.transfer(withdrawal_.token, recipient_, withdrawal_.amount);
     }
 
     /// @inheritdoc IWithdrawalFacet
@@ -118,7 +119,7 @@ contract WithdrawalFacet is OnlyRegisteredToken, OnlyStarkExOperator, OnlyOwner,
         emit LogReclaimWithdrawal(lockHash_, recipient_);
 
         // Transfer funds.
-        HelpersTransferEthOrERC20.transfer(withdrawal_.token, recipient_, withdrawal_.amount);
+        HelpersTransferNativeOrERC20.transfer(withdrawal_.token, recipient_, withdrawal_.amount);
     }
 
     //==============================================================================//

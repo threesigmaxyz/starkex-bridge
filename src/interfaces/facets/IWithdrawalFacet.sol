@@ -67,12 +67,12 @@ interface IWithdrawalFacet {
     function setWithdrawalExpirationTimeout(uint256 timeout_) external;
 
     /**
-     * @notice Lock eth funds to be withdrawn
+     * @notice Lock native funds to be withdrawn
      * @dev Verifies if there are enough funds to lock and then lock funds.
      * @param starkKey_ The public STARK key that must sign the lock hash.
      * @param lockHash_ The lock hash to be signed that transfers funds to the app.
      */
-    function lockEthWithdrawal(uint256 starkKey_, uint256 lockHash_) external payable;
+    function lockNativeWithdrawal(uint256 starkKey_, uint256 lockHash_) external payable;
 
     /**
      * @notice Lock funds to be withdrawn
