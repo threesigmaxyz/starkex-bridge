@@ -55,11 +55,11 @@ contract WithdrawalFacet is OnlyRegisteredToken, OnlyStarkExOperator, OnlyOwner,
     }
 
     /// @inheritdoc IWithdrawalFacet
-    function lockNativeWithdrawal(uint256 starkKey_, uint256 lockHash_, address recipient_) 
-        external 
-        payable 
-        override 
-        onlyStarkExOperator 
+    function lockNativeWithdrawal(uint256 starkKey_, uint256 lockHash_, address recipient_)
+        external
+        payable
+        override
+        onlyStarkExOperator
     {
         _validateAndAddWithdrawal(starkKey_, Constants.NATIVE, msg.value, lockHash_, recipient_);
         // The native is transferred to the contract, no need to call any transfer function like lockDeposit
@@ -148,10 +148,10 @@ contract WithdrawalFacet is OnlyRegisteredToken, OnlyStarkExOperator, OnlyOwner,
     }
 
     function _validateAndAddWithdrawal(
-        uint256 starkKey_, 
-        address token_, 
-        uint256 amount_, 
-        uint256 lockHash_, 
+        uint256 starkKey_,
+        address token_,
+        uint256 amount_,
+        uint256 lockHash_,
         address recipient_
     ) internal {
         // Validate keys and availability.

@@ -25,7 +25,9 @@ interface IWithdrawalFacet {
      * @param token The asset to be locked.
      * @param amount The amount of funds to be locked.
      */
-    event LogLockWithdrawal(uint256 indexed lockHash, uint256 indexed starkKey, address indexed token, uint256 amount, address recipient);
+    event LogLockWithdrawal(
+        uint256 indexed lockHash, uint256 indexed starkKey, address indexed token, uint256 amount, address recipient
+    );
 
     /**
      * @notice Emitted when a withdraw is signed and completed by a user
@@ -85,7 +87,8 @@ interface IWithdrawalFacet {
      * @param lockHash_ The lock hash to be signed that transfers funds to the app.
      * @param recipient_ The recipient of the withdrawal.
      */
-    function lockWithdrawal(uint256 starkKey_, address token_, uint256 amount_, uint256 lockHash_, address recipient_) external;
+    function lockWithdrawal(uint256 starkKey_, address token_, uint256 amount_, uint256 lockHash_, address recipient_)
+        external;
 
     /**
      * @notice Withdraw funds that were previously locked.

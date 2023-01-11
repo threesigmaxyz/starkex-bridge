@@ -94,7 +94,9 @@ contract WithdrawalFacetTest is BaseFixture {
     //==============================================================================//
 
     event LogSetWithdrawalExpirationTimeout(uint256 indexed timeout);
-    event LogLockWithdrawal(uint256 indexed lockHash, uint256 indexed starkKey, address indexed token, uint256 amount, address recipient);
+    event LogLockWithdrawal(
+        uint256 indexed lockHash, uint256 indexed starkKey, address indexed token, uint256 amount, address recipient
+    );
     event LogClaimWithdrawal(uint256 indexed lockHash, bytes indexed signature, address indexed recipient);
     event LogReclaimWithdrawal(uint256 indexed lockHash, address indexed recipient);
 
@@ -392,7 +394,7 @@ contract WithdrawalFacetTest is BaseFixture {
     //==============================================================================//
 
     function _lockWithdrawal(uint256 starkKey_, address token_, uint256 amount_, uint256 lockHash_, address recipient_)
-        private 
+        private
     {
         // Arrange
         uint256 initialPendingWithdrawals_ = IWithdrawalFacet(_bridge).getPendingWithdrawals(token_);
