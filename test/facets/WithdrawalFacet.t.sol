@@ -209,16 +209,16 @@ contract WithdrawalFacetTest is BaseFixture {
     }
 
     //==============================================================================//
-    //=== lockEthWithdrawal Tests                                                ===//
+    //=== lockNativeWithdrawal Tests                                                ===//
     //==============================================================================//
 
-    function test_lockWithdrawal_ETH_ok(uint256 starkKey_, uint256 amount_, uint256 lockHash_) public {
+    function test_lockWithdrawal_NATIVE_ok(uint256 starkKey_, uint256 amount_, uint256 lockHash_) public {
         vm.assume(starkKey_ < Constants.K_MODULUS && HelpersECDSA.isOnCurve(starkKey_));
         vm.assume(amount_ > 0);
         vm.assume(lockHash_ > 0);
 
         // Act + Assert
-        _lockWithdrawal(starkKey_, Constants.ETH, amount_, lockHash_);
+        _lockWithdrawal(starkKey_, Constants.NATIVE, amount_, lockHash_);
     }
 
     //==============================================================================//
@@ -245,15 +245,15 @@ contract WithdrawalFacetTest is BaseFixture {
         _claimWithdrawal(TEST3_LOCK_HASH, TEST3_SIGNATURE, _user(), USER_TOKENS, address(_token));
     }
 
-    function test_claimWithdrawal_ETH_ok() public {
+    function test_claimWithdrawal_NATIVE_ok() public {
         // Arrange
         bytes memory realTransferSignature_ = abi.encode(SIGNATURE_R, SIGNATURE_S, STARK_KEY_Y);
 
         // Act + Assert
         // LOCK_HASH corresponds to real transfer.
-        _lockWithdrawal(STARK_KEY, Constants.ETH, USER_TOKENS, LOCK_HASH);
+        _lockWithdrawal(STARK_KEY, Constants.NATIVE, USER_TOKENS, LOCK_HASH);
         // Set the user as the recipient to repeat the tests afterwards.
-        _claimWithdrawal(LOCK_HASH, realTransferSignature_, _user(), USER_TOKENS, Constants.ETH);
+        _claimWithdrawal(LOCK_HASH, realTransferSignature_, _user(), USER_TOKENS, Constants.NATIVE);
     }
 
     function test_claimWithdrawal_InvalidLockHashError() public {
@@ -325,14 +325,14 @@ contract WithdrawalFacetTest is BaseFixture {
         _reclaimWithdrawal(lockHash_, _recipient(), USER_TOKENS, address(_token));
     }
 
-    function test_reclaimWithdrawal_ETH_ok(uint256 lockHash_) public {
+    function test_reclaimWithdrawal_NATIVE_ok(uint256 lockHash_) public {
         vm.assume(lockHash_ > 0);
 
         // Arrange
-        _lockWithdrawal(STARK_KEY, Constants.ETH, USER_TOKENS, lockHash_);
+        _lockWithdrawal(STARK_KEY, Constants.NATIVE, USER_TOKENS, lockHash_);
 
         // Arrange + Act + Assert
-        _reclaimWithdrawal(lockHash_, _recipient(), USER_TOKENS, Constants.ETH);
+        _reclaimWithdrawal(lockHash_, _recipient(), USER_TOKENS, Constants.NATIVE);
     }
 
     function test_reclaimWithdrawal_UnauthorizedError() public {
@@ -395,13 +395,13 @@ contract WithdrawalFacetTest is BaseFixture {
     function _lockWithdrawal(uint256 starkKey_, address token_, uint256 amount_, uint256 lockHash_) private {
         // Arrange
         uint256 initialPendingWithdrawals_ = IWithdrawalFacet(_bridge).getPendingWithdrawals(token_);
-        uint256 initialBridgeBalance_ = _getEthOrERC20Balance(token_, _bridge);
+        uint256 initialBridgeBalance_ = _getNativeOrERC20Balance(token_, _bridge);
         // Operator balance will increase in lines 404 or 408.
-        uint256 initialOperatorBalance_ = _getEthOrERC20Balance(token_, _operator()) + amount_;
+        uint256 initialOperatorBalance_ = _getNativeOrERC20Balance(token_, _operator()) + amount_;
 
         // And
         vm.prank(_user());
-        if (token_ != Constants.ETH) {
+        if (token_ != Constants.NATIVE) {
             MockERC20(token_).transfer(_operator(), amount_);
             vm.prank(_operator());
             IERC20(token_).approve(address(_bridge), amount_);
@@ -413,9 +413,9 @@ contract WithdrawalFacetTest is BaseFixture {
         vm.expectEmit(true, true, true, true);
         emit LogLockWithdrawal(lockHash_, starkKey_, token_, amount_);
         vm.prank(_operator());
-        token_ != Constants.ETH
+        token_ != Constants.NATIVE
             ? IWithdrawalFacet(_bridge).lockWithdrawal(starkKey_, token_, amount_, lockHash_)
-            : IWithdrawalFacet(_bridge).lockEthWithdrawal{value: amount_}(starkKey_, lockHash_);
+            : IWithdrawalFacet(_bridge).lockNativeWithdrawal{value: amount_}(starkKey_, lockHash_);
 
         // Assert
         // A withdrawal request was created.
@@ -428,8 +428,8 @@ contract WithdrawalFacetTest is BaseFixture {
         );
 
         // All balances were corretly updated
-        assertEq(_getEthOrERC20Balance(token_, _bridge), initialBridgeBalance_ + amount_);
-        assertEq(_getEthOrERC20Balance(token_, _operator()), initialOperatorBalance_ - amount_);
+        assertEq(_getNativeOrERC20Balance(token_, _bridge), initialBridgeBalance_ + amount_);
+        assertEq(_getNativeOrERC20Balance(token_, _operator()), initialOperatorBalance_ - amount_);
         assertEq(IWithdrawalFacet(_bridge).getPendingWithdrawals(token_), initialPendingWithdrawals_ + amount_);
     }
 
@@ -441,8 +441,8 @@ contract WithdrawalFacetTest is BaseFixture {
         address token_
     ) private {
         // Arrange
-        uint256 initialBridgeBalance_ = _getEthOrERC20Balance(token_, _bridge);
-        uint256 initialRecipientBalance_ = _getEthOrERC20Balance(token_, recipient_);
+        uint256 initialBridgeBalance_ = _getNativeOrERC20Balance(token_, _bridge);
+        uint256 initialRecipientBalance_ = _getNativeOrERC20Balance(token_, recipient_);
         uint256 initialPendingWithdrawals_ = IWithdrawalFacet(_bridge).getPendingWithdrawals(token_);
         // And
         vm.expectEmit(true, true, false, true);
@@ -457,15 +457,15 @@ contract WithdrawalFacetTest is BaseFixture {
         _validateWithdrawalDeleted(lockHash_);
 
         // All balances were corretly updated
-        assertEq(_getEthOrERC20Balance(token_, _bridge), initialBridgeBalance_ - amount_);
-        assertEq(_getEthOrERC20Balance(token_, recipient_), initialRecipientBalance_ + amount_);
+        assertEq(_getNativeOrERC20Balance(token_, _bridge), initialBridgeBalance_ - amount_);
+        assertEq(_getNativeOrERC20Balance(token_, recipient_), initialRecipientBalance_ + amount_);
         assertEq(IWithdrawalFacet(_bridge).getPendingWithdrawals(token_), initialPendingWithdrawals_ - amount_);
     }
 
     function _reclaimWithdrawal(uint256 lockHash_, address recipient_, uint256 amount_, address token_) private {
         // Arrange
-        uint256 initialBridgeBalance_ = _getEthOrERC20Balance(token_, _bridge);
-        uint256 initialRecipientBalance_ = _getEthOrERC20Balance(token_, recipient_);
+        uint256 initialBridgeBalance_ = _getNativeOrERC20Balance(token_, _bridge);
+        uint256 initialRecipientBalance_ = _getNativeOrERC20Balance(token_, recipient_);
         uint256 initialPendingWithdrawals_ = IWithdrawalFacet(_bridge).getPendingWithdrawals(token_);
         // And
         vm.expectEmit(true, true, false, true);
@@ -481,8 +481,8 @@ contract WithdrawalFacetTest is BaseFixture {
         _validateWithdrawalDeleted(lockHash_);
 
         // All balances were corretly updated
-        assertEq(_getEthOrERC20Balance(token_, _bridge), initialBridgeBalance_ - amount_);
-        assertEq(_getEthOrERC20Balance(token_, recipient_), initialRecipientBalance_ + amount_);
+        assertEq(_getNativeOrERC20Balance(token_, _bridge), initialBridgeBalance_ - amount_);
+        assertEq(_getNativeOrERC20Balance(token_, recipient_), initialRecipientBalance_ + amount_);
         assertEq(IWithdrawalFacet(_bridge).getPendingWithdrawals(token_), initialPendingWithdrawals_ - amount_);
     }
 

@@ -19,7 +19,7 @@ import { LibDeployBridge } from "common/LibDeployBridge.sol";
 
 contract BaseFixture is Test {
     uint256 internal constant USER_TOKENS = type(uint256).max;
-    uint256 internal constant USER_ETH = type(uint256).max;
+    uint256 internal constant USER_NATIVE = type(uint256).max;
 
     address _bridge;
     MockERC20 _token;
@@ -44,8 +44,8 @@ contract BaseFixture is Test {
 
         _token.mint(_user(), USER_TOKENS);
 
-        // Deal eth to user
-        vm.deal(_user(), USER_ETH);
+        // Deal native to user
+        vm.deal(_user(), USER_NATIVE);
 
         // Register _token in _bridge
         vm.prank(_tokenAdmin());
@@ -78,8 +78,8 @@ contract BaseFixture is Test {
         vm.label(_intruder(), "intruder");
     }
 
-    function _getEthOrERC20Balance(address token_, address user_) internal view returns (uint256) {
-        return token_ == Constants.ETH ? user_.balance : MockERC20(token_).balanceOf(user_);
+    function _getNativeOrERC20Balance(address token_, address user_) internal view returns (uint256) {
+        return token_ == Constants.NATIVE ? user_.balance : MockERC20(token_).balanceOf(user_);
     }
 
     function _owner() internal pure returns (address) {
