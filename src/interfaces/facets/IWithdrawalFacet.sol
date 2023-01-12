@@ -3,6 +3,7 @@ pragma solidity ^0.8.0;
 
 interface IWithdrawalFacet {
     struct Withdrawal {
+        address recipient;
         uint256 starkKey;
         address token;
         uint256 amount;
@@ -24,7 +25,9 @@ interface IWithdrawalFacet {
      * @param token The asset to be locked.
      * @param amount The amount of funds to be locked.
      */
-    event LogLockWithdrawal(uint256 indexed lockHash, uint256 indexed starkKey, address indexed token, uint256 amount);
+    event LogLockWithdrawal(
+        uint256 indexed lockHash, uint256 indexed starkKey, address indexed token, uint256 amount, address recipient
+    );
 
     /**
      * @notice Emitted when a withdraw is signed and completed by a user
@@ -71,8 +74,9 @@ interface IWithdrawalFacet {
      * @dev Verifies if there are enough funds to lock and then lock funds.
      * @param starkKey_ The public STARK key that must sign the lock hash.
      * @param lockHash_ The lock hash to be signed that transfers funds to the app.
+     * @param recipient_ The recipient of the withdrawal.
      */
-    function lockNativeWithdrawal(uint256 starkKey_, uint256 lockHash_) external payable;
+    function lockNativeWithdrawal(uint256 starkKey_, uint256 lockHash_, address recipient_) external payable;
 
     /**
      * @notice Lock funds to be withdrawn
@@ -81,17 +85,18 @@ interface IWithdrawalFacet {
      * @param token_ Asset address to be withdrawn.
      * @param amount_ Amount to be withdrawn.
      * @param lockHash_ The lock hash to be signed that transfers funds to the app.
+     * @param recipient_ The recipient of the withdrawal.
      */
-    function lockWithdrawal(uint256 starkKey_, address token_, uint256 amount_, uint256 lockHash_) external;
+    function lockWithdrawal(uint256 starkKey_, address token_, uint256 amount_, uint256 lockHash_, address recipient_)
+        external;
 
     /**
      * @notice Withdraw funds that were previously locked.
      * @dev First verifies signature, then clears data and then withdraws funds.
      * @param lockHash_ The lock hash to be signed that transfers funds to the app.
      * @param signature_ The signature that signed the lockHash.
-     * @param recipient_ The recipient of the funds.
      */
-    function claimWithdrawal(uint256 lockHash_, bytes memory signature_, address recipient_) external;
+    function claimWithdrawal(uint256 lockHash_, bytes memory signature_) external;
 
     /**
      * @notice The operator can unlock funds if lock expires.

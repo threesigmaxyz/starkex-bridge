@@ -94,9 +94,11 @@ contract WithdrawalFacetTest is BaseFixture {
     //==============================================================================//
 
     event LogSetWithdrawalExpirationTimeout(uint256 indexed timeout);
-    event LogLockWithdrawal(uint256 indexed lockHash, uint256 indexed starkKey, address indexed token, uint256 amount);
-    event LogClaimWithdrawal(uint256 indexed lockHash, bytes indexed signature, address indexed receiver);
-    event LogReclaimWithdrawal(uint256 indexed lockHash, address indexed receiver);
+    event LogLockWithdrawal(
+        uint256 indexed lockHash, uint256 indexed starkKey, address indexed token, uint256 amount, address recipient
+    );
+    event LogClaimWithdrawal(uint256 indexed lockHash, bytes indexed signature, address indexed recipient);
+    event LogReclaimWithdrawal(uint256 indexed lockHash, address indexed recipient);
 
     //==============================================================================//
     //=== initialize Tests                                                       ===//
@@ -142,7 +144,7 @@ contract WithdrawalFacetTest is BaseFixture {
         vm.assume(lockHash_ > 0);
 
         // Act + Assert
-        _lockWithdrawal(starkKey_, address(_token), amount_, lockHash_);
+        _lockWithdrawal(starkKey_, address(_token), amount_, lockHash_, _user());
     }
 
     function test_lockWithdrawal_TokenNotRegisteredError() public {
@@ -153,7 +155,7 @@ contract WithdrawalFacetTest is BaseFixture {
 
         // Act + Assert
         vm.prank(_operator());
-        IWithdrawalFacet(_bridge).lockWithdrawal(STARK_KEY, token_, USER_TOKENS, LOCK_HASH);
+        IWithdrawalFacet(_bridge).lockWithdrawal(STARK_KEY, token_, USER_TOKENS, LOCK_HASH, _user());
     }
 
     function test_lockWithdrawal_InvalidLockHashError() public {
@@ -163,7 +165,7 @@ contract WithdrawalFacetTest is BaseFixture {
 
         // Act + Assert
         vm.prank(_operator());
-        IWithdrawalFacet(_bridge).lockWithdrawal(STARK_KEY, address(_token), USER_TOKENS, lockHash_);
+        IWithdrawalFacet(_bridge).lockWithdrawal(STARK_KEY, address(_token), USER_TOKENS, lockHash_, _user());
     }
 
     function test_lockWithdrawal_whenZeroStarkKey_InvalidStarkKeyError() public {
@@ -173,7 +175,7 @@ contract WithdrawalFacetTest is BaseFixture {
 
         // Act + Assert
         vm.prank(_operator());
-        IWithdrawalFacet(_bridge).lockWithdrawal(starkKey_, address(_token), USER_TOKENS, LOCK_HASH);
+        IWithdrawalFacet(_bridge).lockWithdrawal(starkKey_, address(_token), USER_TOKENS, LOCK_HASH, _user());
     }
 
     function test_lockWithdrawal_whenLargerThanModulusStarkKey_InvalidStarkKeyError(uint256 starkKey_) public {
@@ -184,7 +186,7 @@ contract WithdrawalFacetTest is BaseFixture {
 
         // Act + Assert
         vm.prank(_operator());
-        IWithdrawalFacet(_bridge).lockWithdrawal(starkKey_, address(_token), USER_TOKENS, LOCK_HASH);
+        IWithdrawalFacet(_bridge).lockWithdrawal(starkKey_, address(_token), USER_TOKENS, LOCK_HASH, _user());
     }
 
     function test_lockWithdrawal_whenNotInCurveStarkKey_InvalidStarkKeyError(uint256 starkKey_) public {
@@ -195,7 +197,7 @@ contract WithdrawalFacetTest is BaseFixture {
 
         // Act + Assert
         vm.prank(_operator());
-        IWithdrawalFacet(_bridge).lockWithdrawal(STARK_KEY - 1, address(_token), USER_TOKENS, LOCK_HASH);
+        IWithdrawalFacet(_bridge).lockWithdrawal(STARK_KEY - 1, address(_token), USER_TOKENS, LOCK_HASH, _user());
     }
 
     function test_lockWithdrawal_ZeroAmountError() public {
@@ -205,7 +207,17 @@ contract WithdrawalFacetTest is BaseFixture {
 
         // Act + Assert
         vm.prank(_operator());
-        IWithdrawalFacet(_bridge).lockWithdrawal(STARK_KEY, address(_token), amount_, LOCK_HASH);
+        IWithdrawalFacet(_bridge).lockWithdrawal(STARK_KEY, address(_token), amount_, LOCK_HASH, _user());
+    }
+
+    function test_lockWithdrawal_ZeroAddressRecipientError() public {
+        // Arrange
+        address recipient_ = address(0);
+        vm.expectRevert(IWithdrawalFacet.ZeroAddressRecipientError.selector);
+
+        // Act + Assert
+        vm.prank(_operator());
+        IWithdrawalFacet(_bridge).lockWithdrawal(STARK_KEY, address(_token), USER_TOKENS, LOCK_HASH, recipient_);
     }
 
     //==============================================================================//
@@ -218,7 +230,7 @@ contract WithdrawalFacetTest is BaseFixture {
         vm.assume(lockHash_ > 0);
 
         // Act + Assert
-        _lockWithdrawal(starkKey_, Constants.NATIVE, amount_, lockHash_);
+        _lockWithdrawal(starkKey_, Constants.NATIVE, amount_, lockHash_, _user());
     }
 
     //==============================================================================//
@@ -231,17 +243,17 @@ contract WithdrawalFacetTest is BaseFixture {
 
         // Act + Assert
         // LOCK_HASH corresponds to real transfer.
-        _lockWithdrawal(STARK_KEY, address(_token), USER_TOKENS, LOCK_HASH);
+        _lockWithdrawal(STARK_KEY, address(_token), USER_TOKENS, LOCK_HASH, _user());
         // Set the user as the recipient to repeat the tests afterwards.
         _claimWithdrawal(LOCK_HASH, realTransferSignature_, _user(), USER_TOKENS, address(_token));
         // Test 1
-        _lockWithdrawal(TEST1_STARK_KEY, address(_token), USER_TOKENS, TEST1_LOCK_HASH);
+        _lockWithdrawal(TEST1_STARK_KEY, address(_token), USER_TOKENS, TEST1_LOCK_HASH, _user());
         _claimWithdrawal(TEST1_LOCK_HASH, TEST1_SIGNATURE, _user(), USER_TOKENS, address(_token));
         // Test 2
-        _lockWithdrawal(TEST2_STARK_KEY, address(_token), USER_TOKENS, TEST2_LOCK_HASH);
+        _lockWithdrawal(TEST2_STARK_KEY, address(_token), USER_TOKENS, TEST2_LOCK_HASH, _user());
         _claimWithdrawal(TEST2_LOCK_HASH, TEST2_SIGNATURE, _user(), USER_TOKENS, address(_token));
         // Test 3
-        _lockWithdrawal(TEST3_STARK_KEY, address(_token), USER_TOKENS, TEST3_LOCK_HASH);
+        _lockWithdrawal(TEST3_STARK_KEY, address(_token), USER_TOKENS, TEST3_LOCK_HASH, _user());
         _claimWithdrawal(TEST3_LOCK_HASH, TEST3_SIGNATURE, _user(), USER_TOKENS, address(_token));
     }
 
@@ -251,7 +263,7 @@ contract WithdrawalFacetTest is BaseFixture {
 
         // Act + Assert
         // LOCK_HASH corresponds to real transfer.
-        _lockWithdrawal(STARK_KEY, Constants.NATIVE, USER_TOKENS, LOCK_HASH);
+        _lockWithdrawal(STARK_KEY, Constants.NATIVE, USER_TOKENS, LOCK_HASH, _user());
         // Set the user as the recipient to repeat the tests afterwards.
         _claimWithdrawal(LOCK_HASH, realTransferSignature_, _user(), USER_TOKENS, Constants.NATIVE);
     }
@@ -259,16 +271,7 @@ contract WithdrawalFacetTest is BaseFixture {
     function test_claimWithdrawal_InvalidLockHashError() public {
         // Act + Assert
         vm.expectRevert(IWithdrawalFacet.InvalidLockHashError.selector);
-        IWithdrawalFacet(_bridge).claimWithdrawal(0, abi.encode(0, 0, 0), _recipient());
-    }
-
-    function test_claimWithdrawal_ZeroAddressRecipientError() public {
-        // Arrange
-        address recipient_ = address(0);
-        vm.expectRevert(IWithdrawalFacet.ZeroAddressRecipientError.selector);
-
-        // Act + Assert
-        IWithdrawalFacet(_bridge).claimWithdrawal(LOCK_HASH, abi.encode(0, 0, 0), recipient_);
+        IWithdrawalFacet(_bridge).claimWithdrawal(0, abi.encode(0, 0, 0));
     }
 
     function test_claimWithdrawal_WithdrawalNotFoundError() public {
@@ -276,20 +279,18 @@ contract WithdrawalFacetTest is BaseFixture {
         vm.expectRevert(abi.encodeWithSelector(IWithdrawalFacet.WithdrawalNotFoundError.selector));
 
         // Act + Assert
-        IWithdrawalFacet(_bridge).claimWithdrawal(LOCK_HASH, abi.encode(1, 2, 3), _recipient());
+        IWithdrawalFacet(_bridge).claimWithdrawal(LOCK_HASH, abi.encode(1, 2, 3));
     }
 
     function test_claimWithdrawal_InvalidStarkKeyYError(uint256 starkKeyY_) public {
         vm.assume(starkKeyY_ != STARK_KEY_Y);
 
         // Arrange
-        _lockWithdrawal(STARK_KEY, address(_token), USER_TOKENS, LOCK_HASH);
+        _lockWithdrawal(STARK_KEY, address(_token), USER_TOKENS, LOCK_HASH, _user());
         vm.expectRevert(ECDSA.InvalidStarkKeyError.selector);
 
         // Act + Assert
-        IWithdrawalFacet(_bridge).claimWithdrawal(
-            LOCK_HASH, abi.encode(SIGNATURE_R, SIGNATURE_S, starkKeyY_), _recipient()
-        );
+        IWithdrawalFacet(_bridge).claimWithdrawal(LOCK_HASH, abi.encode(SIGNATURE_R, SIGNATURE_S, starkKeyY_));
     }
 
     function test_claimWithdrawal_whenSignatureWrongLength_InvalidSignatureError() public {
@@ -297,18 +298,18 @@ contract WithdrawalFacetTest is BaseFixture {
         vm.expectRevert(IWithdrawalFacet.InvalidSignatureError.selector);
 
         // Act + Assert
-        IWithdrawalFacet(_bridge).claimWithdrawal(LOCK_HASH, abi.encode(0, 0), _recipient());
+        IWithdrawalFacet(_bridge).claimWithdrawal(LOCK_HASH, abi.encode(0, 0));
     }
 
     function test_claimWithdrawal_InvalidSignatureError(bytes memory signature_) public {
         vm.assume(signature_.length == 32 * 3);
         // Arrange
-        _lockWithdrawal(STARK_KEY, address(_token), USER_TOKENS, LOCK_HASH);
+        _lockWithdrawal(STARK_KEY, address(_token), USER_TOKENS, LOCK_HASH, _user());
 
         // Act + Assert
         // Specific error is unknown because the ECDSA library has errors for different scenarios.
         vm.expectRevert();
-        IWithdrawalFacet(_bridge).claimWithdrawal(LOCK_HASH, signature_, _recipient());
+        IWithdrawalFacet(_bridge).claimWithdrawal(LOCK_HASH, signature_);
     }
 
     //==============================================================================//
@@ -319,7 +320,7 @@ contract WithdrawalFacetTest is BaseFixture {
         vm.assume(lockHash_ > 0);
 
         // Arrange
-        _lockWithdrawal(STARK_KEY, address(_token), USER_TOKENS, lockHash_);
+        _lockWithdrawal(STARK_KEY, address(_token), USER_TOKENS, lockHash_, _user());
 
         // Arrange + Act + Assert
         _reclaimWithdrawal(lockHash_, _recipient(), USER_TOKENS, address(_token));
@@ -329,7 +330,7 @@ contract WithdrawalFacetTest is BaseFixture {
         vm.assume(lockHash_ > 0);
 
         // Arrange
-        _lockWithdrawal(STARK_KEY, Constants.NATIVE, USER_TOKENS, lockHash_);
+        _lockWithdrawal(STARK_KEY, Constants.NATIVE, USER_TOKENS, lockHash_, _user());
 
         // Arrange + Act + Assert
         _reclaimWithdrawal(lockHash_, _recipient(), USER_TOKENS, Constants.NATIVE);
@@ -378,7 +379,7 @@ contract WithdrawalFacetTest is BaseFixture {
         vm.assume(timePassed_ <= block.timestamp + IWithdrawalFacet(_bridge).getWithdrawalExpirationTimeout());
 
         // Arrange
-        _lockWithdrawal(STARK_KEY, address(_token), USER_TOKENS, LOCK_HASH);
+        _lockWithdrawal(STARK_KEY, address(_token), USER_TOKENS, LOCK_HASH, _user());
         // And
         vm.expectRevert(abi.encodeWithSelector(IWithdrawalFacet.WithdrawalNotExpiredError.selector));
 
@@ -392,7 +393,9 @@ contract WithdrawalFacetTest is BaseFixture {
     //=== Internal Test Helpers                                                  ===//
     //==============================================================================//
 
-    function _lockWithdrawal(uint256 starkKey_, address token_, uint256 amount_, uint256 lockHash_) private {
+    function _lockWithdrawal(uint256 starkKey_, address token_, uint256 amount_, uint256 lockHash_, address recipient_)
+        private
+    {
         // Arrange
         uint256 initialPendingWithdrawals_ = IWithdrawalFacet(_bridge).getPendingWithdrawals(token_);
         uint256 initialBridgeBalance_ = _getNativeOrERC20Balance(token_, _bridge);
@@ -411,11 +414,11 @@ contract WithdrawalFacetTest is BaseFixture {
 
         // Act + Assert
         vm.expectEmit(true, true, true, true);
-        emit LogLockWithdrawal(lockHash_, starkKey_, token_, amount_);
+        emit LogLockWithdrawal(lockHash_, starkKey_, token_, amount_, recipient_);
         vm.prank(_operator());
         token_ != Constants.NATIVE
-            ? IWithdrawalFacet(_bridge).lockWithdrawal(starkKey_, token_, amount_, lockHash_)
-            : IWithdrawalFacet(_bridge).lockNativeWithdrawal{value: amount_}(starkKey_, lockHash_);
+            ? IWithdrawalFacet(_bridge).lockWithdrawal(starkKey_, token_, amount_, lockHash_, recipient_)
+            : IWithdrawalFacet(_bridge).lockNativeWithdrawal{value: amount_}(starkKey_, lockHash_, recipient_);
 
         // Assert
         // A withdrawal request was created.
@@ -450,7 +453,7 @@ contract WithdrawalFacetTest is BaseFixture {
 
         // Assert
         vm.prank(recipient_); // anyone could claim this (auth is in the signature)
-        IWithdrawalFacet(_bridge).claimWithdrawal(lockHash_, signature_, recipient_);
+        IWithdrawalFacet(_bridge).claimWithdrawal(lockHash_, signature_);
 
         // Assert
         // The withdrawal request was deleted

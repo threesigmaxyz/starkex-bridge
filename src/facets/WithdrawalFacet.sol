@@ -54,29 +54,34 @@ contract WithdrawalFacet is OnlyRegisteredToken, OnlyStarkExOperator, OnlyOwner,
         emit LogSetWithdrawalExpirationTimeout(timeout_);
     }
 
-    function lockNativeWithdrawal(uint256 starkKey_, uint256 lockHash_) external payable override onlyStarkExOperator {
-        _validateAndAddWithdrawal(starkKey_, Constants.NATIVE, msg.value, lockHash_);
+    /// @inheritdoc IWithdrawalFacet
+    function lockNativeWithdrawal(uint256 starkKey_, uint256 lockHash_, address recipient_)
+        external
+        payable
+        override
+        onlyStarkExOperator
+    {
+        _validateAndAddWithdrawal(starkKey_, Constants.NATIVE, msg.value, lockHash_, recipient_);
         // The native is transferred to the contract, no need to call any transfer function like lockDeposit
     }
 
     /// @inheritdoc IWithdrawalFacet
-    function lockWithdrawal(uint256 starkKey_, address token_, uint256 amount_, uint256 lockHash_)
+    function lockWithdrawal(uint256 starkKey_, address token_, uint256 amount_, uint256 lockHash_, address recipient_)
         external
         override
         onlyStarkExOperator
         onlyRegisteredToken(token_)
     {
-        _validateAndAddWithdrawal(starkKey_, token_, amount_, lockHash_);
+        _validateAndAddWithdrawal(starkKey_, token_, amount_, lockHash_, recipient_);
 
         // Transfer funds.
         HelpersERC20.transferFrom(token_, msg.sender, address(this), amount_);
     }
 
     /// @inheritdoc IWithdrawalFacet
-    function claimWithdrawal(uint256 lockHash_, bytes memory signature_, address recipient_) external override {
+    function claimWithdrawal(uint256 lockHash_, bytes memory signature_) external override {
         // Stateless validation.
         if (lockHash_ == 0) revert InvalidLockHashError();
-        if (recipient_ == address(0)) revert ZeroAddressRecipientError();
         if (signature_.length != 32 * 3) revert InvalidSignatureError();
 
         WithdrawalStorage storage ws = withdrawalStorage();
@@ -93,10 +98,10 @@ contract WithdrawalFacet is OnlyRegisteredToken, OnlyStarkExOperator, OnlyOwner,
         ws.pendingWithdrawals[withdrawal_.token] -= withdrawal_.amount;
 
         // Emit event.
-        emit LogClaimWithdrawal(lockHash_, signature_, recipient_);
+        emit LogClaimWithdrawal(lockHash_, signature_, withdrawal_.recipient);
 
         // Transfer funds.
-        HelpersTransferNativeOrERC20.transfer(withdrawal_.token, recipient_, withdrawal_.amount);
+        HelpersTransferNativeOrERC20.transfer(withdrawal_.token, withdrawal_.recipient, withdrawal_.amount);
     }
 
     /// @inheritdoc IWithdrawalFacet
@@ -142,18 +147,24 @@ contract WithdrawalFacet is OnlyRegisteredToken, OnlyStarkExOperator, OnlyOwner,
         return withdrawalStorage().withdrawalExpirationTimeout;
     }
 
-    function _validateAndAddWithdrawal(uint256 starkKey_, address token_, uint256 amount_, uint256 lockHash_)
-        internal
-    {
+    function _validateAndAddWithdrawal(
+        uint256 starkKey_,
+        address token_,
+        uint256 amount_,
+        uint256 lockHash_,
+        address recipient_
+    ) internal {
         // Validate keys and availability.
         if (lockHash_ == 0) revert InvalidLockHashError();
         if (!HelpersECDSA.isOnCurve(starkKey_) || starkKey_ > Constants.K_MODULUS) revert InvalidStarkKeyError();
         if (amount_ == 0) revert ZeroAmountError();
+        if (recipient_ == address(0)) revert ZeroAddressRecipientError();
 
         WithdrawalStorage storage ws = withdrawalStorage();
 
         // Create a withdrawal lock for the funds.
         ws.withdrawals[lockHash_] = Withdrawal({
+            recipient: recipient_,
             starkKey: starkKey_,
             token: token_,
             amount: amount_,
@@ -162,6 +173,6 @@ contract WithdrawalFacet is OnlyRegisteredToken, OnlyStarkExOperator, OnlyOwner,
         ws.pendingWithdrawals[token_] += amount_;
 
         // Emit new Lock.
-        emit LogLockWithdrawal(lockHash_, starkKey_, token_, amount_);
+        emit LogLockWithdrawal(lockHash_, starkKey_, token_, amount_, recipient_);
     }
 }
