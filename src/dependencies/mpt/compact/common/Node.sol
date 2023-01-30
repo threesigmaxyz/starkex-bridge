@@ -109,7 +109,7 @@ library Node {
     // encodeBranch encodes a branch
     function encodeBranch(Branch memory b)
         internal
-        view
+        pure
         returns (bytes memory encoding)
     {
         encoding = encodeBranchHeader(b);

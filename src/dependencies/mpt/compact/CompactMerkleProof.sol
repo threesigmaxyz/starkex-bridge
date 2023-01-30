@@ -26,7 +26,6 @@ pragma solidity ^0.8.0;
 
 import "./common/Input.sol";
 import "./common/Bytes.sol";
-import "./common/Hash.sol";
 import "./common/Nibble.sol";
 import "./common/Node.sol";
 
@@ -37,18 +36,19 @@ contract CompactMerkleProof {
     using Bytes for bytes;
     using Input for Input.Data;
 
-    uint8 internal constant NODEKIND_NOEXT_LEAF = 1;
-    uint8 internal constant NODEKIND_NOEXT_BRANCH_NOVALUE = 2;
-    uint8 internal constant NODEKIND_NOEXT_BRANCH_WITHVALUE = 3;
+    // Node kinds, no extension
+    uint8 internal constant LEAF = 1;
+    uint8 internal constant BRANCH_NOVALUE = 2;
+    uint8 internal constant BRANCH_WITHVALUE = 3;
 
     struct StackEntry {
         bytes prefix; // The prefix is the nibble path to the node in the trie.
         uint8 kind; // The type of the trie node.
-        bytes key; // The partail key of the trie node.
+        bytes key; // The partial key of the trie node.
         bytes value; // The value associated with this trie node.
         Node.NodeHandle[16] children; // The child references to use in reconstructing the trie nodes.
         uint8 childIndex; // The child index is in [0, NIBBLE_LENGTH],
-        bool isInline; // The trie node data less 32-byte is an isline node
+        bool isInline; // The trie node data less 32-byte is an inline node
     }
 
     struct ProofIter {
@@ -66,258 +66,215 @@ contract CompactMerkleProof {
         bytes value;
     }
 
-    enum ValueMatch {MatchesLeaf, MatchesBranch, NotOmitted, NotFound, IsChild}
+    enum ValueMatch {Leaf, Branch, NotOmitted, NotFound, IsChild}
 
     enum Step {Descend, UnwindStack}
 
+    error EmptyProofError();
+    error ZeroItemsError();
+    error ExtraneousProofError();
+    error InvalidRoot_SizeError();
+    error MustBeBranchError();
+    error EmptyChildPrefixError();
+    error InvalidChildReferenceError();
+    error ExtraneousHashReferenceError();
+    error IncompleteProofError();
+    error NoValueInLeafError();
+    error ValueInNotFoundError();
+    error ExtraneousValueError();
+    error InvalidNodeKindError();
+
 	/**
-     * @dev Returns true if `keys ans values` can be proved to be a part of a Merkle tree
-     * defined by `root`. For this, a `proof` must be provided, is a sequence of the subset 
+     * @notice Returns true if `keys ans values` can be proved to be a part of a Merkle tree
+     * defined by `root_`. For this, a `proof` must be provided, is a sequence of the subset 
      * of nodes in the trie traversed while performing lookups on all keys. The trie nodes 
      * are listed in pre-order traversal order with some values and internal hashes omitted.
+     * @param root_ The root hash of the Merkle tree.
+     * @param proof_ The proof of the Merkle Patricia trie.
+     * @param items_ The items to verify.
+     * @return True if the proof is valid, false otherwise.
      */
-    function verify(
-        bytes32 root,
-        bytes[] memory proof,
-        bytes[] memory keys,
-        bytes[] memory values
-    ) public view returns (bool) {
-        require(proof.length > 0, "no proof");
-        require(keys.length > 0, "no keys");
-        require(keys.length == values.length, "invalid pair");
-        Item[] memory items = new Item[](keys.length);
-        for (uint256 i = 0; i < keys.length; i++) {
-            items[i] = Item({key: keys[i], value: values[i]});
-        }
-        return verify_proof(root, proof, items);
-    }
+    function verifyProof(
+        bytes32 root_,
+        bytes[] memory proof_,
+        Item[] memory items_
+    ) public pure returns (bool) {
+        if (proof_.length == 0) revert EmptyProofError();
+        if (items_.length == 0) revert ZeroItemsError();
 
-    function verify_proof(
-        bytes32 root,
-        bytes[] memory proof,
-        Item[] memory items
-    ) internal view returns (bool) {
-        require(proof.length > 0, "no proof");
-        require(items.length > 0, "no item");
-        //TODO:: OPT
-        uint256 maxDepth = proof.length;
-        StackEntry[] memory stack = new StackEntry[](maxDepth);
-        uint256 stackLen = 0;
-        bytes memory rootNode = proof[0];
-        StackEntry memory lastEntry = decodeNode(rootNode, hex"", false);
-        ProofIter memory proofIter = ProofIter({proof: proof, offset: 1});
-        ItemsIter memory itemsIter = ItemsIter({items: items, offset: 0});
+        StackEntry[] memory stack_ = new StackEntry[](proof_.length);
+        uint256 stackLen_;
+        StackEntry memory lastEntry_ = decodeNode(proof_[0], hex"", false);
+        ProofIter memory proofIter_ = ProofIter({proof: proof_, offset: 1});
+        ItemsIter memory itemsIter_ = ItemsIter({items: items_, offset: 0});
+        bytes memory childRef_;
+        Step step_;
+        bytes memory childPrefix_;
+        bytes memory nodeData_;
         while (true) {
-            Step step;
-            bytes memory childPrefix;
-            (step, childPrefix) = advanceItem(lastEntry, itemsIter);
-            if (step == Step.Descend) {
-                StackEntry memory nextEntry = advanceChildIndex(
-                    lastEntry,
-                    childPrefix,
-                    proofIter
-                );
-                stack[stackLen] = lastEntry;
-                stackLen++;
-                lastEntry = nextEntry;
-            } else if (step == Step.UnwindStack) {
-                bytes memory childRef;
-                {
-                    bool isInline = lastEntry.isInline;
-                    bytes memory nodeData = encodeNode(lastEntry);
-                    if (isInline) {
-                        require(
-                            nodeData.length <= 32,
-                            "invalid child reference"
-                        );
-                        childRef = nodeData;
-                    } else {
-                        childRef = Hash.hash(nodeData);
-                    }
-                }
-                {
-                    if (stackLen > 0) {
-                        lastEntry = stack[stackLen - 1];
-                        stackLen--;
-                        lastEntry.children[lastEntry.childIndex]
-                            .data = childRef;
-                    } else {
-                        require(
-                            proofIter.offset == proofIter.proof.length,
-                            "exraneous proof"
-                        );
-                        require(
-                            childRef.length == 32,
-                            "root hash length should be 32"
-                        );
-                        bytes32 computedRoot = abi.decode(childRef, (bytes32));
-                        if (computedRoot != root) {
-                            return false;
-                        }
-                        break;
-                    }
-                }
-            }
-        }
-        return true;
-    }
-
-    function advanceChildIndex(
-        StackEntry memory entry,
-        bytes memory childPrefix,
-        ProofIter memory proofIter
-    ) internal pure returns (StackEntry memory) {
-        if (
-            entry.kind == NODEKIND_NOEXT_BRANCH_NOVALUE ||
-            entry.kind == NODEKIND_NOEXT_BRANCH_WITHVALUE
-        ) {
-            require(childPrefix.length > 0, "this is a branch");
-            entry.childIndex = uint8(childPrefix[childPrefix.length - 1]);
-            Node.NodeHandle memory child = entry.children[entry.childIndex];
-            return makeChildEntry(proofIter, child, childPrefix);
-        } else {
-            revert("cannot have children");
-        }
-    }
-
-    function makeChildEntry(
-        ProofIter memory proofIter,
-        Node.NodeHandle memory child,
-        bytes memory prefix
-    ) internal pure returns (StackEntry memory) {
-        if (child.isInline) {
-            if (child.data.length == 0) {
-                require(
-                    proofIter.offset < proofIter.proof.length,
-                    "incomplete proof"
-                );
-                bytes memory nodeData = proofIter.proof[proofIter.offset];
-                proofIter.offset++;
-                return decodeNode(nodeData, prefix, false);
-            } else {
-                return decodeNode(child.data, prefix, true);
-            }
-        } else {
-            require(child.data.length == 32, "invalid child reference");
-            revert("extraneous hash reference");
-        }
-    }
-
-    function advanceItem(StackEntry memory entry, ItemsIter memory itemsIter)
-        internal
-        pure
-        returns (Step, bytes memory childPrefix)
-    {
-        while (itemsIter.offset < itemsIter.items.length) {
-            Item memory item = itemsIter.items[itemsIter.offset];
-            bytes memory k = Nibble.keyToNibbles(item.key);
-            bytes memory v = item.value;
-            if (startsWith(k, entry.prefix)) {
-                ValueMatch vm;
-                (vm, childPrefix) = matchKeyToNode(
-                    k,
-                    entry.prefix.length,
-                    entry
-                );
-                if (ValueMatch.MatchesLeaf == vm) {
-                    if (v.length == 0) {
-                        revert("value mismatch");
-                    }
-                    entry.value = v;
-                } else if (ValueMatch.MatchesBranch == vm) {
-                    entry.value = v;
-                } else if (ValueMatch.NotFound == vm) {
-                    if (v.length > 0) {
-                        revert("value mismatch");
-                    }
-                } else if (ValueMatch.NotOmitted == vm) {
-                    revert("extraneouts value");
-                } else if (ValueMatch.IsChild == vm) {
-                    return (Step.Descend, childPrefix);
-                }
-                itemsIter.offset++;
+            (step_, childPrefix_) = advanceItem(lastEntry_, itemsIter_);
+            if (step_ == Step.Descend) {
+                stack_[stackLen_++] = lastEntry_;
+                lastEntry_ = advanceChildIndex(lastEntry_, childPrefix_, proofIter_);
                 continue;
-            }
-            return (Step.UnwindStack, childPrefix);
+            } 
+            // step == Step.UnwindStack
+            nodeData_ = encodeNode(lastEntry_);
+            if (lastEntry_.isInline && nodeData_.length > 32) revert("invalid child reference");
+
+            lastEntry_.isInline ? childRef_ = nodeData_ : childRef_ = Hash.hash(nodeData_);
+        
+            if (stackLen_ == 0) break;
+
+            lastEntry_ = stack_[--stackLen_];
+            lastEntry_.children[lastEntry_.childIndex].data = childRef_;                
         }
-        return (Step.UnwindStack, childPrefix);
+
+        if(proofIter_.offset != proof_.length) revert ExtraneousProofError();
+        if(childRef_.length != 32) revert InvalidRoot_SizeError();
+        if (abi.decode(childRef_, (bytes32)) != root_) return false;
+        return true;
     }
 
-    function matchKeyToNode(
-        bytes memory k,
-        uint256 prefixLen,
-        StackEntry memory entry
-    ) internal pure returns (ValueMatch vm, bytes memory childPrefix) {
-        uint256 prefixPlufPartialLen = prefixLen + entry.key.length;
-        if (entry.kind == NODEKIND_NOEXT_LEAF) {
-            if (
-                contains(k, entry.key, prefixLen) &&
-                k.length == prefixPlufPartialLen
-            ) {
-                if (entry.value.length == 0) {
-                    return (ValueMatch.MatchesLeaf, childPrefix);
-                } else {
-                    return (ValueMatch.NotOmitted, childPrefix);
-                }
-            } else {
-                return (ValueMatch.NotFound, childPrefix);
-            }
-        } else if (
-            entry.kind == NODEKIND_NOEXT_BRANCH_NOVALUE ||
-            entry.kind == NODEKIND_NOEXT_BRANCH_WITHVALUE
-        ) {
-            if (contains(k, entry.key, prefixLen)) {
-                if (prefixPlufPartialLen == k.length) {
-                    if (entry.value.length == 0) {
-                        return (ValueMatch.MatchesBranch, childPrefix);
-                    } else {
-                        return (ValueMatch.NotOmitted, childPrefix);
-                    }
-                } else {
-                    uint8 index = uint8(k[prefixPlufPartialLen]);
-                    if (entry.children[index].exist) {
-                        childPrefix = k.substr(0, prefixPlufPartialLen + 1);
-                        return (ValueMatch.IsChild, childPrefix);
-                    } else {
-                        return (ValueMatch.NotFound, childPrefix);
-                    }
-                }
-            } else {
-                return (ValueMatch.NotFound, childPrefix);
-            }
-        } else {
-            revert("not support node type");
-        }
+    /**
+     * @notice Advances to the next child index and returns the child entry.
+     * @dev The child index is the last nibble of the child prefix.
+     * @param entry_ The stack entry.
+     * @param childPrefix_ The child prefix.
+     * @param proofIter_ The proof iterator.
+     */
+    function advanceChildIndex(
+        StackEntry memory entry_,
+        bytes memory childPrefix_,
+        ProofIter memory proofIter_
+    ) internal pure returns (StackEntry memory) {
+        if (entry_.kind != BRANCH_NOVALUE && entry_.kind != BRANCH_WITHVALUE) revert MustBeBranchError();
+        if (childPrefix_.length == 0) revert EmptyChildPrefixError();
+
+        entry_.childIndex = uint8(childPrefix_[childPrefix_.length - 1]);
+        Node.NodeHandle memory child_ = entry_.children[entry_.childIndex];
+        return makeChildEntry(proofIter_, child_, childPrefix_);
     }
 
-    function contains(
-        bytes memory a,
-        bytes memory b,
-        uint256 offset
-    ) internal pure returns (bool) {
-        if (a.length < b.length + offset) {
-            return false;
+    /**
+     * @notice Returns a node either from the next proof iter or the inline childData.
+     * @param proofIter_ The proof iterator.
+     * @param child_ The child node handle.
+     * @param prefix_ The prefix of the child node.
+     * @return StackEntry The decoded child node.
+     */
+    function makeChildEntry(
+        ProofIter memory proofIter_,
+        Node.NodeHandle memory child_,
+        bytes memory prefix_
+    ) internal pure returns (StackEntry memory) {
+        if (!child_.isInline){
+            if (child_.data.length != 32) revert InvalidChildReferenceError();
+            revert ExtraneousHashReferenceError();
+        } 
+
+        // Return decoded inline child from branch  
+        if(child_.data.length > 0) return decodeNode(child_.data, prefix_, true);
+        
+        // Return decoded inline child from proof
+        if(proofIter_.offset >= proofIter_.proof.length) revert IncompleteProofError();
+
+        bytes memory nodeData_ = proofIter_.proof[proofIter_.offset];
+        proofIter_.offset++;
+        return decodeNode(nodeData_, prefix_, false);
+    }
+
+    /**
+     * @notice Returns the next item to process and the child prefix to descend to.
+     * @param entry_ The current stack entry.
+     * @param itemsIter_ The iterator over the items to prove.
+     * @return step_ The next step to take.
+     * @return childPrefix_ The child prefix to descend to.
+     */
+    function advanceItem(StackEntry memory entry_, ItemsIter memory itemsIter_) internal pure
+        returns (Step, bytes memory childPrefix_)
+    {
+        ValueMatch vm_;
+        while (itemsIter_.offset < itemsIter_.items.length) {
+            Item memory item_ = itemsIter_.items[itemsIter_.offset];
+            bytes memory keyAsNibbles_ = Nibble.keyToNibbles(item_.key);
+
+            if (!startsWith(keyAsNibbles_, entry_.prefix)) return (Step.UnwindStack, "");
+            
+            (vm_, childPrefix_) = matchKeyToNode(keyAsNibbles_, entry_.prefix.length, entry_);
+
+            if (vm_ == ValueMatch.Leaf && item_.value.length == 0) revert NoValueInLeafError();
+            if (vm_ == ValueMatch.NotFound && item_.value.length > 0) revert ValueInNotFoundError();
+            if (vm_ == ValueMatch.NotOmitted) revert ExtraneousValueError();
+            if (vm_ == ValueMatch.IsChild) return (Step.Descend, childPrefix_);
+            if (vm_ != ValueMatch.NotFound) entry_.value = item_.value;
+
+            itemsIter_.offset++;
         }
-        for (uint256 i = 0; i < b.length; i++) {
-            if (a[i + offset] != b[i]) {
-                return false;
-            }
+        return (Step.UnwindStack, childPrefix_);
+    }
+
+    /**
+     * @notice Matches a key to a node in entry.
+     * @param keyAsNibbles_ The key to match.
+     * @param prefixLen_ The length of the prefix.
+     * @param entry_ The node to match against.
+     * @return ValueMatch The result of the match.
+     * @return bytes The child prefix if the match is ValueMatch.IsChild.
+     */
+    function matchKeyToNode(bytes memory keyAsNibbles_, uint256 prefixLen_, StackEntry memory entry_) internal pure
+        returns (ValueMatch, bytes memory) 
+    {
+        if (!_isNodeKindSupported(entry_.kind)) revert InvalidNodeKindError();
+
+        uint256 prefixPlusPartialLen = prefixLen_ + entry_.key.length;
+
+        if (entry_.kind == LEAF) {
+            if (!contains(keyAsNibbles_, entry_.key, prefixLen_) || keyAsNibbles_.length != prefixPlusPartialLen) 
+                return (ValueMatch.NotFound, "");
+
+            return(entry_.value.length == 0 ? ValueMatch.Leaf : ValueMatch.NotOmitted, "");
+        } 
+
+        if (!contains(keyAsNibbles_, entry_.key, prefixLen_)) return (ValueMatch.NotFound, "");
+
+        if (prefixPlusPartialLen == keyAsNibbles_.length) 
+            return (entry_.value.length == 0 ? ValueMatch.Branch : ValueMatch.NotOmitted, "");
+        
+        uint8 index = uint8(keyAsNibbles_[prefixPlusPartialLen]);
+        if (!entry_.children[index].exist) return (ValueMatch.NotFound, "");
+
+        bytes memory childPrefix_ = keyAsNibbles_.substr(0, prefixPlusPartialLen + 1);
+        return (ValueMatch.IsChild, childPrefix_);
+    }
+
+    /**
+     * @notice Check if a bytes array contains another bytes array at a given offset.
+     * @param a_ The bytes array to check.
+     * @param b_ The bytes array to check against.
+     * @param offset_ The offset to check at.
+     * @return true If a_ contains b_ at offset_, false otherwise.
+     */
+    function contains(bytes memory a_, bytes memory b_, uint256 offset_) internal pure returns (bool) {
+        if (a_.length < b_.length + offset_) return false;
+        
+        for (uint256 i = 0; i < b_.length; i++) {
+            if (a_[i + offset_] != b_[i]) return false;
         }
         return true;
     }
 
-    function startsWith(bytes memory a, bytes memory b)
-        internal
-        pure
-        returns (bool)
-    {
-        if (a.length < b.length) {
-            return false;
-        }
-        for (uint256 i = 0; i < b.length; i++) {
-            if (a[i] != b[i]) {
-                return false;
-            }
+    /**
+     * @notice Check if a bytes array starts with another bytes array.
+     * @param a_ The bytes array to check.
+     * @param b_ The bytes array to check against.
+     * @return true If a_ starts with b_, false otherwise.
+     */
+    function startsWith(bytes memory a_, bytes memory b_) internal pure returns (bool) {
+        if (a_.length < b_.length) return false;
+        
+        for (uint256 i = 0; i < b_.length; i++) {
+            if (a_[i] != b_[i]) return false;   
         }
         return true;
     }
@@ -326,75 +283,57 @@ contract CompactMerkleProof {
      * @dev Encode a Node.
      *      encoding has the following format:
      *      NodeHeader | Extra partial key length | Partial Key | Value
-     * @param entry The stackEntry.
-     * @return The encoded branch.
+     * @param entry_ The stackEntry.
+     * @return bytes The encoded branch.
      */
-    function encodeNode(StackEntry memory entry)
-        internal
-        view
-        returns (bytes memory)
-    {
-        if (entry.kind == NODEKIND_NOEXT_LEAF) {
-            Node.Leaf memory l = Node.Leaf({
-                key: entry.key,
-                value: entry.value
-            });
-            return Node.encodeLeaf(l);
-        } else if (
-            entry.kind == NODEKIND_NOEXT_BRANCH_NOVALUE ||
-            entry.kind == NODEKIND_NOEXT_BRANCH_WITHVALUE
-        ) {
-            Node.Branch memory b = Node.Branch({
-                key: entry.key,
-                value: entry.value,
-                children: entry.children
-            });
-            return Node.encodeBranch(b);
-        } else {
-            revert("not support node kind");
-        }
+    function encodeNode(StackEntry memory entry_) internal pure returns (bytes memory) {
+        if (!_isNodeKindSupported(entry_.kind)) revert InvalidNodeKindError();
+
+        if (entry_.kind == LEAF) return Node.encodeLeaf(Node.Leaf(entry_.key, entry_.value));
+
+        return Node.encodeBranch(Node.Branch(entry_.key, entry_.children, entry_.value));
     }
 
     /**
      * @dev Decode a Node.
      *      encoding has the following format:
      *      NodeHeader | Extra partial key length | Partial Key | Value
-     * @param nodeData The encoded trie node data.
-     * @param prefix The nibble path to the node.
-     * @param isInline The node is an in-line node or not.
-     * @return entry The StackEntry.
+     * @param nodeData_ The encoded trie node data.
+     * @param prefix_ The nibble path to the node.
+     * @param isInline_ The node is an in-line node or not.
+     * @return entry_ The StackEntry.
      */
-    function decodeNode(
-        bytes memory nodeData,
-        bytes memory prefix,
-        bool isInline
-    ) internal pure returns (StackEntry memory entry) {
-        Input.Data memory data = Input.from(nodeData);
-        uint8 header = data.decodeU8();
-        uint8 kind = header >> 6;
-        if (kind == NODEKIND_NOEXT_LEAF) {
-            //Leaf
-            Node.Leaf memory leaf = Node.decodeLeaf(data, header);
-            entry.key = leaf.key;
-            entry.value = leaf.value;
-            entry.kind = kind;
-            entry.prefix = prefix;
-            entry.isInline = isInline;
-        } else if (
-            kind == NODEKIND_NOEXT_BRANCH_NOVALUE ||
-            kind == NODEKIND_NOEXT_BRANCH_WITHVALUE
-        ) {
-            //BRANCH_WITHOUT_MASK_NO_EXT  BRANCH_WITH_MASK_NO_EXT
-            Node.Branch memory branch = Node.decodeBranch(data, header);
-            entry.key = branch.key;
-            entry.value = branch.value;
-            entry.kind = kind;
-            entry.children = branch.children;
-            entry.childIndex = 0;
-            entry.prefix = prefix;
-            entry.isInline = isInline;
-        } else {
-            revert("not support node kind");
-        }
+    function decodeNode(bytes memory nodeData_, bytes memory prefix_, bool isInline_
+    ) internal pure returns (StackEntry memory entry_) {
+        Input.Data memory data_ = Input.from(nodeData_); // nodeData to Data {uint256 offset = 0, bytes raw = nodeData}
+        uint8 header_ = data_.decodeU8(); // Get the first byte of nodeData (header) and increase offset to 1
+        uint8 kind_ = header_ >> 6; // Get the first two bits of header
+        if (!_isNodeKindSupported(kind_)) revert InvalidNodeKindError();
+
+        entry_.kind = kind_;
+        entry_.prefix = prefix_;
+        entry_.isInline = isInline_;
+        
+        if (kind_ == LEAF) { 
+            Node.Leaf memory leaf_ = Node.decodeLeaf(data_, header_);
+            entry_.key = leaf_.key;
+            entry_.value = leaf_.value;
+            return entry_;
+        } 
+
+        Node.Branch memory branch_ = Node.decodeBranch(data_, header_);
+        entry_.key = branch_.key;
+        entry_.value = branch_.value;
+        entry_.children = branch_.children;
+        entry_.childIndex = 0;
+    }
+
+    /**
+     * @notice Check if the node kind is supported.
+     * @param kind_ The node kind.
+     * @return true If the node kind is supported, false otherwise.
+     */ 
+    function _isNodeKindSupported(uint8 kind_) internal pure returns(bool) {
+        return kind_ == LEAF || kind_ == BRANCH_NOVALUE || kind_ == BRANCH_WITHVALUE;
     }
 }

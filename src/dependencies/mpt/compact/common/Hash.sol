@@ -5,7 +5,7 @@ import "./Memory.sol";
 
 library Hash {
 
-    function hash(bytes memory src) internal view returns (bytes memory des) {
+    function hash(bytes memory src) internal pure returns (bytes memory des) {
         return Memory.toBytes(keccak256(src));
     }
 }

@@ -1,19 +1,14 @@
-//SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.7;
 
-import { Test } from "@forge-std/Test.sol";
+import "@forge-std/Test.sol";
+import "@forge-std/console.sol";
 
 import "src/dependencies/mpt/compact/CompactMerkleProof.sol";
-import "src/dependencies/mpt/compact/common/Input.sol";
+import "src/dependencies/mpt/compact/common/Nibble.sol";
 
-contract CompactMerkleProofTest is Test {
+contract CompactMerkleProofTest is CompactMerkleProof, Test {
     using Input for Input.Data;
-
-    CompactMerkleProof _mpt;
-
-    function setUp() public {
-        _mpt = new CompactMerkleProof();
-    }
 
     function testSimplePairVerifyProof() public returns (bool) {
         bytes32 root = hex"36d59226dcf98198b07207ee154ebea246a687d8c11191f35b475e7a63f9e5b4";
@@ -23,7 +18,11 @@ contract CompactMerkleProofTest is Test {
         keys[0] = hex"646f";
         bytes[] memory values = new bytes[](1);
         values[0] = hex"76657262";
-        bool res = _mpt.verify(root, proof, keys, values);
+        Item[] memory items = new Item[](keys.length);
+        for (uint256 i = 0; i < keys.length; i++) {
+            items[i] = Item(keys[i], values[i]);
+        }
+        bool res = verifyProof(root, proof, items);
         assertTrue(res);
 		return res;
     }
@@ -39,7 +38,11 @@ contract CompactMerkleProofTest is Test {
         keys[0] = hex"646f6765";
         bytes[] memory values = new bytes[](1);
         values[0] = hex"0000000000000000000000000000000000000000000000000000000000000000";
-        bool res = _mpt.verify(root, merkleProof, keys, values);
+        Item[] memory items = new Item[](keys.length);
+        for (uint256 i = 0; i < keys.length; i++) {
+            items[i] = Item(keys[i], values[i]);
+        }
+        bool res = verifyProof(root, merkleProof, items);
         assertTrue(res);
 		return res;
     }
@@ -73,7 +76,78 @@ contract CompactMerkleProofTest is Test {
         values[5] = hex"7075707079";
         values[6] = hex"0000000000000000000000000000000000000000000000000000000000000000";
         values[7] = hex"";
-        bool res = _mpt.verify(root, merkleProof, keys, values);
+        Item[] memory items = new Item[](keys.length);
+        for (uint256 i = 0; i < keys.length; i++) {
+            items[i] = Item(keys[i], values[i]);
+        }
+        bool res = verifyProof(root, merkleProof, items);
+        assertTrue(res);
+		return res;
+    }
+
+    function testPairsAnotherProof() public returns (bool) {
+        bytes32 root = hex"493825321d9ad0c473bbf85e1a08c742b4a0b75414f890745368b8953b873017";
+        bytes[] memory merkleProof = new bytes[](3);
+        merkleProof[0] = hex"8106160180e1d36480e752f07021a5e11ef480382d11158a5703d3e76df489d0f40c41c4772c487261766f14627261766f007c8306f7240030447365207374616c6c696f6e30447365206275696c64696e67";
+        merkleProof[1] = hex"c26f4000107665726200";
+        merkleProof[2] = hex"810740008083809f19c0b956a97fc0175e6717d289bb0f890a67a953eb0874f89244314b34";
+
+        //sort keys!
+        bytes[] memory keys = new bytes[](1);
+        keys[0] = abi.encodePacked("dog");
+
+
+        bytes[] memory values = new bytes[](1);
+        values[0] = abi.encodePacked("puppy");
+
+        Item[] memory items = new Item[](keys.length);
+        for (uint256 i = 0; i < keys.length; i++) {
+            items[i] = Item(keys[i], values[i]);
+        }
+        bool res = verifyProof(root, merkleProof, items);
+        assertTrue(res);
+		return res;
+    }
+
+    function testPairsAnotherProof2() public returns (bool) {
+        bytes32 root = hex"493825321d9ad0c473bbf85e1a08c742b4a0b75414f890745368b8953b873017";
+        bytes[] memory merkleProof = new bytes[](1);
+        merkleProof[0] = hex"8106160180e1d36480e752f07021a5e11ef480382d11158a5703d3e76df489d0f40c41c47718487261766f008032d5d23c2ead392b6c8f09de886c981c96e52e133780d15a616333c89ced53c17c8306f7240030447365207374616c6c696f6e30447365206275696c64696e67";
+
+        //sort keys!
+        bytes[] memory keys = new bytes[](1);
+        keys[0] = abi.encodePacked("bravo");
+
+
+        bytes[] memory values = new bytes[](1);
+        values[0] = abi.encodePacked("bravo");
+
+        Item[] memory items = new Item[](keys.length);
+        for (uint256 i = 0; i < keys.length; i++) {
+            items[i] = Item(keys[i], values[i]);
+        }
+        bool res = verifyProof(root, merkleProof, items);
+        assertTrue(res);
+		return res;
+    }
+
+    function testPairsAnotherProof4() public returns (bool) {
+        bytes32 root = hex"4ff75de3a99a74fb0d9724d6ce74466dec835957d98006880f59c82ca79d9eb8";
+        bytes[] memory merkleProof = new bytes[](1);
+        merkleProof[0] = hex"8106160114466c6661002c487261766f14627261766f8032d5d23c2ead392b6c8f09de886c981c96e52e133780d15a616333c89ced53c17c8306f7240030447365207374616c6c696f6e30447365206275696c64696e67";
+
+        //sort keys!
+        bytes[] memory keys = new bytes[](1);
+        keys[0] = abi.encodePacked("alfa");
+
+        bytes[] memory values = new bytes[](1);
+        values[0] = abi.encodePacked(bytes26(0));
+
+        Item[] memory items = new Item[](keys.length);
+        for (uint256 i = 0; i < keys.length; i++) {
+            items[i] = Item(keys[i], values[i]);
+        }
+        bool res = verifyProof(root, merkleProof, items);
         assertTrue(res);
 		return res;
     }
@@ -101,8 +175,9 @@ contract CompactMerkleProofTest is Test {
         Input.Data memory data = Input.from(proof);
         uint8 header = data.decodeU8();
         Node.Branch memory b = Node.decodeBranch(data, header);
-        assertEq0(b.key, hex"07");
+        assertEq(b.key, hex"07");
         assertEq0(b.value, hex"7075707079");
+        //TODO:: test children
     }
 
     function test_encode_branch() public {
