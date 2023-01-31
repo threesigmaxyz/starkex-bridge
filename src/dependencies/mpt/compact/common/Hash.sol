@@ -5,7 +5,12 @@ import "./Memory.sol";
 
 library Hash {
 
-    function hash(bytes memory src) internal pure returns (bytes memory des) {
-        return Memory.toBytes(keccak256(src));
+    /**
+     * @notice Returns the keccak256 hash of the input.
+     * @param src_ The input to hash.
+     * @return des_ The hash of the input.
+     */
+    function hash(bytes memory src_) internal pure returns (bytes memory des_) {
+        return Memory.toBytes(keccak256(src_));
     }
 }

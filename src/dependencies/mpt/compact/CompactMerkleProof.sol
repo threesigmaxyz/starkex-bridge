@@ -179,8 +179,7 @@ contract CompactMerkleProof {
         // Return decoded inline child from proof
         if(proofIter_.offset >= proofIter_.proof.length) revert IncompleteProofError();
 
-        bytes memory nodeData_ = proofIter_.proof[proofIter_.offset];
-        proofIter_.offset++;
+        bytes memory nodeData_ = proofIter_.proof[proofIter_.offset++];
         return decodeNode(nodeData_, prefix_, false);
     }
 

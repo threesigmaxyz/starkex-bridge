@@ -6,78 +6,60 @@ import {Memory} from "./Memory.sol";
 library Bytes {
     uint256 internal constant BYTES_HEADER_SIZE = 32;
 
-    // Checks if two `bytes memory` variables are equal. This is done using hashing,
-    // which is much more gas efficient then comparing each byte individually.
-    // Equality means that:
-    //  - 'self.length == other.length'
-    //  - For 'n' in '[0, self.length)', 'self[n] == other[n]'
-    function equals(bytes memory self, bytes memory other) internal pure returns (bool equal) {
-        if (self.length != other.length) {
-            return false;
-        }
-        uint addr;
-        uint addr2;
+    /** 
+     *  @notice Checks if two `bytes memory` variables are equal. This is done using hashing,
+     *           which is much more gas efficient then comparing each byte individually.
+     *           Equality means that:
+     *           - 'self.length == other.length'
+     *           - For 'n' in '[0, self.length)', 'self[n] == other[n]'
+     *  @param self_ The first `bytes memory` variable to compare.
+     *  @param other_ The second `bytes memory` variable to compare.
+     *  @return equal_ 'true' if the two `bytes memory` variables are equal, otherwise 'false'.
+     */  
+    function equals(bytes memory self_, bytes memory other_) internal pure returns (bool equal_) {
+        if (self_.length != other_.length) return false;
+        
+        uint addr_;
+        uint addr2_;
         assembly {
-            addr := add(self, /*BYTES_HEADER_SIZE*/32)
-            addr2 := add(other, /*BYTES_HEADER_SIZE*/32)
+            addr_ := add(self_, BYTES_HEADER_SIZE) 
+            addr2_ := add(other_, BYTES_HEADER_SIZE)
         }
-        equal = Memory.equals(addr, addr2, self.length);
+        equal_ = Memory.equals(addr_, addr2_, self_.length);
     }
 
-    // Copies a section of 'self' into a new array, starting at the provided 'startIndex'.
-    // Returns the new copy.
-    // Requires that 'startIndex <= self.length'
-    // The length of the substring is: 'self.length - startIndex'
-    function substr(bytes memory self, uint256 startIndex)
-        internal
-        pure
-        returns (bytes memory)
-    {
-        require(startIndex <= self.length);
-        uint256 len = self.length - startIndex;
-        uint256 addr = Memory.dataPtr(self);
-        return Memory.toBytes(addr + startIndex, len);
+    /** 
+     * @notice Copies a section of 'self' into a new array, starting at the provided 'startIndex'.
+     *         Returns the new copy.
+     *         Requires that 'startIndex <= self.length'
+     *         The length of the substring is: 'self.length - startIndex'
+     * @param self_ The `bytes memory` variable to slice.
+     * @param startIndex_ The index to start slicing from.
+     * @return Bytes The substring.
+     */
+    function substr(bytes memory self_, uint256 startIndex_) internal pure returns (bytes memory) {
+        require(startIndex_ <= self_.length);
+        uint256 len_ = self_.length - startIndex_;
+        uint256 addr_ = Memory.dataPtr(self_);
+        return Memory.toBytes(addr_ + startIndex_, len_);
     }
 
-    // Copies 'len' bytes from 'self' into a new array, starting at the provided 'startIndex'.
-    // Returns the new copy.
-    // Requires that:
-    //  - 'startIndex + len <= self.length'
-    // The length of the substring is: 'len'
-    function substr(
-        bytes memory self,
-        uint256 startIndex,
-        uint256 len
-    ) internal pure returns (bytes memory) {
-        require(startIndex + len <= self.length);
-        if (len == 0) {
-            return "";
-        }
-        uint256 addr = Memory.dataPtr(self);
-        return Memory.toBytes(addr + startIndex, len);
-    }
-
-    // Combines 'self' and 'other' into a single array.
-    // Returns the concatenated arrays:
-    //  [self[0], self[1], ... , self[self.length - 1], other[0], other[1], ... , other[other.length - 1]]
-    // The length of the new array is 'self.length + other.length'
-    function concat(bytes memory self, bytes memory other)
-        internal
-        pure
-        returns (bytes memory)
-    {
-        bytes memory ret = new bytes(self.length + other.length);
-        uint256 src;
-        uint256 srcLen;
-        (src, srcLen) = Memory.fromBytes(self);
-        uint256 src2;
-        uint256 src2Len;
-        (src2, src2Len) = Memory.fromBytes(other);
-        uint256 dest;
-        (dest, ) = Memory.fromBytes(ret);
-        uint256 dest2 = dest + srcLen;
-        Memory.copy(src, dest, srcLen);
-        Memory.copy(src2, dest2, src2Len);
-        return ret;
+    /** 
+     * @notice Copies 'len' bytes from 'self' into a new array, starting at the provided 'startIndex'.
+     *         Returns the new copy.
+     *         Requires that:
+     *         - 'startIndex + len <= self.length'
+     *         The length of the substring is: 'len'
+     * @param self_ The `bytes memory` variable to slice.
+     * @param startIndex_ The index to start slicing from.
+     * @param len_ The length of the substring.
+     * @return Bytes The substring.
+     */
+    function substr(bytes memory self_, uint256 startIndex_, uint256 len_) internal pure returns (bytes memory) {
+        require(startIndex_ + len_ <= self_.length);
+        if (len_ == 0) return "";
+        
+        uint256 addr_ = Memory.dataPtr(self_);
+        return Memory.toBytes(addr_ + startIndex_, len_);
     }
 }
