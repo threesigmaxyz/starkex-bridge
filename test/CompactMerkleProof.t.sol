@@ -1,11 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.7;
 
-import "@forge-std/Test.sol";
-import "@forge-std/console.sol";
-
-import "src/dependencies/mpt/compact/CompactMerkleProof.sol";
-import "src/dependencies/mpt/compact/common/Nibble.sol";
+import { Test } from "@forge-std/Test.sol";
+import { CompactMerkleProof } from "src/dependencies/mpt/compact/CompactMerkleProof.sol";
+import { Input } from "src/dependencies/mpt/compact/common/Input.sol";
+import { Node } from "src/dependencies/mpt/compact/common/Node.sol";
 
 contract CompactMerkleProofTest is Test {
     using Input for Input.Data;
