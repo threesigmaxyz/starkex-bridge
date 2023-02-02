@@ -7,7 +7,7 @@ import "@forge-std/console.sol";
 import "src/dependencies/mpt/compact/CompactMerkleProof.sol";
 import "src/dependencies/mpt/compact/common/Nibble.sol";
 
-contract CompactMerkleProofTest is CompactMerkleProof, Test {
+contract CompactMerkleProofTest is Test {
     using Input for Input.Data;
 
     function testSimplePairVerifyProof() public {
@@ -18,8 +18,8 @@ contract CompactMerkleProofTest is CompactMerkleProof, Test {
         keys_[0] = hex"646f";
         bytes[] memory values_ = new bytes[](1);
         values_[0] = hex"76657262";
-        Item[] memory items_ = _keysValuesToItems(keys_, values_);
-        bool res_ = verifyProof(root_, proof_, items_);
+        CompactMerkleProof.Item[] memory items_ = _keysValuesToItems(keys_, values_);
+        bool res_ = CompactMerkleProof.verifyProof(root_, proof_, items_);
         assertTrue(res_);
     }
 
@@ -34,8 +34,8 @@ contract CompactMerkleProofTest is CompactMerkleProof, Test {
         keys_[0] = hex"646f6765";
         bytes[] memory values_ = new bytes[](1);
         values_[0] = hex"0000000000000000000000000000000000000000000000000000000000000000";
-        Item[] memory items_ = _keysValuesToItems(keys_, values_);
-        bool res_ = verifyProof(root_, merkleProof_, items_);
+        CompactMerkleProof.Item[] memory items_ = _keysValuesToItems(keys_, values_);
+        bool res_ = CompactMerkleProof.verifyProof(root_, merkleProof_, items_);
         assertTrue(res_);
     }
 
@@ -68,8 +68,8 @@ contract CompactMerkleProofTest is CompactMerkleProof, Test {
         values_[5] = hex"7075707079";
         values_[6] = hex"0000000000000000000000000000000000000000000000000000000000000000";
         values_[7] = hex"";
-        Item[] memory items_ = _keysValuesToItems(keys_, values_);
-        bool res_ = verifyProof(root_, merkleProof_, items_);
+        CompactMerkleProof.Item[] memory items_ = _keysValuesToItems(keys_, values_);
+        bool res_ = CompactMerkleProof.verifyProof(root_, merkleProof_, items_);
         assertTrue(res_);
     }
 
@@ -88,8 +88,8 @@ contract CompactMerkleProofTest is CompactMerkleProof, Test {
         bytes[] memory values_ = new bytes[](1);
         values_[0] = abi.encodePacked("puppy");
 
-        Item[] memory items_ = _keysValuesToItems(keys_, values_);
-        bool res_ = verifyProof(root_, merkleProof_, items_);
+        CompactMerkleProof.Item[] memory items_ = _keysValuesToItems(keys_, values_);
+        bool res_ = CompactMerkleProof.verifyProof(root_, merkleProof_, items_);
         assertTrue(res_);
     }
 
@@ -106,12 +106,12 @@ contract CompactMerkleProofTest is CompactMerkleProof, Test {
         bytes[] memory values_ = new bytes[](1);
         values_[0] = abi.encodePacked("bravo");
 
-        Item[] memory items_ = _keysValuesToItems(keys_, values_);
-        bool res_ = verifyProof(root_, merkleProof_, items_);
+        CompactMerkleProof.Item[] memory items_ = _keysValuesToItems(keys_, values_);
+        bool res_ = CompactMerkleProof.verifyProof(root_, merkleProof_, items_);
         assertTrue(res_);
     }
 
-    function testPairsAnotherProof4() public {
+    function testPairsAnotherProof3() public {
         bytes32 root_ = hex"4ff75de3a99a74fb0d9724d6ce74466dec835957d98006880f59c82ca79d9eb8";
         bytes[] memory merkleProof_ = new bytes[](1);
         merkleProof_[0] = hex"8106160114466c6661002c487261766f14627261766f8032d5d23c2ead392b6c8f09de886c981c96e52e133780d15a616333c89ced53c17c8306f7240030447365207374616c6c696f6e30447365206275696c64696e67";
@@ -123,9 +123,30 @@ contract CompactMerkleProofTest is CompactMerkleProof, Test {
         bytes[] memory values_ = new bytes[](1);
         values_[0] = abi.encodePacked(bytes26(0));
 
-        Item[] memory items_ = _keysValuesToItems(keys_, values_);
-        bool res_ = verifyProof(root_, merkleProof_, items_);
+        CompactMerkleProof.Item[] memory items_ = _keysValuesToItems(keys_, values_);
+        bool res_ = CompactMerkleProof.verifyProof(root_, merkleProof_, items_);
         assertTrue(res_);
+    }
+
+    function testDuplicatedKeyReverts() public {
+        bytes32 root_ = hex"493825321d9ad0c473bbf85e1a08c742b4a0b75414f890745368b8953b873017";
+        bytes[] memory merkleProof_ = new bytes[](1);
+        merkleProof_[0] = hex"8106160180e1d36480e752f07021a5e11ef480382d11158a5703d3e76df489d0f40c41c47718487261766f008032d5d23c2ead392b6c8f09de886c981c96e52e133780d15a616333c89ced53c17c8306f7240030447365207374616c6c696f6e30447365206275696c64696e67";
+
+        //sort keys!
+        bytes[] memory keys_ = new bytes[](2);
+        keys_[0] = abi.encodePacked("bravo");
+        keys_[1] = abi.encodePacked("bravo");
+
+
+        bytes[] memory values_ = new bytes[](2);
+        values_[0] = abi.encodePacked("bravo");
+        values_[0] = abi.encodePacked("bravo");
+
+        CompactMerkleProof.Item[] memory items_ = _keysValuesToItems(keys_, values_);
+        vm.expectRevert(abi.encodeWithSelector(CompactMerkleProof.ExtraneousValueError.selector));
+        bool res_ = CompactMerkleProof.verifyProof(root_, merkleProof_, items_);
+        assertFalse(res_);
     }
 
     function testDecodeLeaf() public {
@@ -165,10 +186,11 @@ contract CompactMerkleProofTest is CompactMerkleProof, Test {
         assertEq0(proof_, encodedBranch_);
     }
 
-    function _keysValuesToItems(bytes[] memory keys_, bytes[] memory values_) internal pure returns (Item[] memory) {
-        Item[] memory items_ = new Item[](keys_.length);
+    function _keysValuesToItems(bytes[] memory keys_, bytes[] memory values_
+    ) internal pure returns (CompactMerkleProof.Item[] memory) {
+        CompactMerkleProof.Item[] memory items_ = new CompactMerkleProof.Item[](keys_.length);
         for (uint256 i = 0; i < keys_.length; i++) {
-            items_[i] = Item(keys_[i], values_[i]);
+            items_[i] = CompactMerkleProof.Item(keys_[i], values_[i]);
         }
         return items_;
     }

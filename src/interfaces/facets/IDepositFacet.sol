@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
+import { CompactMerkleProof } from "src/dependencies/mpt/compact/CompactMerkleProof.sol";
+
 interface IDepositFacet {
     struct Deposit {
         address receiver;
@@ -85,6 +87,15 @@ interface IDepositFacet {
      * @param recipient_ The recipient of the deposit.
      */
     function claimDeposit(uint256 lockHash_, uint256 branchMask_, bytes32[] memory proof_, address recipient_)
+        external;
+
+    /**
+     * @notice Claim multiple deposits if the hashes of the transfers were included in the Merkle Tree.
+     * @param lockHashes_ The hashes of the transfers.
+     * @param proof_ The Merkle proof proving that the transfers are in the Merkle Tree.
+     * @param recipient_ The recipient of the deposits.
+     */
+    function claimDeposits(CompactMerkleProof.Item[] memory lockHashes_, bytes[] memory proof_, address recipient_)
         external;
 
     /**

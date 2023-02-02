@@ -32,7 +32,7 @@ import "./common/Node.sol";
 /**
  * @dev Verification of compact proofs for Modified Merkle-Patricia tries.
  */
-contract CompactMerkleProof {
+library CompactMerkleProof {
     using Bytes for bytes;
     using Input for Input.Data;
 
@@ -73,7 +73,7 @@ contract CompactMerkleProof {
     error EmptyProofError();
     error ZeroItemsError();
     error ExtraneousProofError();
-    error InvalidRoot_SizeError();
+    error InvalidRootSizeError();
     error MustBeBranchError();
     error EmptyChildPrefixError();
     error InvalidChildReferenceError();
@@ -83,6 +83,9 @@ contract CompactMerkleProof {
     error ValueInNotFoundError();
     error ExtraneousValueError();
     error InvalidNodeKindError();
+
+    event LogBytes(bytes data);
+    event LogBytes32(bytes32 data);
 
 	/**
      * @notice Returns true if `keys ans values` can be proved to be a part of a Merkle tree
@@ -98,7 +101,17 @@ contract CompactMerkleProof {
         bytes32 root_,
         bytes[] memory proof_,
         Item[] memory items_
-    ) public pure returns (bool) {
+    ) public returns (bool) {
+        for(uint256 i = 0; i < proof_.length; i++) {
+            emit LogBytes(proof_[i]);
+        }
+        for(uint256 i = 0; i < items_.length; i++) {
+            emit LogBytes(items_[i].key);
+            emit LogBytes(items_[i].value);
+        }
+
+        emit LogBytes32(root_);
+
         if (proof_.length == 0) revert EmptyProofError();
         if (items_.length == 0) revert ZeroItemsError();
 
@@ -131,7 +144,7 @@ contract CompactMerkleProof {
         }
 
         if(proofIter_.offset != proof_.length) revert ExtraneousProofError();
-        if(childRef_.length != 32) revert InvalidRoot_SizeError();
+        if(childRef_.length != 32) revert InvalidRootSizeError();
         if (abi.decode(childRef_, (bytes32)) != root_) return false;
         return true;
     }

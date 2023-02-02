@@ -2,6 +2,7 @@
 pragma solidity ^0.8.0;
 
 import { LibMPT as MerklePatriciaTree } from "src/dependencies/mpt/v2/LibMPT.sol";
+import { CompactMerkleProof } from "src/dependencies/mpt/compact/CompactMerkleProof.sol";
 import { HelpersECDSA } from "src/helpers/HelpersECDSA.sol";
 
 import { HelpersERC20 } from "src/helpers/HelpersERC20.sol";
@@ -105,6 +106,37 @@ contract DepositFacet is OnlyRegisteredToken, OnlyStarkExOperator, OnlyOwner, ID
 
         // Transfer funds
         HelpersTransferNativeOrERC20.transfer(deposit_.token, recipient_, deposit_.amount);
+    }
+
+    /// @inheritdoc IDepositFacet
+    function claimDeposits(CompactMerkleProof.Item[] memory lockHashes_, bytes[] memory proof_, address recipient_)
+        external
+        override
+        onlyStarkExOperator
+    {
+        if (recipient_ == address(0)) revert ZeroAddressRecipientError();
+        DepositStorage storage ds = depositStorage();
+        Deposit memory deposit_;
+        uint256 lockHash_;
+        for (uint256 i = 0; i < lockHashes_.length; i++) {
+            lockHash_ = uint256(bytes32(lockHashes_[i].key));
+            if (lockHash_ == 0) revert InvalidDepositLockError();
+            deposit_ = ds.deposits[lockHash_];
+            if (deposit_.expirationDate == 0) revert DepositNotFoundError();
+        }
+
+        // Validate MPT compact proof.
+        CompactMerkleProof.verifyProof(bytes32(LibState.getOrderRoot()), proof_, lockHashes_);
+
+        // State update.
+        for(uint256 i = 0; i < lockHashes_.length; i++) {
+            lockHash_ = uint256(bytes32(lockHashes_[i].key));
+            deposit_ = ds.deposits[lockHash_];
+            delete ds.deposits[lockHash_];
+            ds.pendingDeposits[deposit_.token] -= deposit_.amount;
+            emit LogClaimDeposit(lockHash_, recipient_);
+            HelpersTransferNativeOrERC20.transfer(deposit_.token, recipient_, deposit_.amount);
+        }
     }
 
     /// @inheritdoc IDepositFacet
