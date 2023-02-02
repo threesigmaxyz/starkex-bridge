@@ -93,9 +93,6 @@ library CompactMerkleProof {
     error ExtraneousValueError();
     error InvalidNodeKindError();
 
-    event LogBytes(bytes data);
-    event LogBytes32(bytes32 data);
-
     /**
      * @notice Returns true if `keys ans values` can be proved to be a part of a Merkle tree
      * defined by `root_`. For this, a `proof` must be provided, is a sequence of the subset
@@ -106,17 +103,7 @@ library CompactMerkleProof {
      * @param items_ The items to verify.
      * @return True if the proof is valid, false otherwise.
      */
-    function verifyProof(bytes32 root_, bytes[] memory proof_, Item[] memory items_) public returns (bool) {
-        for (uint256 i = 0; i < proof_.length; i++) {
-            emit LogBytes(proof_[i]);
-        }
-        for (uint256 i = 0; i < items_.length; i++) {
-            emit LogBytes(items_[i].key);
-            emit LogBytes(items_[i].value);
-        }
-
-        emit LogBytes32(root_);
-
+    function verifyProof(bytes32 root_, bytes[] memory proof_, Item[] memory items_) public pure returns (bool) {
         if (proof_.length == 0) revert EmptyProofError();
         if (items_.length == 0) revert ZeroItemsError();
 
