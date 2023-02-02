@@ -49,10 +49,10 @@ contract DepositFacetTest is BaseFixture {
     //=== Helper Mappings                                                        ===//
     //==============================================================================//
 
-    mapping (address => uint256) _initialBridgeBalances;
-    mapping (address => uint256) _initialRecipientBalances;
-    mapping (address => uint256) _initialPendingDeposits;
-    mapping (address => uint256) _amountByToken;
+    mapping(address => uint256) _initialBridgeBalances;
+    mapping(address => uint256) _initialRecipientBalances;
+    mapping(address => uint256) _initialPendingDeposits;
+    mapping(address => uint256) _amountByToken;
 
     //==============================================================================//
     //=== initialize Tests                                                       ===//
@@ -270,7 +270,7 @@ contract DepositFacetTest is BaseFixture {
         bytes[] memory keys_ = new bytes[](2);
         keys_[0] = lockHash1_;
         keys_[1] = lockHash2_;
-        
+
         bytes[] memory proof_ = new bytes[](3);
         proof_[0] = hex"8048000000";
         proof_[1] = hex"7f00083036653064376335653662376538366464313233333132333132333161326400";
@@ -459,10 +459,10 @@ contract DepositFacetTest is BaseFixture {
     }
 
     function _claimDeposits(
-        address[] memory tokens_, 
-        uint256[] memory amounts_, 
-        bytes[] memory keys_, 
-        bytes[] memory proof_, 
+        address[] memory tokens_,
+        uint256[] memory amounts_,
+        bytes[] memory keys_,
+        bytes[] memory proof_,
         uint256 orderRoot_,
         address recipient_
     ) internal {
@@ -472,7 +472,7 @@ contract DepositFacetTest is BaseFixture {
             items_[i] = CompactMerkleProof.Item(keys_[i], hex"01");
         }
         // And
-        for (uint i = 0; i < tokens_.length; i++) {
+        for (uint256 i = 0; i < tokens_.length; i++) {
             _initialBridgeBalances[tokens_[i]] = _getNativeOrERC20Balance(tokens_[i], _bridge);
             _initialRecipientBalances[tokens_[i]] = _getNativeOrERC20Balance(tokens_[i], recipient_);
             _initialPendingDeposits[tokens_[i]] = IDepositFacet(_bridge).getPendingDeposits(tokens_[i]);
@@ -483,7 +483,7 @@ contract DepositFacetTest is BaseFixture {
         IStateFacet(_bridge).setOrderRoot(orderRoot_);
 
         // Act + Assert
-        for (uint i = 0; i < keys_.length; i++) {
+        for (uint256 i = 0; i < keys_.length; i++) {
             vm.expectEmit(true, true, false, true);
             emit LogClaimDeposit(uint256(bytes32(keys_[i])), recipient_);
         }
@@ -491,16 +491,25 @@ contract DepositFacetTest is BaseFixture {
         IDepositFacet(_bridge).claimDeposits(items_, proof_, recipient_);
 
         // Assert
-        for (uint i = 0; i < keys_.length; i++) {
+        for (uint256 i = 0; i < keys_.length; i++) {
             _validateDepositDeleted(uint256(bytes32(keys_[i])));
             _amountByToken[tokens_[i]] += amounts_[i];
         }
 
-        for (uint i = 0; i < tokens_.length; i++) {
-            assertEq(_getNativeOrERC20Balance(tokens_[i], _bridge), _initialBridgeBalances[tokens_[i]] - _amountByToken[tokens_[i]]);
-            assertEq(_getNativeOrERC20Balance(tokens_[i], recipient_), _initialRecipientBalances[tokens_[i]] + _amountByToken[tokens_[i]]);
-            assertEq(IDepositFacet(_bridge).getPendingDeposits(tokens_[i]), _initialPendingDeposits[tokens_[i]] - _amountByToken[tokens_[i]]);
-        }       
+        for (uint256 i = 0; i < tokens_.length; i++) {
+            assertEq(
+                _getNativeOrERC20Balance(tokens_[i], _bridge),
+                _initialBridgeBalances[tokens_[i]] - _amountByToken[tokens_[i]]
+            );
+            assertEq(
+                _getNativeOrERC20Balance(tokens_[i], recipient_),
+                _initialRecipientBalances[tokens_[i]] + _amountByToken[tokens_[i]]
+            );
+            assertEq(
+                IDepositFacet(_bridge).getPendingDeposits(tokens_[i]),
+                _initialPendingDeposits[tokens_[i]] - _amountByToken[tokens_[i]]
+            );
+        }
     }
 
     function _reclaimDeposit(address user_, address token_, uint256 amount_, uint256 lockHash_) internal {

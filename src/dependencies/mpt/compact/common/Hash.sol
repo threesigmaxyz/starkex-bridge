@@ -4,7 +4,6 @@ pragma solidity ^0.8.0;
 import "./Memory.sol";
 
 library Hash {
-
     /**
      * @notice Returns the keccak256 hash of the input.
      * @param src_ The input to hash.

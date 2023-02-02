@@ -66,9 +66,18 @@ library CompactMerkleProof {
         bytes value;
     }
 
-    enum ValueMatch {Leaf, Branch, NotOmitted, NotFound, IsChild}
+    enum ValueMatch {
+        Leaf,
+        Branch,
+        NotOmitted,
+        NotFound,
+        IsChild
+    }
 
-    enum Step {Descend, UnwindStack}
+    enum Step {
+        Descend,
+        UnwindStack
+    }
 
     error EmptyProofError();
     error ZeroItemsError();
@@ -87,25 +96,21 @@ library CompactMerkleProof {
     event LogBytes(bytes data);
     event LogBytes32(bytes32 data);
 
-	/**
+    /**
      * @notice Returns true if `keys ans values` can be proved to be a part of a Merkle tree
-     * defined by `root_`. For this, a `proof` must be provided, is a sequence of the subset 
-     * of nodes in the trie traversed while performing lookups on all keys. The trie nodes 
+     * defined by `root_`. For this, a `proof` must be provided, is a sequence of the subset
+     * of nodes in the trie traversed while performing lookups on all keys. The trie nodes
      * are listed in pre-order traversal order with some values and internal hashes omitted.
      * @param root_ The root hash of the Merkle tree.
      * @param proof_ The proof of the Merkle Patricia trie.
      * @param items_ The items to verify.
      * @return True if the proof is valid, false otherwise.
      */
-    function verifyProof(
-        bytes32 root_,
-        bytes[] memory proof_,
-        Item[] memory items_
-    ) public returns (bool) {
-        for(uint256 i = 0; i < proof_.length; i++) {
+    function verifyProof(bytes32 root_, bytes[] memory proof_, Item[] memory items_) public returns (bool) {
+        for (uint256 i = 0; i < proof_.length; i++) {
             emit LogBytes(proof_[i]);
         }
-        for(uint256 i = 0; i < items_.length; i++) {
+        for (uint256 i = 0; i < items_.length; i++) {
             emit LogBytes(items_[i].key);
             emit LogBytes(items_[i].value);
         }
@@ -130,21 +135,21 @@ library CompactMerkleProof {
                 stack_[stackLen_++] = lastEntry_;
                 lastEntry_ = advanceChildIndex(lastEntry_, childPrefix_, proofIter_);
                 continue;
-            } 
+            }
             // step == Step.UnwindStack
             nodeData_ = encodeNode(lastEntry_);
             if (lastEntry_.isInline && nodeData_.length > 32) revert("invalid child reference");
 
             lastEntry_.isInline ? childRef_ = nodeData_ : childRef_ = Hash.hash(nodeData_);
-        
+
             if (stackLen_ == 0) break;
 
             lastEntry_ = stack_[--stackLen_];
-            lastEntry_.children[lastEntry_.childIndex].data = childRef_;                
+            lastEntry_.children[lastEntry_.childIndex].data = childRef_;
         }
 
-        if(proofIter_.offset != proof_.length) revert ExtraneousProofError();
-        if(childRef_.length != 32) revert InvalidRootSizeError();
+        if (proofIter_.offset != proof_.length) revert ExtraneousProofError();
+        if (childRef_.length != 32) revert InvalidRootSizeError();
         if (abi.decode(childRef_, (bytes32)) != root_) return false;
         return true;
     }
@@ -156,11 +161,11 @@ library CompactMerkleProof {
      * @param childPrefix_ The child prefix.
      * @param proofIter_ The proof iterator.
      */
-    function advanceChildIndex(
-        StackEntry memory entry_,
-        bytes memory childPrefix_,
-        ProofIter memory proofIter_
-    ) internal pure returns (StackEntry memory) {
+    function advanceChildIndex(StackEntry memory entry_, bytes memory childPrefix_, ProofIter memory proofIter_)
+        internal
+        pure
+        returns (StackEntry memory)
+    {
         if (entry_.kind != BRANCH_NOVALUE && entry_.kind != BRANCH_WITHVALUE) revert MustBeBranchError();
         if (childPrefix_.length == 0) revert EmptyChildPrefixError();
 
@@ -176,21 +181,21 @@ library CompactMerkleProof {
      * @param prefix_ The prefix of the child node.
      * @return StackEntry The decoded child node.
      */
-    function makeChildEntry(
-        ProofIter memory proofIter_,
-        Node.NodeHandle memory child_,
-        bytes memory prefix_
-    ) internal pure returns (StackEntry memory) {
-        if (!child_.isInline){
+    function makeChildEntry(ProofIter memory proofIter_, Node.NodeHandle memory child_, bytes memory prefix_)
+        internal
+        pure
+        returns (StackEntry memory)
+    {
+        if (!child_.isInline) {
             if (child_.data.length != 32) revert InvalidChildReferenceError();
             revert ExtraneousHashReferenceError();
-        } 
+        }
 
-        // Return decoded inline child from branch  
-        if(child_.data.length > 0) return decodeNode(child_.data, prefix_, true);
-        
+        // Return decoded inline child from branch
+        if (child_.data.length > 0) return decodeNode(child_.data, prefix_, true);
+
         // Return decoded inline child from proof
-        if(proofIter_.offset >= proofIter_.proof.length) revert IncompleteProofError();
+        if (proofIter_.offset >= proofIter_.proof.length) revert IncompleteProofError();
 
         bytes memory nodeData_ = proofIter_.proof[proofIter_.offset++];
         return decodeNode(nodeData_, prefix_, false);
@@ -203,7 +208,9 @@ library CompactMerkleProof {
      * @return step_ The next step to take.
      * @return childPrefix_ The child prefix to descend to.
      */
-    function advanceItem(StackEntry memory entry_, ItemsIter memory itemsIter_) internal pure
+    function advanceItem(StackEntry memory entry_, ItemsIter memory itemsIter_)
+        internal
+        pure
         returns (Step, bytes memory childPrefix_)
     {
         ValueMatch vm_;
@@ -212,7 +219,7 @@ library CompactMerkleProof {
             bytes memory keyAsNibbles_ = Nibble.keyToNibbles(item_.key);
 
             if (!startsWith(keyAsNibbles_, entry_.prefix)) return (Step.UnwindStack, "");
-            
+
             (vm_, childPrefix_) = matchKeyToNode(keyAsNibbles_, entry_.prefix.length, entry_);
 
             if (vm_ == ValueMatch.Leaf && item_.value.length == 0) revert NoValueInLeafError();
@@ -234,25 +241,29 @@ library CompactMerkleProof {
      * @return ValueMatch The result of the match.
      * @return bytes The child prefix if the match is ValueMatch.IsChild.
      */
-    function matchKeyToNode(bytes memory keyAsNibbles_, uint256 prefixLen_, StackEntry memory entry_) internal pure
-        returns (ValueMatch, bytes memory) 
+    function matchKeyToNode(bytes memory keyAsNibbles_, uint256 prefixLen_, StackEntry memory entry_)
+        internal
+        pure
+        returns (ValueMatch, bytes memory)
     {
         if (!_isNodeKindSupported(entry_.kind)) revert InvalidNodeKindError();
 
         uint256 prefixPlusPartialLen = prefixLen_ + entry_.key.length;
 
         if (entry_.kind == LEAF) {
-            if (!contains(keyAsNibbles_, entry_.key, prefixLen_) || keyAsNibbles_.length != prefixPlusPartialLen) 
+            if (!contains(keyAsNibbles_, entry_.key, prefixLen_) || keyAsNibbles_.length != prefixPlusPartialLen) {
                 return (ValueMatch.NotFound, "");
+            }
 
-            return(entry_.value.length == 0 ? ValueMatch.Leaf : ValueMatch.NotOmitted, "");
-        } 
+            return (entry_.value.length == 0 ? ValueMatch.Leaf : ValueMatch.NotOmitted, "");
+        }
 
         if (!contains(keyAsNibbles_, entry_.key, prefixLen_)) return (ValueMatch.NotFound, "");
 
-        if (prefixPlusPartialLen == keyAsNibbles_.length) 
+        if (prefixPlusPartialLen == keyAsNibbles_.length) {
             return (entry_.value.length == 0 ? ValueMatch.Branch : ValueMatch.NotOmitted, "");
-        
+        }
+
         uint8 index = uint8(keyAsNibbles_[prefixPlusPartialLen]);
         if (!entry_.children[index].exist) return (ValueMatch.NotFound, "");
 
@@ -269,7 +280,7 @@ library CompactMerkleProof {
      */
     function contains(bytes memory a_, bytes memory b_, uint256 offset_) internal pure returns (bool) {
         if (a_.length < b_.length + offset_) return false;
-        
+
         for (uint256 i = 0; i < b_.length; i++) {
             if (a_[i + offset_] != b_[i]) return false;
         }
@@ -284,9 +295,9 @@ library CompactMerkleProof {
      */
     function startsWith(bytes memory a_, bytes memory b_) internal pure returns (bool) {
         if (a_.length < b_.length) return false;
-        
+
         for (uint256 i = 0; i < b_.length; i++) {
-            if (a_[i] != b_[i]) return false;   
+            if (a_[i] != b_[i]) return false;
         }
         return true;
     }
@@ -315,8 +326,11 @@ library CompactMerkleProof {
      * @param isInline_ The node is an in-line node or not.
      * @return entry_ The StackEntry.
      */
-    function decodeNode(bytes memory nodeData_, bytes memory prefix_, bool isInline_
-    ) internal pure returns (StackEntry memory entry_) {
+    function decodeNode(bytes memory nodeData_, bytes memory prefix_, bool isInline_)
+        internal
+        pure
+        returns (StackEntry memory entry_)
+    {
         Input.Data memory data_ = Input.from(nodeData_); // nodeData to Data {uint256 offset = 0, bytes raw = nodeData}
         uint8 header_ = data_.decodeU8(); // Get the first byte of nodeData (header) and increase offset to 1
         uint8 kind_ = header_ >> 6; // Get the first two bits of header
@@ -325,13 +339,13 @@ library CompactMerkleProof {
         entry_.kind = kind_;
         entry_.prefix = prefix_;
         entry_.isInline = isInline_;
-        
-        if (kind_ == LEAF) { 
+
+        if (kind_ == LEAF) {
             Node.Leaf memory leaf_ = Node.decodeLeaf(data_, header_);
             entry_.key = leaf_.key;
             entry_.value = leaf_.value;
             return entry_;
-        } 
+        }
 
         Node.Branch memory branch_ = Node.decodeBranch(data_, header_);
         entry_.key = branch_.key;
@@ -344,8 +358,8 @@ library CompactMerkleProof {
      * @notice Check if the node kind is supported.
      * @param kind_ The node kind.
      * @return true If the node kind is supported, false otherwise.
-     */ 
-    function _isNodeKindSupported(uint8 kind_) internal pure returns(bool) {
+     */
+    function _isNodeKindSupported(uint8 kind_) internal pure returns (bool) {
         return kind_ == LEAF || kind_ == BRANCH_NOVALUE || kind_ == BRANCH_WITHVALUE;
     }
 }

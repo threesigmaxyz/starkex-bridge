@@ -129,7 +129,7 @@ contract DepositFacet is OnlyRegisteredToken, OnlyStarkExOperator, OnlyOwner, ID
         CompactMerkleProof.verifyProof(bytes32(LibState.getOrderRoot()), proof_, lockHashes_);
 
         // State update.
-        for(uint256 i = 0; i < lockHashes_.length; i++) {
+        for (uint256 i = 0; i < lockHashes_.length; i++) {
             lockHash_ = uint256(bytes32(lockHashes_[i].key));
             deposit_ = ds.deposits[lockHash_];
             delete ds.deposits[lockHash_];

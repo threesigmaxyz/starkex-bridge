@@ -6,7 +6,7 @@ import "./Input.sol";
 library Scale {
     using Input for Input.Data;
 
-    /** 
+    /**
      * @notice Accepts a byte array representing a SCALE encoded byte array and performs SCALE decoding
      *         of the byte array.
      * @param data_ The byte array to decode.
@@ -18,7 +18,7 @@ library Scale {
         decodedBytesArray_ = data_.decodeBytesN(len);
     }
 
-    /**  
+    /**
      * @notice Accepts a byte array representing a SCALE encoded integer and performs SCALE decoding of the int.
      * @param data_ The byte array to decode.
      * @return decodedInt_ The decoded integer.
@@ -32,18 +32,18 @@ library Scale {
         if (mode_ == 1) {
             uint16 decodedU32Mode1_ = uint16(b0_) | (uint16(b1_) << 8);
             return uint32(decodedU32Mode1_) >> 2;
-        } 
+        }
         uint8 b2_ = data_.decodeU8();
         uint8 b3_ = data_.decodeU8();
         uint32 decodedU32Mode2_ = uint32(b0_) | (uint32(b1_) << 8) | (uint32(b2_) << 18) | (uint32(b3_) << 24);
         return decodedU32Mode2_ >> 2;
     }
 
-    /** 
+    /**
      * @notice Performs the following: b -> [encodeInteger(len(b)) b]
      * @param src_ The byte array to encode.
      * @return des_ The encoded byte array.
-    */
+     */
     function encodeByteArray(bytes memory src_) internal pure returns (bytes memory des_, uint256 bytesEncoded_) {
         uint256 n;
         (des_, n) = encodeU32(uint32(src_.length));
@@ -51,7 +51,7 @@ library Scale {
         des_ = abi.encodePacked(des_, src_);
     }
 
-    /** 
+    /**
      * @notice encodeU32 performs the following on integer i:
      *         i  -> i^0...i^n where n is the length in bits of i
      *         note that the bit representation of i is in little endian; ie i^0 is the least significant bit of i,
@@ -73,14 +73,14 @@ library Scale {
             des_[0] = b_;
             return (des_, 1);
             // 1<<14
-        } else if (i_ < 16384) {
+        } else if (i_ < 16_384) {
             uint16 v_ = uint16(i_ << 2) + 1;
             bytes memory des_ = new bytes(2);
             des_[0] = bytes1(uint8(v_));
             des_[1] = bytes1(uint8(v_ >> 8));
             return (des_, 2);
             // 1<<30
-        } else if (i_ < 1073741824) {
+        } else if (i_ < 1_073_741_824) {
             uint32 v_ = uint32(i_ << 2) + 2;
             bytes memory des_ = new bytes(4);
             des_[0] = bytes1(uint8(v_));

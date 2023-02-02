@@ -42,7 +42,8 @@ contract CompactMerkleProofTest is Test {
     function testPairsVerifyProof() public {
         bytes32 root_ = hex"493825321d9ad0c473bbf85e1a08c742b4a0b75414f890745368b8953b873017";
         bytes[] memory merkleProof_ = new bytes[](5);
-        merkleProof_[0] = hex"810616010018487261766f00007c8306f7240030447365207374616c6c696f6e30447365206275696c64696e67";
+        merkleProof_[0] =
+            hex"810616010018487261766f00007c8306f7240030447365207374616c6c696f6e30447365206275696c64696e67";
         merkleProof_[1] = hex"466c6661800000000000000000000000000000000000000000000000000000000000000000";
         merkleProof_[2] = hex"826f400000";
         merkleProof_[3] = hex"8107400000";
@@ -76,14 +77,14 @@ contract CompactMerkleProofTest is Test {
     function testPairsAnotherProof() public {
         bytes32 root_ = hex"493825321d9ad0c473bbf85e1a08c742b4a0b75414f890745368b8953b873017";
         bytes[] memory merkleProof_ = new bytes[](3);
-        merkleProof_[0] = hex"8106160180e1d36480e752f07021a5e11ef480382d11158a5703d3e76df489d0f40c41c4772c487261766f14627261766f007c8306f7240030447365207374616c6c696f6e30447365206275696c64696e67";
+        merkleProof_[0] =
+            hex"8106160180e1d36480e752f07021a5e11ef480382d11158a5703d3e76df489d0f40c41c4772c487261766f14627261766f007c8306f7240030447365207374616c6c696f6e30447365206275696c64696e67";
         merkleProof_[1] = hex"c26f4000107665726200";
         merkleProof_[2] = hex"810740008083809f19c0b956a97fc0175e6717d289bb0f890a67a953eb0874f89244314b34";
 
         //sort keys!
         bytes[] memory keys_ = new bytes[](1);
         keys_[0] = abi.encodePacked("dog");
-
 
         bytes[] memory values_ = new bytes[](1);
         values_[0] = abi.encodePacked("puppy");
@@ -96,12 +97,12 @@ contract CompactMerkleProofTest is Test {
     function testPairsAnotherProof2() public {
         bytes32 root_ = hex"493825321d9ad0c473bbf85e1a08c742b4a0b75414f890745368b8953b873017";
         bytes[] memory merkleProof_ = new bytes[](1);
-        merkleProof_[0] = hex"8106160180e1d36480e752f07021a5e11ef480382d11158a5703d3e76df489d0f40c41c47718487261766f008032d5d23c2ead392b6c8f09de886c981c96e52e133780d15a616333c89ced53c17c8306f7240030447365207374616c6c696f6e30447365206275696c64696e67";
+        merkleProof_[0] =
+            hex"8106160180e1d36480e752f07021a5e11ef480382d11158a5703d3e76df489d0f40c41c47718487261766f008032d5d23c2ead392b6c8f09de886c981c96e52e133780d15a616333c89ced53c17c8306f7240030447365207374616c6c696f6e30447365206275696c64696e67";
 
         //sort keys!
         bytes[] memory keys_ = new bytes[](1);
         keys_[0] = abi.encodePacked("bravo");
-
 
         bytes[] memory values_ = new bytes[](1);
         values_[0] = abi.encodePacked("bravo");
@@ -114,7 +115,8 @@ contract CompactMerkleProofTest is Test {
     function testPairsAnotherProof3() public {
         bytes32 root_ = hex"4ff75de3a99a74fb0d9724d6ce74466dec835957d98006880f59c82ca79d9eb8";
         bytes[] memory merkleProof_ = new bytes[](1);
-        merkleProof_[0] = hex"8106160114466c6661002c487261766f14627261766f8032d5d23c2ead392b6c8f09de886c981c96e52e133780d15a616333c89ced53c17c8306f7240030447365207374616c6c696f6e30447365206275696c64696e67";
+        merkleProof_[0] =
+            hex"8106160114466c6661002c487261766f14627261766f8032d5d23c2ead392b6c8f09de886c981c96e52e133780d15a616333c89ced53c17c8306f7240030447365207374616c6c696f6e30447365206275696c64696e67";
 
         //sort keys!
         bytes[] memory keys_ = new bytes[](1);
@@ -131,13 +133,13 @@ contract CompactMerkleProofTest is Test {
     function testDuplicatedKeyReverts() public {
         bytes32 root_ = hex"493825321d9ad0c473bbf85e1a08c742b4a0b75414f890745368b8953b873017";
         bytes[] memory merkleProof_ = new bytes[](1);
-        merkleProof_[0] = hex"8106160180e1d36480e752f07021a5e11ef480382d11158a5703d3e76df489d0f40c41c47718487261766f008032d5d23c2ead392b6c8f09de886c981c96e52e133780d15a616333c89ced53c17c8306f7240030447365207374616c6c696f6e30447365206275696c64696e67";
+        merkleProof_[0] =
+            hex"8106160180e1d36480e752f07021a5e11ef480382d11158a5703d3e76df489d0f40c41c47718487261766f008032d5d23c2ead392b6c8f09de886c981c96e52e133780d15a616333c89ced53c17c8306f7240030447365207374616c6c696f6e30447365206275696c64696e67";
 
         //sort keys!
         bytes[] memory keys_ = new bytes[](2);
         keys_[0] = abi.encodePacked("bravo");
         keys_[1] = abi.encodePacked("bravo");
-
 
         bytes[] memory values_ = new bytes[](2);
         values_[0] = abi.encodePacked("bravo");
@@ -168,7 +170,8 @@ contract CompactMerkleProofTest is Test {
     }
 
     function testDecodeBranch() public {
-		bytes memory proof_ = hex"c10740001470757070798083809f19c0b956a97fc0175e6717d289bb0f890a67a953eb0874f89244314b34";
+        bytes memory proof_ =
+            hex"c10740001470757070798083809f19c0b956a97fc0175e6717d289bb0f890a67a953eb0874f89244314b34";
         Input.Data memory data_ = Input.from(proof_);
         uint8 header_ = data_.decodeU8();
         Node.Branch memory branch_ = Node.decodeBranch(data_, header_);
@@ -178,7 +181,8 @@ contract CompactMerkleProofTest is Test {
     }
 
     function testEncodeBranch() public {
-		bytes memory proof_  = hex"c10740001470757070798083809f19c0b956a97fc0175e6717d289bb0f890a67a953eb0874f89244314b34";
+        bytes memory proof_ =
+            hex"c10740001470757070798083809f19c0b956a97fc0175e6717d289bb0f890a67a953eb0874f89244314b34";
         Input.Data memory data_ = Input.from(proof_);
         uint8 header_ = data_.decodeU8();
         Node.Branch memory branch_ = Node.decodeBranch(data_, header_);
@@ -186,8 +190,11 @@ contract CompactMerkleProofTest is Test {
         assertEq0(proof_, encodedBranch_);
     }
 
-    function _keysValuesToItems(bytes[] memory keys_, bytes[] memory values_
-    ) internal pure returns (CompactMerkleProof.Item[] memory) {
+    function _keysValuesToItems(bytes[] memory keys_, bytes[] memory values_)
+        internal
+        pure
+        returns (CompactMerkleProof.Item[] memory)
+    {
         CompactMerkleProof.Item[] memory items_ = new CompactMerkleProof.Item[](keys_.length);
         for (uint256 i = 0; i < keys_.length; i++) {
             items_[i] = CompactMerkleProof.Item(keys_[i], values_[i]);

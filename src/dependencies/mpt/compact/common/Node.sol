@@ -32,7 +32,7 @@ library Node {
         bytes value;
     }
 
-    /** 
+    /**
      * @notice Decodes a byte array into a branch node.
      * @param data_ The input data.
      * @param header_ The header byte.
@@ -45,18 +45,14 @@ library Node {
         bitmap_[1] = data_.decodeU8();
         uint8 nodeType = header_ >> 6;
         if (nodeType == BRANCH_WITHVALUE) branch_.value = Scale.decodeByteArray(data_);
-        
+
         for (uint8 i = 0; i < 16; i++) {
             if (((bitmap_[i / 8] >> (i % 8)) & 1) == 1) {
                 bytes memory childData_ = Scale.decodeByteArray(data_);
                 bool isInline_ = true;
                 if (childData_.length == 32) isInline_ = false;
-                
-                branch_.children[i] = NodeHandle({
-                    data: childData_,
-                    isInline: isInline_,
-                    exist: true
-                });
+
+                branch_.children[i] = NodeHandle({data: childData_, isInline: isInline_, exist: true});
             }
         }
     }
@@ -81,11 +77,11 @@ library Node {
     function decodeNodeKey(Input.Data memory data_, uint8 header_) internal pure returns (bytes memory key_) {
         uint256 keyLen_ = header_ & 0x3F;
         if (keyLen_ == 0x3f) {
-            while (keyLen_ < 65536 ) {
+            while (keyLen_ < 65_536) {
                 uint8 nextKeyLen_ = data_.decodeU8();
                 keyLen_ += uint256(nextKeyLen_);
                 if (nextKeyLen_ < 0xFF) break;
-                require(keyLen_ < 65536, "Size limit reached for a nibble slice");
+                require(keyLen_ < 65_536, "Size limit reached for a nibble slice");
             }
         }
         if (keyLen_ != 0) {
@@ -97,7 +93,7 @@ library Node {
         }
     }
 
-    /** 
+    /**
      * @notice encodeBranch encodes a branch.
      * @param branch_ The branch to encode.
      * @return encoding_ The encoded branch.
@@ -108,7 +104,7 @@ library Node {
         encoding_ = abi.encodePacked(encoding_, u16ToBytes(childrenBitmap(branch_)));
         if (branch_.value.length != 0) {
             bytes memory encValue;
-            (encValue, ) = Scale.encodeByteArray(branch_.value);
+            (encValue,) = Scale.encodeByteArray(branch_.value);
             encoding_ = abi.encodePacked(encoding_, encValue);
         }
 
@@ -120,13 +116,13 @@ library Node {
                 childData_ = branch_.children[i].data;
                 require(childData_.length > 0, "miss child data");
                 childData_.length <= 32 ? hash_ = childData_ : hash_ = Hash.hash(childData_);
-                (encChild_, ) = Scale.encodeByteArray(hash_);
+                (encChild_,) = Scale.encodeByteArray(hash_);
                 encoding_ = abi.encodePacked(encoding_, encChild_);
             }
         }
     }
 
-    /** 
+    /**
      * @notice Encodes a leaf.
      * @param leaf_ The leaf to encode.
      * @return encoding_ The encoded leaf.
@@ -134,11 +130,11 @@ library Node {
     function encodeLeaf(Leaf memory leaf_) internal pure returns (bytes memory encoding_) {
         encoding_ = encodeLeafHeader(leaf_);
         encoding_ = abi.encodePacked(encoding_, Nibble.nibblesToKeyLE(leaf_.key));
-        (bytes memory encValue, ) = Scale.encodeByteArray(leaf_.value);
+        (bytes memory encValue,) = Scale.encodeByteArray(leaf_.value);
         encoding_ = abi.encodePacked(encoding_, encValue);
     }
 
-    /** 
+    /**
      * @notice Encodes a branch header.
      * @param branch_ The branch to encode.
      * @return branchHeader_ The encoded branch header.
@@ -146,9 +142,9 @@ library Node {
     function encodeBranchHeader(Branch memory branch_) internal pure returns (bytes memory branchHeader_) {
         uint8 header_;
         uint256 valueLen_ = branch_.value.length;
-        require(valueLen_ < 65536, "partial key too long");
+        require(valueLen_ < 65_536, "partial key too long");
         valueLen_ == 0 ? header_ = 2 << 6 : header_ = 3 << 6; // 2 for branch without value, 3 for branch with value
- 
+
         bytes memory encPkLen_;
         uint256 pkLen_ = branch_.key.length;
         if (pkLen_ >= 63) {
@@ -160,7 +156,7 @@ library Node {
         branchHeader_ = abi.encodePacked(header_, encPkLen_);
     }
 
-    /** 
+    /**
      * @notice Encodes a leaf header.
      * @param leaf_ The leaf to encode.
      * @return leafHeader_ The encoded leaf header.
@@ -178,14 +174,14 @@ library Node {
         leafHeader_ = abi.encodePacked(header_, encPkLen_);
     }
 
-    /** 
+    /**
      * @notice Encodes the extra partial key length.
      * @param pkLen_ The partial key length.
      * @return encPkLen_ The encoded partial key length.
      */
     function encodeExtraPartialKeyLength(uint16 pkLen_) internal pure returns (bytes memory encPkLen_) {
         pkLen_ -= 63;
-        for (uint8 i = 0; i < 65536; i++) {
+        for (uint8 i = 0; i < 65_536; i++) {
             if (pkLen_ < 255) {
                 encPkLen_ = abi.encodePacked(encPkLen_, uint8(pkLen_));
                 break;
@@ -195,7 +191,7 @@ library Node {
         }
     }
 
-    /**  
+    /**
      * @notice Converts a uint16 into a 2-byte slice.
      * @param src_ The uint16 to convert.
      * @return des_ The converted slice.

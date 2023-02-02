@@ -66,7 +66,7 @@ library Input {
      * @param N_ The number of bytes to decode.
      * @return value_ The decoded bytes.
      */
-    function decodeBytesN(Data memory data_, uint256 N_)internal pure shift(data_, N_) returns (bytes memory value_) {
+    function decodeBytesN(Data memory data_, uint256 N_) internal pure shift(data_, N_) returns (bytes memory value_) {
         value_ = data_.raw.substr(data_.offset, N_);
     }
 }

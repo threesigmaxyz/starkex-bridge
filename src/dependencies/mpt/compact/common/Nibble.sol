@@ -2,8 +2,7 @@
 pragma solidity ^0.8.0;
 
 library Nibble {
-
-    /** 
+    /**
      * @notice Turns bytes into nibbles. Does not rearrange the nibbles; assumes they are already ordered in LE.
      *         Each byte is split into two nibbles, (src[i]/16 and src[i]%16) and the nibbles are concatenated.
      * @param src_ The input bytes.
@@ -12,7 +11,7 @@ library Nibble {
     function keyToNibbles(bytes memory src_) internal pure returns (bytes memory des_) {
         if (src_.length == 0) return des_;
         if (src_.length == 1 && uint8(src_[0]) == 0) return hex"0000";
-   
+
         uint256 l_ = src_.length * 2;
         des_ = new bytes(l_);
         for (uint256 i = 0; i < src_.length; i++) {
@@ -21,7 +20,7 @@ library Nibble {
         }
     }
 
-    /** 
+    /**
      * @notice nibblesToKeyLE turns a slice of nibbles w/ length k into a little endian byte array
      *         assumes nibbles are already LE, does not rearrange nibbles
      *         if the length of the input is odd, the result is [ 0000 in[0] | in[1] in[2] | ... | in[k-2] in[k-1] ]
