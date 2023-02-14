@@ -124,7 +124,7 @@ contract DepositFacet is OnlyRegisteredToken, OnlyStarkExOperator, OnlyOwner, ID
         uint256 lockHash_;
         for (uint256 i = 0; i < lockHashes_.length; i++) {
             lockHash_ = uint256(bytes32(lockHashes_[i].key));
-            // Validate 
+            // Validate
             if (lockHash_ == 0) revert InvalidDepositLockError();
             deposit_ = ds.deposits[lockHash_];
             if (deposit_.expirationDate == 0) revert DepositNotFoundError();

@@ -311,7 +311,7 @@ contract DepositFacetTest is BaseFixture {
         CompactMerkleProof.Item[] memory items_ = new CompactMerkleProof.Item[](2);
         items_[0] = CompactMerkleProof.Item(lockHash1_, hex"01");
         items_[1] = CompactMerkleProof.Item(lockHash2_, hex"01");
-        
+
         // And
         vm.prank(_mockInteropContract());
         IStateFacet(_bridge).setOrderRoot(orderRoot_);
