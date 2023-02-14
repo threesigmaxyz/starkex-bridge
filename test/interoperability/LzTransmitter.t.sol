@@ -153,13 +153,13 @@ contract LzTransmitterTest is Test {
         // And
         _mock_starkEx_getOrderRoot(orderRoot_);
         // And
-        for (uint256 i = 0; i < dstChainIds_.length; i++) {
-            _mock_lzEndpoint_send(dstChainIds_[i], orderRoot_, nativeFees_[i]);
+        for (uint256 i_ = 0; i_ < dstChainIds_.length; i_++) {
+            _mock_lzEndpoint_send(dstChainIds_[i_], orderRoot_, nativeFees_[i_]);
         }
         // And
-        for (uint256 i = 0; i < dstChainIds_.length; i++) {
+        for (uint256 i_ = 0; i_ < dstChainIds_.length; i_++) {
             vm.expectEmit(true, true, true, true, address(_transmitter));
-            emit LogNewOrderRootSent(dstChainIds_[i], sequenceNumber_, abi.encode(orderRoot_));
+            emit LogNewOrderRootSent(dstChainIds_[i_], sequenceNumber_, abi.encode(orderRoot_));
         }
 
         // Act + Assert
@@ -195,9 +195,9 @@ contract LzTransmitterTest is Test {
         // And
         _mock_starkEx_getOrderRoot(orderRoot_);
         // And
-        for (uint256 i = 0; i < dstChainIds_.length - 1; i++) {
+        for (uint256 i_ = 0; i_ < dstChainIds_.length - 1; i_++) {
             // Last chain will not be called because of stale Update Error.
-            _mock_lzEndpoint_send(dstChainIds_[i], orderRoot_, nativeFees_[i]);
+            _mock_lzEndpoint_send(dstChainIds_[i_], orderRoot_, nativeFees_[i_]);
         }
         // And
         vm.expectRevert(

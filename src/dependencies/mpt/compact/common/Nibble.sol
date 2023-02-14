@@ -14,9 +14,13 @@ library Nibble {
 
         uint256 l_ = src_.length * 2;
         des_ = new bytes(l_);
-        for (uint256 i = 0; i < src_.length; i++) {
-            des_[2 * i] = bytes1(uint8(src_[i]) / 16);
-            des_[2 * i + 1] = bytes1(uint8(src_[i]) % 16);
+        for (uint256 i_ = 0; i_ < src_.length;) {
+            des_[2 * i_] = bytes1(uint8(src_[i_]) / 16);
+            des_[2 * i_ + 1] = bytes1(uint8(src_[i_]) % 16);
+
+            unchecked {
+                ++i_;
+            }
         }
     }
 
@@ -32,18 +36,26 @@ library Nibble {
         uint256 l_ = src_.length;
         if (l_ % 2 == 0) {
             des_ = new bytes(l_ / 2);
-            for (uint256 i = 0; i < l_; i += 2) {
-                uint8 a = uint8(src_[i]);
-                uint8 b = uint8(src_[i + 1]);
-                des_[i / 2] = bytes1(((a << 4) & 0xF0) | (b & 0x0F));
+            for (uint256 i_ = 0; i_ < l_;) {
+                uint8 a = uint8(src_[i_]);
+                uint8 b = uint8(src_[i_ + 1]);
+                des_[i_ / 2] = bytes1(((a << 4) & 0xF0) | (b & 0x0F));
+
+                unchecked {
+                    i_ += 2;
+                }
             }
         } else {
             des_ = new bytes(l_ / 2 + 1);
             des_[0] = src_[0];
-            for (uint256 i = 2; i < l_; i += 2) {
-                uint8 a = uint8(src_[i - 1]);
-                uint8 b = uint8(src_[i]);
-                des_[i / 2] = bytes1(((a << 4) & 0xF0) | (b & 0x0F));
+            for (uint256 i_ = 2; i_ < l_;) {
+                uint8 a = uint8(src_[i_ - 1]);
+                uint8 b = uint8(src_[i_]);
+                des_[i_ / 2] = bytes1(((a << 4) & 0xF0) | (b & 0x0F));
+
+                unchecked {
+                    i_ += 2;
+                }
             }
         }
     }

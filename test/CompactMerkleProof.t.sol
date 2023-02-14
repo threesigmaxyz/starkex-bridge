@@ -195,8 +195,8 @@ contract CompactMerkleProofTest is Test {
         returns (CompactMerkleProof.Item[] memory)
     {
         CompactMerkleProof.Item[] memory items_ = new CompactMerkleProof.Item[](keys_.length);
-        for (uint256 i = 0; i < keys_.length; i++) {
-            items_[i] = CompactMerkleProof.Item(keys_[i], values_[i]);
+        for (uint256 i_ = 0; i_ < keys_.length; i_++) {
+            items_[i_] = CompactMerkleProof.Item(keys_[i_], values_[i_]);
         }
         return items_;
     }

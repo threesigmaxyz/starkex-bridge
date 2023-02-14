@@ -268,8 +268,12 @@ library CompactMerkleProof {
     function contains(bytes memory a_, bytes memory b_, uint256 offset_) internal pure returns (bool) {
         if (a_.length < b_.length + offset_) return false;
 
-        for (uint256 i = 0; i < b_.length; i++) {
-            if (a_[i + offset_] != b_[i]) return false;
+        for (uint256 i_ = 0; i_ < b_.length;) {
+            if (a_[i_ + offset_] != b_[i_]) return false;
+
+            unchecked {
+                ++i_;
+            }
         }
         return true;
     }
@@ -283,8 +287,12 @@ library CompactMerkleProof {
     function startsWith(bytes memory a_, bytes memory b_) internal pure returns (bool) {
         if (a_.length < b_.length) return false;
 
-        for (uint256 i = 0; i < b_.length; i++) {
-            if (a_[i] != b_[i]) return false;
+        for (uint256 i_ = 0; i_ < b_.length;) {
+            if (a_[i_] != b_[i_]) return false;
+
+            unchecked {
+                ++i_;
+            }
         }
         return true;
     }

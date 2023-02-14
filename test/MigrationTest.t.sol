@@ -56,8 +56,8 @@ contract MigrationTest is BaseFixture {
     function _assertFacetSelectors(address facet_, bytes4[] memory selectors_) internal {
         bytes4[] memory facetSelectors_ = IDiamondLoupe(_bridge).facetFunctionSelectors(facet_);
         assertEq(facetSelectors_.length, selectors_.length);
-        for (uint256 i = 0; i < selectors_.length; i++) {
-            assertEq(facetSelectors_[i], selectors_[i]);
+        for (uint256 i_ = 0; i_ < selectors_.length; i_++) {
+            assertEq(facetSelectors_[i_], selectors_[i_]);
         }
     }
 

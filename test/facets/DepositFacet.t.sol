@@ -326,9 +326,6 @@ contract DepositFacetTest is BaseFixture {
 
     function test_claimDeposits_InvalidLockHashError() public {
         // Arrange
-        uint256 orderRoot_ = uint256(bytes32(hex"2c0891b988161796860b8277ef8ad4bce0d50777e2d6d93b60989a13e27ba1f4"));
-
-        // And
         CompactMerkleProof.Item[] memory items_ = new CompactMerkleProof.Item[](1);
         items_[0] = CompactMerkleProof.Item(hex"00", hex"01");
         // And
@@ -491,14 +488,14 @@ contract DepositFacetTest is BaseFixture {
     ) internal {
         // Arrange
         CompactMerkleProof.Item[] memory items_ = new CompactMerkleProof.Item[](keys_.length);
-        for (uint256 i = 0; i < keys_.length; i++) {
-            items_[i] = CompactMerkleProof.Item(keys_[i], hex"01");
+        for (uint256 i_ = 0; i_ < keys_.length; i_++) {
+            items_[i_] = CompactMerkleProof.Item(keys_[i_], hex"01");
         }
         // And
-        for (uint256 i = 0; i < tokens_.length; i++) {
-            _initialBridgeBalances[tokens_[i]] = _getNativeOrERC20Balance(tokens_[i], _bridge);
-            _initialRecipientBalances[tokens_[i]] = _getNativeOrERC20Balance(tokens_[i], recipient_);
-            _initialPendingDeposits[tokens_[i]] = IDepositFacet(_bridge).getPendingDeposits(tokens_[i]);
+        for (uint256 i_ = 0; i_ < tokens_.length; i_++) {
+            _initialBridgeBalances[tokens_[i_]] = _getNativeOrERC20Balance(tokens_[i_], _bridge);
+            _initialRecipientBalances[tokens_[i_]] = _getNativeOrERC20Balance(tokens_[i_], recipient_);
+            _initialPendingDeposits[tokens_[i_]] = IDepositFacet(_bridge).getPendingDeposits(tokens_[i_]);
         }
 
         // And
@@ -506,31 +503,31 @@ contract DepositFacetTest is BaseFixture {
         IStateFacet(_bridge).setOrderRoot(orderRoot_);
 
         // Act + Assert
-        for (uint256 i = 0; i < keys_.length; i++) {
+        for (uint256 i_ = 0; i_ < keys_.length; i_++) {
             vm.expectEmit(true, true, false, true);
-            emit LogClaimDeposit(uint256(bytes32(keys_[i])), recipient_);
+            emit LogClaimDeposit(uint256(bytes32(keys_[i_])), recipient_);
         }
         vm.prank(_operator());
         IDepositFacet(_bridge).claimDeposits(items_, proof_, recipient_);
 
         // Assert
-        for (uint256 i = 0; i < keys_.length; i++) {
-            _validateDepositDeleted(uint256(bytes32(keys_[i])));
-            _amountByToken[tokens_[i]] += amounts_[i];
+        for (uint256 i_ = 0; i_ < keys_.length; i_++) {
+            _validateDepositDeleted(uint256(bytes32(keys_[i_])));
+            _amountByToken[tokens_[i_]] += amounts_[i_];
         }
 
-        for (uint256 i = 0; i < tokens_.length; i++) {
+        for (uint256 i_ = 0; i_ < tokens_.length; i_++) {
             assertEq(
-                _getNativeOrERC20Balance(tokens_[i], _bridge),
-                _initialBridgeBalances[tokens_[i]] - _amountByToken[tokens_[i]]
+                _getNativeOrERC20Balance(tokens_[i_], _bridge),
+                _initialBridgeBalances[tokens_[i_]] - _amountByToken[tokens_[i_]]
             );
             assertEq(
-                _getNativeOrERC20Balance(tokens_[i], recipient_),
-                _initialRecipientBalances[tokens_[i]] + _amountByToken[tokens_[i]]
+                _getNativeOrERC20Balance(tokens_[i_], recipient_),
+                _initialRecipientBalances[tokens_[i_]] + _amountByToken[tokens_[i_]]
             );
             assertEq(
-                IDepositFacet(_bridge).getPendingDeposits(tokens_[i]),
-                _initialPendingDeposits[tokens_[i]] - _amountByToken[tokens_[i]]
+                IDepositFacet(_bridge).getPendingDeposits(tokens_[i_]),
+                _initialPendingDeposits[tokens_[i_]] - _amountByToken[tokens_[i_]]
             );
         }
     }

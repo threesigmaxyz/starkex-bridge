@@ -101,7 +101,7 @@ contract DepositFacet is OnlyRegisteredToken, OnlyStarkExOperator, OnlyOwner, ID
         delete ds.deposits[lockHash_];
         ds.pendingDeposits[deposit_.token] -= deposit_.amount;
 
-        // Emit event.
+        // Emit event
         emit LogClaimDeposit(lockHash_, recipient_);
 
         // Transfer funds
@@ -122,17 +122,27 @@ contract DepositFacet is OnlyRegisteredToken, OnlyStarkExOperator, OnlyOwner, ID
         DepositStorage storage ds = depositStorage();
         Deposit memory deposit_;
         uint256 lockHash_;
-        for (uint256 i = 0; i < lockHashes_.length; i++) {
-            lockHash_ = uint256(bytes32(lockHashes_[i].key));
+        for (uint256 i_ = 0; i_ < lockHashes_.length;) {
+            lockHash_ = uint256(bytes32(lockHashes_[i_].key));
+
             // Validate
             if (lockHash_ == 0) revert InvalidDepositLockError();
             deposit_ = ds.deposits[lockHash_];
             if (deposit_.expirationDate == 0) revert DepositNotFoundError();
+
             // State update
             delete ds.deposits[lockHash_];
             ds.pendingDeposits[deposit_.token] -= deposit_.amount;
+
+            // Emit event
             emit LogClaimDeposit(lockHash_, recipient_);
+
+            // Transfer funds
             HelpersTransferNativeOrERC20.transfer(deposit_.token, recipient_, deposit_.amount);
+
+            unchecked {
+                ++i_;
+            }
         }
     }
 

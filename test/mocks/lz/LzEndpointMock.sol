@@ -184,8 +184,8 @@ contract LzEndpointMock is ILayerZeroEndpoint {
                 msgs.push(newMsg);
 
                 // shift all the indexes up for pop()
-                for (uint256 i = 0; i < msgs.length - 1; i++) {
-                    msgs[i + 1] = msgs[i];
+                for (uint256 i_ = 0; i_ < msgs.length - 1; i_++) {
+                    msgs[i_ + 1] = msgs[i_];
                 }
 
                 // put the newMsg at the bottom of the stack

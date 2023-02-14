@@ -208,9 +208,13 @@ library Node {
      * @return bitmap_ The children bitmap.
      */
     function childrenBitmap(Branch memory branch_) internal pure returns (uint16 bitmap_) {
-        for (uint256 i = 0; i < 16; i++) {
-            if (branch_.children[i].exist) {
-                bitmap_ = bitmap_ | uint16(1 << i);
+        for (uint256 i_ = 0; i_ < 16;) {
+            if (branch_.children[i_].exist) {
+                bitmap_ = bitmap_ | uint16(1 << i_);
+            }
+
+            unchecked {
+                ++i_;
             }
         }
     }
