@@ -125,7 +125,7 @@ library CompactMerkleProof {
             }
             // step == Step.UnwindStack
             nodeData_ = encodeNode(lastEntry_);
-            if (lastEntry_.isInline && nodeData_.length > 32) revert("invalid child reference");
+            if (lastEntry_.isInline && nodeData_.length > 32) revert InvalidChildReferenceError();
 
             lastEntry_.isInline ? childRef_ = nodeData_ : childRef_ = Hash.hash(nodeData_);
 
