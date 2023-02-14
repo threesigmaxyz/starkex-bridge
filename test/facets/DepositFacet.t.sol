@@ -293,13 +293,29 @@ contract DepositFacetTest is BaseFixture {
         IDepositFacet(_bridge).claimDeposits(items_, proof_, recipient_);
     }
 
-    function test_claimDeposits_DepositNotFoundError(uint256 lockHash_) public {
-        vm.assume(lockHash_ > 0);
-
+    function test_claimDeposits_DepositNotFoundError() public {
         // Arrange
-        CompactMerkleProof.Item[] memory items_ = new CompactMerkleProof.Item[](1);
-        items_[0].key = abi.encodePacked(lockHash_);
-        bytes[] memory proof_ = new bytes[](1);
+        bytes memory lockHash1_ = hex"3830366530643763356536623765383664643132333331323331323331613264";
+        bytes memory lockHash2_ = hex"6337326530653334313266343231353266396764666777656173647165313233";
+
+        // And
+        bytes[] memory proof_ = new bytes[](3);
+        proof_[0] = hex"8048000000";
+        proof_[1] = hex"7f00083036653064376335653662376538366464313233333132333132333161326400";
+        proof_[2] = hex"7f00033732653065333431326634323135326639676466677765617364716531323300";
+
+        // And
+        uint256 orderRoot_ = uint256(bytes32(hex"65969a0d99e040ed3f7a370a7cee07e03503c21f6e2f971f6e4b35de08301215"));
+
+        // And
+        CompactMerkleProof.Item[] memory items_ = new CompactMerkleProof.Item[](2);
+        items_[0] = CompactMerkleProof.Item(lockHash1_, hex"01");
+        items_[1] = CompactMerkleProof.Item(lockHash2_, hex"01");
+        
+        // And
+        vm.prank(_mockInteropContract());
+        IStateFacet(_bridge).setOrderRoot(orderRoot_);
+
         // And
         vm.expectRevert(abi.encodeWithSelector(IDepositFacet.DepositNotFoundError.selector));
 
@@ -310,8 +326,15 @@ contract DepositFacetTest is BaseFixture {
 
     function test_claimDeposits_InvalidLockHashError() public {
         // Arrange
+        uint256 orderRoot_ = uint256(bytes32(hex"2c0891b988161796860b8277ef8ad4bce0d50777e2d6d93b60989a13e27ba1f4"));
+
+        // And
         CompactMerkleProof.Item[] memory items_ = new CompactMerkleProof.Item[](1);
+        items_[0] = CompactMerkleProof.Item(hex"00", hex"01");
+        // And
         bytes[] memory proof_ = new bytes[](1);
+        proof_[0] = hex"420000";
+        // And
         vm.expectRevert(abi.encodeWithSelector(IDepositFacet.InvalidDepositLockError.selector));
 
         // Act + Assert

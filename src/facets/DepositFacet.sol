@@ -115,23 +115,20 @@ contract DepositFacet is OnlyRegisteredToken, OnlyStarkExOperator, OnlyOwner, ID
         onlyStarkExOperator
     {
         if (recipient_ == address(0)) revert ZeroAddressRecipientError();
+
+        // Validate MPT compact proof.
+        CompactMerkleProof.verifyProof(bytes32(LibState.getOrderRoot()), proof_, lockHashes_);
+
         DepositStorage storage ds = depositStorage();
         Deposit memory deposit_;
         uint256 lockHash_;
         for (uint256 i = 0; i < lockHashes_.length; i++) {
             lockHash_ = uint256(bytes32(lockHashes_[i].key));
+            // Validate 
             if (lockHash_ == 0) revert InvalidDepositLockError();
             deposit_ = ds.deposits[lockHash_];
             if (deposit_.expirationDate == 0) revert DepositNotFoundError();
-        }
-
-        // Validate MPT compact proof.
-        CompactMerkleProof.verifyProof(bytes32(LibState.getOrderRoot()), proof_, lockHashes_);
-
-        // State update.
-        for (uint256 i = 0; i < lockHashes_.length; i++) {
-            lockHash_ = uint256(bytes32(lockHashes_[i].key));
-            deposit_ = ds.deposits[lockHash_];
+            // State update
             delete ds.deposits[lockHash_];
             ds.pendingDeposits[deposit_.token] -= deposit_.amount;
             emit LogClaimDeposit(lockHash_, recipient_);
