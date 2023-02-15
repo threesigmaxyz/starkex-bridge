@@ -137,15 +137,16 @@ library LibDeployBridge {
     }
 
     function getDepositFacetFunctionSelectors() internal pure returns (bytes4[] memory) {
-        bytes4[] memory depositFacetSelectors_ = new bytes4[](8);
+        bytes4[] memory depositFacetSelectors_ = new bytes4[](9);
         depositFacetSelectors_[0] = IDepositFacet.setDepositExpirationTimeout.selector;
         depositFacetSelectors_[1] = IDepositFacet.lockDeposit.selector;
         depositFacetSelectors_[2] = IDepositFacet.lockNativeDeposit.selector;
         depositFacetSelectors_[3] = IDepositFacet.claimDeposit.selector;
-        depositFacetSelectors_[4] = IDepositFacet.reclaimDeposit.selector;
-        depositFacetSelectors_[5] = IDepositFacet.getDeposit.selector;
-        depositFacetSelectors_[6] = IDepositFacet.getPendingDeposits.selector;
-        depositFacetSelectors_[7] = IDepositFacet.getDepositExpirationTimeout.selector;
+        depositFacetSelectors_[4] = IDepositFacet.claimDeposits.selector;
+        depositFacetSelectors_[5] = IDepositFacet.reclaimDeposit.selector;
+        depositFacetSelectors_[6] = IDepositFacet.getDeposit.selector;
+        depositFacetSelectors_[7] = IDepositFacet.getPendingDeposits.selector;
+        depositFacetSelectors_[8] = IDepositFacet.getDepositExpirationTimeout.selector;
         return depositFacetSelectors_;
     }
 

@@ -57,17 +57,23 @@ contract LzTransmitter is ILzTransmitter, LzSender {
         override
     {
         uint256 etherSent;
-        for (uint256 i = 0; i < nativeFees_.length; i++) {
-            etherSent += nativeFees_[i];
+        for (uint256 i_ = 0; i_ < nativeFees_.length;) {
+            etherSent += nativeFees_[i_];
+            unchecked {
+                ++i_;
+            }
         }
         if (etherSent != msg.value) revert InvalidEtherSentError();
 
         bytes memory orderRoot_ = getPayload();
         uint256 sequenceNumber_ = _starkEx.getSequenceNumber();
 
-        for (uint256 i = 0; i < dstChainIds_.length; i++) {
-            _updateSequenceNumber(dstChainIds_[i], sequenceNumber_);
-            _send(dstChainIds_[i], orderRoot_, sequenceNumber_, refundAddress_, nativeFees_[i]);
+        for (uint256 i_ = 0; i_ < dstChainIds_.length;) {
+            _updateSequenceNumber(dstChainIds_[i_], sequenceNumber_);
+            _send(dstChainIds_[i_], orderRoot_, sequenceNumber_, refundAddress_, nativeFees_[i_]);
+            unchecked {
+                ++i_;
+            }
         }
     }
 
