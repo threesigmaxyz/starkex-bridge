@@ -35,7 +35,7 @@ lint:
 
 # Run tests
 tests :;
-	@forge test -vvv
+	@forge test -vvv --ffi
 
 # Run tests with coverage
 coverage :;

@@ -8,6 +8,7 @@ license = "Apache-2.0"
 edition = "2018"
 
 [dependencies]
+hex = "0.4"
 log = "0.4"
 smallvec = "1.0.0"
 hash-db = { path = "../hash-db", default-features = false, version = "0.15.2"}

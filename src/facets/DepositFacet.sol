@@ -109,15 +109,16 @@ contract DepositFacet is OnlyRegisteredToken, OnlyStarkExOperator, OnlyOwner, ID
     }
 
     /// @inheritdoc IDepositFacet
-    function claimDeposits(CompactMerkleProof.Item[] memory lockHashes_, bytes[] memory proof_, address recipient_)
-        external
-        override
-        onlyStarkExOperator
-    {
+    function claimDeposits(
+        CompactMerkleProof.Item[] memory lockHashes_,
+        bytes[] memory proof_,
+        uint256 maxProofDepth_,
+        address recipient_
+    ) external override onlyStarkExOperator {
         if (recipient_ == address(0)) revert ZeroAddressRecipientError();
 
         // Validate MPT compact proof.
-        CompactMerkleProof.verifyProof(bytes32(LibState.getOrderRoot()), proof_, lockHashes_);
+        CompactMerkleProof.verifyProof(bytes32(LibState.getOrderRoot()), proof_, lockHashes_, maxProofDepth_);
 
         DepositStorage storage ds = depositStorage();
         Deposit memory deposit_;

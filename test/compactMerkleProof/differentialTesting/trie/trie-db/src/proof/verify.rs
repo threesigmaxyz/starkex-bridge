@@ -283,9 +283,10 @@ impl<'a, C: NodeCodec> StackEntry<'a, C> {
 						ValueMatch::MatchesBranch =>
 							self.value = value,
 						ValueMatch::NotFound =>
-							if value.is_some() {
-								return Err(Error::ValueMismatch(key_bytes.to_vec()));
-							},
+							//if value.is_some() {
+								//return Err(Error::ValueMismatch(key_bytes.to_vec()));
+							//},
+							return Err(Error::ValueMismatch(key_bytes.to_vec())),
 						ValueMatch::NotOmitted =>
 							return Err(Error::ExtraneousValue(key_bytes.to_vec())),
 						ValueMatch::IsChild(child_prefix) =>
@@ -454,6 +455,7 @@ pub fn verify_proof<'a, L, I, K, V>(root: &<L::Hash as Hasher>::Out, proof: &[Ve
 					&mut hash.as_mut()[..node_data.len()].copy_from_slice(node_data.as_ref());
 					ChildReference::Inline(hash, node_data.len())
 				} else {
+					//println!("root node: {}", hex::encode(&node_data));
 					let hash = L::Hash::hash(&node_data);
 					ChildReference::Hash(hash)
 				};
@@ -466,6 +468,7 @@ pub fn verify_proof<'a, L, I, K, V>(root: &<L::Hash as Hasher>::Out, proof: &[Ve
 					if proof_iter.next().is_some() {
 						return Err(Error::ExtraneousNode);
 					}
+					
 					let computed_root = match child_ref {
 						ChildReference::Hash(hash) => hash,
 						ChildReference::Inline(_, _) => panic!(

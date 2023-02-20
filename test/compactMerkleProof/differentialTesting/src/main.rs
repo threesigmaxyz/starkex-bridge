@@ -20,7 +20,9 @@ type MemoryDB<H> = memory_db::MemoryDB<H, memory_db::HashKey<H>, DBValue>;
 #[derive(Deserialize, Serialize, Debug)]
 struct GeneratorResults {
     root: String,
-    proof: Vec<String>
+    proof: Vec<String>,
+    keys: Vec<String>,
+    values: Vec<String>,
 }
 
 fn main() {
@@ -44,7 +46,7 @@ fn main() {
         }
 
         if proof.len() == 0 {
-            fs::write(current_path.clone() + "/verifierResults.txt", "zero proof");
+            fs::write(current_path.clone() + "/verifierResults.json", "zero proof");
             return;
         }
         
@@ -61,7 +63,7 @@ fn main() {
         }
 
         if items.len() == 0 {
-            fs::write(current_path.clone() + "/verifierResults.txt", "zero items");
+            fs::write(current_path.clone() + "/verifierResults.json", "zero items");
             return;
         }
 
@@ -70,7 +72,7 @@ fn main() {
             Ok(_) => output = "true".to_string(),
             Err(e) => output = e.to_string(),
         }
-        fs::write(current_path.clone() + "/verifierResults.txt", output);
+        fs::write(current_path.clone() + "/verifierResults.json", output);
     } else if args[1] == "generate" {
         let mut i = 2;
         let mut entries: Vec<(Vec<u8>, Vec<u8>)> = Vec::new();
@@ -81,28 +83,45 @@ fn main() {
 
         i += 1;
         let mut keys: Vec<Vec<u8>> = Vec::new();
+        let mut entries_to_prove = Vec::new();
         while i < args.len() {
-            keys.push(hex::decode(args[i].clone().trim_start_matches("0x")).unwrap());
+            let index = args[i].clone().parse::<usize>().unwrap();
+            entries_to_prove.push(entries[index].clone());
+            keys.push(entries[index].0.clone());
             i += 1;
         }
 
         let (root, proof) = test_generate_proof::<NoExtensionLayout>(
-            entries,
-            keys,
+            entries.clone(),
+            keys.clone(),
         );
 
+        // The solidity verifier requires the keys and values to be sorted
+        entries_to_prove.sort();
+
         let mut proof_string = Vec::new();
+        let mut keys_string = Vec::new();
+        let mut values_string = Vec::new();
 
         for i in 0..proof.len() {
             proof_string.push(hex::encode(proof[i].clone()));
         }
 
+        for i in 0..entries_to_prove.len() {
+            keys_string.push(hex::encode(entries_to_prove[i].0.clone()));
+            values_string.push(hex::encode(entries_to_prove[i].1.clone()));
+        }
+
         let generator_results = GeneratorResults {
             root: hex::encode(root).to_owned(),
-            proof: proof_string
+            proof: proof_string,
+            keys: keys_string,
+            values: values_string,
         };
 
-        match fs::write(current_path + "/generatorResults.txt", serde_json::to_string(&generator_results).unwrap()) {
+        let result = serde_json::to_string(&generator_results).unwrap();
+
+        match fs::write(current_path + "/generatorResults.json", result) {
             Ok(_) => print!("Successfully wrote to file"),
             Err(e) => panic!("Error writing to file: {}", e),
         }
@@ -123,6 +142,7 @@ fn test_generate_proof<L: TrieLayout>(
 		let mut root = Default::default();
 		{
 			let mut trie = <TrieDBMut<L>>::new(&mut db, &mut root);
+            trie.insert(key, Some("")).unwrap();
 			for (key, value) in entries.iter() {
 				trie.insert(key, value).unwrap();
 			}
@@ -132,7 +152,6 @@ fn test_generate_proof<L: TrieLayout>(
 
 	// Generate proof for the given keys..
 	let trie = <TrieDB<L>>::new(&db, &root).unwrap();
-
 
 	let proof = generate_proof::<_, L, _, _>(&trie, keys.iter()).unwrap();
 

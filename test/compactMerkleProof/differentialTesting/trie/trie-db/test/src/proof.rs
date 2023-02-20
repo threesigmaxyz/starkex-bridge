@@ -95,7 +95,9 @@ fn trie_proof_works_with_ext() {
 		],
 	);
 
-	verify_proof::<ExtensionLayout, _, _, _>(&root, &proof, items.iter()).unwrap();
+	let res = verify_proof::<ExtensionLayout, _, _, _>(&root, &proof, items.iter());
+	print!("res: {:?}", res);
+	assert_eq!(0, 1);
 }
 
 #[test]

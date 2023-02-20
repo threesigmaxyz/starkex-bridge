@@ -6,20 +6,48 @@ import { CompactMerkleProof } from "src/dependencies/mpt/compact/CompactMerklePr
 import { Input } from "src/dependencies/mpt/compact/common/Input.sol";
 import { Node } from "src/dependencies/mpt/compact/common/Node.sol";
 import { console } from "@forge-std/console.sol";
+import { stdJson } from "@forge-std/StdJson.sol";
 
 contract CompactMerkleProofTest is Test {
     using Input for Input.Data;
+    using stdJson for string;
 
     struct GeneratorResults {
+        string[] keys;
         string[] proof;
         string root;
+        string[] values;
     }
+
+    struct VerifierResults {
+        bool result;
+        string reason;
+    }
+
+    /** 
+     * @dev A child of a node in the tree will be hashed if its data is longer than 32 bytes.
+            The minimum length of a branch node is 1 byte for the header, 1 byte for the partial key, 
+            2 bytes for the children bitmap, 1 byte for the scale of the children and then the children.
+            This means that the minimum length of a branch node is 5 bytes + children. Then, a proof can have
+            1 branch node with 32 / 5 = 6 children inside. So a proof index can have at most depth 7.
+            This value will be used as an approximation for the size of the stack in the verifier. Later on,
+            the real depth of the proof should be computed and used instead.
+     */ 
+    uint256 private constant  MAX_INLINE_NODES_IN_PROOF_INDEX = 7;
 
     uint256[] private _keysToProve;
 
-    function testVsRustImplementation(bytes[] calldata keysValues_, bytes memory keysToProveMask_) public {
-        vm.assume(keysValues_.length > 0);
+    function setUp() public {
+        try vm.removeFile("test/compactMerkleProof/differentialTesting/results/allResults.json") {
+        } catch (bytes memory) {}
+    }
 
+    /**
+     * @notice Generates a root and proof from the rust proof generator implementation and then tests 
+               the rust verifier against the solidity verifier. The results are appended to a file.
+               The keys and values in `keysValues_` are sorted in the rust generator.
+     */
+    function testVsRustImplementation(bytes[] calldata keysValues_, bytes memory keysToProveMask_) public {
         bytes[] memory keys_ = new bytes[](keysValues_.length);
         bytes[] memory values_ = new bytes[](keysValues_.length);
 
@@ -29,83 +57,30 @@ contract CompactMerkleProofTest is Test {
 
             // Check if the current key is to be proved
             if (_isKeyToBeProved(keysToProveMask_, i)) _keysToProve.push(i);
-
-            if (i > 0) keys_[i] = _addBytes(keys_[i], keys_[i-1]);
         }
         
-        (bytes32 root_, bytes[] memory compactProof_) = _generateRootAndProof(keys_, values_, _keysToProve);
-        bool rustRes_ = _verifyRootAndProof(root_, compactProof_, _keysValuesToItems(keys_, values_, _keysToProve));
-        try CompactMerkleProof.verifyProof(root_, compactProof_, _keysValuesToItems(keys_, values_, _keysToProve)) returns (bool res_) {
-            assertEq(rustRes_, res_);
+        (
+            bytes32 root_,
+            bytes[] memory compactProof_,
+            CompactMerkleProof.Item[] memory itemsToProve_
+        ) = _generateRootAndProof(keys_, values_, _keysToProve);
+
+        VerifierResults memory rustResult_ = _verifyRootAndProof(root_, compactProof_, itemsToProve_);
+        VerifierResults memory solidityResult_;
+        try CompactMerkleProof.verifyProof(
+            root_, 
+            compactProof_, 
+            itemsToProve_, 
+            compactProof_.length*MAX_INLINE_NODES_IN_PROOF_INDEX
+        ) returns (bool res_) {
+            solidityResult_ = VerifierResults(res_, "");
         } catch (bytes memory reason) {
-            console.log("Error: ", vm.toString(reason));
-            assertEq(rustRes_, false);
+            solidityResult_ = VerifierResults(false, _errorToErrorName(reason));
         }
-    }
 
-    function testCustom() public {
-        bytes32 root_ = hex"d982ceabee899d9c01f5c83b3fc37e2821c1a7686e38b8ae8db9abb94ba2d37a";
-        bytes[] memory compactProof_ = new bytes[](1);
-        compactProof_[0] = hex"bf098a8e6a00000000000000000000000000000000000000000000000000000000000000000001041c470000000104004c81048010204507f33d0c0dd465144504d45100";
-        CompactMerkleProof.Item[] memory items_ = new CompactMerkleProof.Item[](2);
-        items_[0] = CompactMerkleProof.Item(hex"8a8e6a00000000000000000000000000000000000000000000000000000000000000000000000000", "");
-        items_[1] = CompactMerkleProof.Item(hex"8a8e6a000000000000000000000000000000000000000000000000000000000000000000a4c4d451", hex"7b6a");
-        CompactMerkleProof.verifyProof(root_, compactProof_, items_);
-    }
+        _appendRunResultsToFile(keys_, values_, root_, compactProof_, itemsToProve_, rustResult_, solidityResult_);
 
-    function testSelectors() public {
-        console.logBytes4(CompactMerkleProof.EmptyProofError.selector);
-        console.logBytes4(CompactMerkleProof.ZeroItemsError.selector);
-        console.logBytes4(CompactMerkleProof.ExtraneousProofError.selector);
-        console.logBytes4(CompactMerkleProof.InvalidRootSizeError.selector);
-        console.logBytes4(CompactMerkleProof.MustBeBranchError.selector);
-        console.logBytes4(CompactMerkleProof.EmptyChildPrefixError.selector);
-        console.logBytes4(CompactMerkleProof.InvalidChildReferenceError.selector);
-        console.logBytes4(CompactMerkleProof.ExtraneousHashReferenceError.selector);
-        console.logBytes4(CompactMerkleProof.IncompleteProofError.selector);
-        console.logBytes4(CompactMerkleProof.NoValueInLeafError.selector);
-        console.logBytes4(CompactMerkleProof.ValueInNotFoundError.selector);
-        console.logBytes4(CompactMerkleProof.ExtraneousValueError.selector);
-        console.logBytes4(CompactMerkleProof.InvalidNodeKindError.selector);
-    }
-
-    function testGeneratorAndVerifierFfiCalls() public {
-        bytes[] memory keys_ = new bytes[](2);
-        keys_[0] = hex"1234";
-        keys_[1] = abi.encodePacked(keccak256(abi.encodePacked(bytes1(uint8(1)))));
-        bytes[] memory values_ = new bytes[](2);
-        values_[0] = hex"5678";
-        values_[1] = hex"5679";
-        uint256[] memory keysToProve_ = new uint256[](2);
-        keysToProve_[0] = 0;
-        keysToProve_[1] = 1;
-
-        (bytes32 root_, bytes[] memory compactProof_) = _generateRootAndProof(keys_, values_, keysToProve_);
-        
-        assertEq(root_, hex"b9fe0c74ca49700a23570a0be4f7f1a30386cde4381248890f29960ec7f33584");
-        assertEq(compactProof_.length, 2);
-        assertEq(keccak256(compactProof_[0]), keccak256(hex"802200104302340000"));
-        assertEq(keccak256(compactProof_[1]), keccak256(hex"7f000fe7f977e71dba2ea1a68e21057beebb9be2ac30c6410aa38d4f3fbe41dcffd200"));
-
-        bool res = _verifyRootAndProof(root_, compactProof_, _keysValuesToItems(keys_, values_, keysToProve_));
-        assertEq(res, true);
-    }
-
-    function testGeneratorAndVerifierFfiCalls2() public {
-        bytes[] memory keys_ = new bytes[](2);
-        keys_[0] = hex"100000000000000000000000000000";
-        keys_[1] = hex"000000000000000000100000000000000000000000000000";
-        bytes[] memory values_ = new bytes[](2);
-        values_[0] = hex"000000000000000000000000000000";
-        values_[1] = hex"000000000000000000000000000000000000000000000000";
-        uint256[] memory keysToProve_ = new uint256[](2);
-        keysToProve_[0] = 0;
-        keysToProve_[1] = 1;
-
-        (bytes32 root_, bytes[] memory compactProof_) = _generateRootAndProof(keys_, values_, keysToProve_);
-    
-        bool res = _verifyRootAndProof(root_, compactProof_, _keysValuesToItems(keys_, values_, keysToProve_));
-        assertEq(res, true);
+        assertEq(rustResult_.result, solidityResult_.result);
     }
 
     function testSimplePairVerifyProof() public {
@@ -117,7 +92,7 @@ contract CompactMerkleProofTest is Test {
         bytes[] memory values_ = new bytes[](1);
         values_[0] = hex"76657262";
         CompactMerkleProof.Item[] memory items_ = _keysValuesToItems(keys_, values_);
-        bool res_ = CompactMerkleProof.verifyProof(root_, proof_, items_);
+        bool res_ = CompactMerkleProof.verifyProof(root_, proof_, items_, proof_.length);
         assertTrue(res_);
     }
 
@@ -133,42 +108,7 @@ contract CompactMerkleProofTest is Test {
         bytes[] memory values_ = new bytes[](1);
         values_[0] = hex"0000000000000000000000000000000000000000000000000000000000000000";
         CompactMerkleProof.Item[] memory items_ = _keysValuesToItems(keys_, values_);
-        bool res_ = CompactMerkleProof.verifyProof(root_, merkleProof_, items_);
-        assertTrue(res_);
-    }
-
-    function testPairsVerifyProof() public {
-        bytes32 root_ = hex"493825321d9ad0c473bbf85e1a08c742b4a0b75414f890745368b8953b873017";
-        bytes[] memory merkleProof_ = new bytes[](5);
-        merkleProof_[0] =
-            hex"810616010018487261766f00007c8306f7240030447365207374616c6c696f6e30447365206275696c64696e67";
-        merkleProof_[1] = hex"466c6661800000000000000000000000000000000000000000000000000000000000000000";
-        merkleProof_[2] = hex"826f400000";
-        merkleProof_[3] = hex"8107400000";
-        merkleProof_[4] = hex"410500";
-
-        //sort keys!
-        bytes[] memory keys_ = new bytes[](8);
-        keys_[0] = hex"616c6661626574";
-        keys_[1] = hex"627261766f";
-        keys_[2] = hex"64";
-        keys_[3] = hex"646f";
-        keys_[4] = hex"646f10";
-        keys_[5] = hex"646f67";
-        keys_[6] = hex"646f6765";
-        keys_[7] = hex"68616c70";
-
-        bytes[] memory values_ = new bytes[](8);
-        values_[0] = hex"";
-        values_[1] = hex"627261766f";
-        values_[2] = hex"";
-        values_[3] = hex"76657262";
-        values_[4] = hex"";
-        values_[5] = hex"7075707079";
-        values_[6] = hex"0000000000000000000000000000000000000000000000000000000000000000";
-        values_[7] = hex"";
-        CompactMerkleProof.Item[] memory items_ = _keysValuesToItems(keys_, values_);
-        bool res_ = CompactMerkleProof.verifyProof(root_, merkleProof_, items_);
+        bool res_ = CompactMerkleProof.verifyProof(root_, merkleProof_, items_, merkleProof_.length);
         assertTrue(res_);
     }
 
@@ -188,7 +128,7 @@ contract CompactMerkleProofTest is Test {
         values_[0] = abi.encodePacked("puppy");
 
         CompactMerkleProof.Item[] memory items_ = _keysValuesToItems(keys_, values_);
-        bool res_ = CompactMerkleProof.verifyProof(root_, merkleProof_, items_);
+        bool res_ = CompactMerkleProof.verifyProof(root_, merkleProof_, items_, merkleProof_.length);
         assertTrue(res_);
     }
 
@@ -206,7 +146,7 @@ contract CompactMerkleProofTest is Test {
         values_[0] = abi.encodePacked("bravo");
 
         CompactMerkleProof.Item[] memory items_ = _keysValuesToItems(keys_, values_);
-        bool res_ = CompactMerkleProof.verifyProof(root_, merkleProof_, items_);
+        bool res_ = CompactMerkleProof.verifyProof(root_, merkleProof_, items_, merkleProof_.length);
         assertTrue(res_);
     }
 
@@ -224,7 +164,7 @@ contract CompactMerkleProofTest is Test {
         values_[0] = abi.encodePacked(bytes26(0));
 
         CompactMerkleProof.Item[] memory items_ = _keysValuesToItems(keys_, values_);
-        bool res_ = CompactMerkleProof.verifyProof(root_, merkleProof_, items_);
+        bool res_ = CompactMerkleProof.verifyProof(root_, merkleProof_, items_, merkleProof_.length);
         assertTrue(res_);
     }
 
@@ -241,11 +181,11 @@ contract CompactMerkleProofTest is Test {
 
         bytes[] memory values_ = new bytes[](2);
         values_[0] = abi.encodePacked("bravo");
-        values_[0] = abi.encodePacked("bravo");
+        values_[1] = abi.encodePacked("bravo");
 
         CompactMerkleProof.Item[] memory items_ = _keysValuesToItems(keys_, values_);
         vm.expectRevert(abi.encodeWithSelector(CompactMerkleProof.ExtraneousValueError.selector));
-        bool res_ = CompactMerkleProof.verifyProof(root_, merkleProof_, items_);
+        bool res_ = CompactMerkleProof.verifyProof(root_, merkleProof_, items_, merkleProof_.length);
         assertFalse(res_);
     }
 
@@ -288,44 +228,20 @@ contract CompactMerkleProofTest is Test {
         assertEq0(proof_, encodedBranch_);
     }
 
-    function testAddBytes(bytes memory number1_, bytes memory number2_) public {
-        vm.assume(number1_.length <= 32);
-        vm.assume(number2_.length <= 32);
-        uint256 number1val_ = bytesToUint(number1_);
-        uint256 number2val_ = bytesToUint(number2_);
-  
-        vm.assume(number2val_ <= type(uint256).max - number1val_);
-        uint256 expectedResult_ = number1val_ + number2val_;
-        uint256 result_ = bytesToUint(_addBytes(number1_, number2_));
-        assertEq(result_, expectedResult_);
-    }
-
     function _keysValuesToItems(bytes[] memory keys_, bytes[] memory values_)
         internal
         pure
         returns (CompactMerkleProof.Item[] memory)
     {
         CompactMerkleProof.Item[] memory items_ = new CompactMerkleProof.Item[](keys_.length);
-        for (uint256 i = 0; i < keys_.length; i++) {
-            items_[i] = CompactMerkleProof.Item(keys_[i], values_[i]);
-        }
-        return items_;
-    }
-
-    function _keysValuesToItems(bytes[] memory keys_, bytes[] memory values_, uint256[] memory keysToProve_)
-        internal
-        pure
-        returns (CompactMerkleProof.Item[] memory)
-    {
-        CompactMerkleProof.Item[] memory items_ = new CompactMerkleProof.Item[](keysToProve_.length);
-        for (uint256 i_ = 0; i_ < keysToProve_.length; i_++) {
-            items_[i_] = CompactMerkleProof.Item(keys_[keysToProve_[i_]], values_[keysToProve_[i_]]);
+        for (uint256 i_ = 0; i_ < keys_.length; i_++) {
+            items_[i_] = CompactMerkleProof.Item(keys_[i_], values_[i_]);
         }
         return items_;
     }
 
     function _generateRootAndProof(bytes[] memory keys_, bytes[] memory values_, uint256[] memory keysToProve_
-    ) internal returns (bytes32 root_, bytes[] memory compactProof_) {
+    ) internal returns (bytes32 root_, bytes[] memory compactProof_, CompactMerkleProof.Item[] memory itemsToProve_) {
         string[] memory inputs = new string[](6 + 2*keys_.length + 1 + keysToProve_.length);
         inputs[0] = "cargo";
         inputs[1] = "run";
@@ -334,30 +250,38 @@ contract CompactMerkleProofTest is Test {
         inputs[4] = "test/compactMerkleProof/differentialTesting/Cargo.toml";
         inputs[5] = "generate";
         uint256 currentKeyValuePair_;
-        for (uint i = 0; i < 2*keys_.length; i+=2) {
-            inputs[6 + i] = vm.toString(keys_[currentKeyValuePair_]);
-            inputs[6 + i + 1] = vm.toString(values_[currentKeyValuePair_]);
+        for (uint i_ = 0; i_ < 2*keys_.length; i_+=2) {
+            inputs[6 + i_] = vm.toString(keys_[currentKeyValuePair_]);
+            inputs[6 + i_ + 1] = vm.toString(values_[currentKeyValuePair_]);
             currentKeyValuePair_++;
         }
         inputs[6 + 2*keys_.length] = "keys";
 
-        for (uint i = 0; i < keysToProve_.length; i++) {
-            inputs[6 + 2*keys_.length + 1 + i] = vm.toString(keys_[keysToProve_[i]]);
+        for (uint i_ = 0; i_ < keysToProve_.length; i_++) {
+            inputs[6 + 2*keys_.length + 1 + i_] = vm.toString(keysToProve_[i_]);
         }
 
         vm.ffi(inputs);
-        string memory result_ = vm.readFile("test/compactMerkleProof/differentialTesting/results/generatorResults.txt");
+        string memory result_ = vm.readLine("test/compactMerkleProof/differentialTesting/results/generatorResults.json");
         bytes memory parsedResult_ = vm.parseJson(result_);
         GeneratorResults memory generatorResults_ = abi.decode(parsedResult_, (GeneratorResults));
         root_ = bytes32(vm.parseBytes(generatorResults_.root));
         compactProof_ = new bytes[](generatorResults_.proof.length);
-        for (uint i = 0; i < compactProof_.length; i++) {
-            compactProof_[i] = vm.parseBytes(generatorResults_.proof[i]);
+        for (uint i_ = 0; i_ < compactProof_.length; i_++) {
+            compactProof_[i_] = vm.parseBytes(generatorResults_.proof[i_]);
+        }
+
+        itemsToProve_ = new CompactMerkleProof.Item[](generatorResults_.keys.length);
+        for (uint i_ = 0; i_ < generatorResults_.keys.length; i_++) {
+            itemsToProve_[i_] = CompactMerkleProof.Item(
+                vm.parseBytes(generatorResults_.keys[i_]), 
+                vm.parseBytes(generatorResults_.values[i_])
+            );
         }
     }
 
     function _verifyRootAndProof(bytes32 root_, bytes[] memory proof_, CompactMerkleProof.Item[] memory items_
-    ) internal returns (bool) {
+    ) internal returns (VerifierResults memory) {
         string[] memory inputs = new string[](7 + proof_.length + 1 + 2*items_.length);
         inputs[0] = "cargo";
         inputs[1] = "run";
@@ -368,23 +292,22 @@ contract CompactMerkleProofTest is Test {
 
         inputs[6] = vm.toString(root_);
 
-        for (uint i = 0; i < proof_.length; i++) {
-            inputs[7 + i] = vm.toString(proof_[i]);
+        for (uint i_ = 0; i_ < proof_.length; i_++) {
+            inputs[7 + i_] = vm.toString(proof_[i_]);
         }
         inputs[7 + proof_.length] = "items";
 
         uint256 currentItem_;
-        for (uint i = 0; i < 2*items_.length; i+=2) {
-            inputs[7 + proof_.length + 1 + i] = vm.toString(items_[currentItem_].key);
-            inputs[7 + proof_.length + 1 + i + 1] = vm.toString(items_[currentItem_].value);
+        for (uint i_ = 0; i_ < 2*items_.length; i_+=2) {
+            inputs[7 + proof_.length + 1 + i_] = vm.toString(items_[currentItem_].key);
+            inputs[7 + proof_.length + 1 + i_ + 1] = vm.toString(items_[currentItem_].value);
             currentItem_++;
         }
 
         vm.ffi(inputs);
-        string memory result_ = vm.readFile("test/compactMerkleProof/differentialTesting/results/verifierResults.txt");
-        if (keccak256(bytes(result_)) == keccak256(bytes("true"))) return true;
-        console.log(result_);
-        return false;
+        string memory result_ = vm.readFile("test/compactMerkleProof/differentialTesting/results/verifierResults.json");
+        if (keccak256(bytes(result_)) == keccak256(bytes("true"))) return VerifierResults(true, "");
+        return VerifierResults(false, result_);
     }
 
     function _isKeyToBeProved(bytes memory keysToProveMask_, uint256 keyAtIndexI_) internal pure returns (bool) {
@@ -393,32 +316,67 @@ contract CompactMerkleProofTest is Test {
         return uint8(bytes1(keysToProveMask_[keyAtIndexI_/8])) >> keyAtIndexI_ % 8 & 1 == 1;
     }
 
-    function _addBytes(bytes memory array1_, bytes memory array2_) internal pure returns (bytes memory) {
-        uint256 smallestArrayLength_ = array1_.length < array2_.length ? array1_.length : array2_.length;
-        bytes memory longestArray_ = array2_.length > array1_.length ? array2_ : array1_;
-        bytes memory result_ = new bytes(longestArray_.length);
-
-        uint i_ = 1;
-        uint16 sumWithCarry_;
-        while (i_ <= smallestArrayLength_) {
-            sumWithCarry_ += uint16(uint8(array1_[array1_.length - i_])) + uint8(array2_[array2_.length - i_]);
-            unchecked {
-                result_[result_.length - i_] = bytes1(uint8(sumWithCarry_));
-            }
-            sumWithCarry_ = sumWithCarry_ > uint16(uint8(result_[result_.length - i_])) ? 1 : 0;
-            ++i_;
+    function _bytesArrayToStringArray(bytes[] memory bytesArray_) internal pure returns (string[] memory) {
+        string[] memory stringArray_ = new string[](bytesArray_.length);
+        for (uint i_ = 0; i_ < bytesArray_.length; i_++) {
+            stringArray_[i_] = vm.toString(bytesArray_[i_]);
         }
-        while (i_ <= longestArray_.length) {
-            sumWithCarry_ += uint8(longestArray_[longestArray_.length - i_]);
-            unchecked {
-                result_[result_.length - i_] = bytes1(uint8(sumWithCarry_));
-            }
-            sumWithCarry_ = sumWithCarry_ > uint16(uint8(result_[result_.length - i_])) ? 1 : 0;
-            ++i_;
+        return stringArray_;
+    }
+
+    function _itemsToKeyValues(CompactMerkleProof.Item[] memory items_)
+        internal
+        pure
+        returns (bytes[] memory keys_, bytes[] memory values_)
+    {
+        keys_ = new bytes[](items_.length);
+        values_ = new bytes[](items_.length);
+        for (uint256 i_ = 0; i_ < items_.length; i_++) {
+            keys_[i_] = items_[i_].key;
+            values_[i_] = items_[i_].value;
         }
+    }
 
-        if (sumWithCarry_ == 1) result_ = abi.encodePacked(hex"01", result_);
+    function _errorToErrorName(bytes memory error_) internal pure returns (string memory) {
+        if (bytes4(error_) == CompactMerkleProof.EmptyProofError.selector) return "EmptyProofError";
+        if (bytes4(error_) == CompactMerkleProof.ZeroItemsError.selector) return "ZeroItemsError";
+        if (bytes4(error_) == CompactMerkleProof.ExtraneousProofError.selector) return "ExtraneousProofError";
+        if (bytes4(error_) == CompactMerkleProof.InvalidRootSizeError.selector) return "InvalidRootSizeError";
+        if (bytes4(error_) == CompactMerkleProof.MustBeBranchError.selector) return "MustBeBranchError";
+        if (bytes4(error_) == CompactMerkleProof.EmptyChildPrefixError.selector) return "EmptyChildPrefixError";
+        if (bytes4(error_) == CompactMerkleProof.InvalidChildReferenceError.selector) return "InvalidChildReferenceError";
+        if (bytes4(error_) == CompactMerkleProof.ExtraneousHashReferenceError.selector) return "ExtraneousHashReferenceError";
+        if (bytes4(error_) == CompactMerkleProof.IncompleteProofError.selector) return "IncompleteProofError";
+        if (bytes4(error_) == CompactMerkleProof.NoValueInLeafError.selector) return "NoValueInLeafError";
+        if (bytes4(error_) == CompactMerkleProof.NotFoundError.selector) return "NotFoundError";
+        if (bytes4(error_) == CompactMerkleProof.ExtraneousValueError.selector) return "ExtraneousValueError";
+        if (bytes4(error_) == CompactMerkleProof.InvalidNodeKindError.selector) return "InvalidNodeKindError";
+        if (bytes4(error_) == CompactMerkleProof.DuplicatedKeysError.selector) return "DuplicateKeysError";
+        return string(error_);
+    }
 
-        return result_;
+    function _appendRunResultsToFile(
+        bytes[] memory keys_, 
+        bytes[] memory values_, 
+        bytes32 root_, 
+        bytes[] memory compactProof_, 
+        CompactMerkleProof.Item[] memory itemsToProve_, 
+        VerifierResults memory rustResult_, 
+        VerifierResults memory solidityResult_) 
+        internal
+    {
+        string memory totalVerifierResults_ = "TotalVerifierResults";
+        totalVerifierResults_.serialize("Keys", _bytesArrayToStringArray(keys_));
+        totalVerifierResults_.serialize("Values", _bytesArrayToStringArray(values_));
+        totalVerifierResults_.serialize("Root", vm.toString(root_));
+        totalVerifierResults_.serialize("Proof", _bytesArrayToStringArray(compactProof_));
+        (bytes[] memory keysToProve_, bytes[] memory valuesToProve_) = _itemsToKeyValues(itemsToProve_);
+        string memory itemsToProveObject_ = "ItemsToProve";
+        itemsToProveObject_.serialize("Keys", _bytesArrayToStringArray(keysToProve_));
+        string memory itemsToProveOutput_ = itemsToProveObject_.serialize("Values", _bytesArrayToStringArray(valuesToProve_));
+        totalVerifierResults_.serialize("RustVerifierResult", rustResult_.result ? "true" : rustResult_.reason);
+        totalVerifierResults_.serialize("SolidityVerifierResult", solidityResult_.result ? "true" : solidityResult_.reason);
+        totalVerifierResults_ = totalVerifierResults_.serialize(itemsToProveObject_, itemsToProveOutput_);
+        vm.writeLine("test/compactMerkleProof/differentialTesting/results/allResults.json", totalVerifierResults_);
     }
 }
