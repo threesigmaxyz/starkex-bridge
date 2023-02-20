@@ -52,7 +52,7 @@ library Node {
                 bool isInline_ = true;
                 if (childData_.length == 32) isInline_ = false;
 
-                branch_.children[i] = NodeHandle({data: childData_, isInline: isInline_, exist: true});
+                branch_.children[i] = NodeHandle({ data: childData_, isInline: isInline_, exist: true });
             }
         }
     }

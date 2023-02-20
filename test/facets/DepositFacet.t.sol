@@ -434,7 +434,7 @@ contract DepositFacetTest is BaseFixture {
         vm.prank(user_);
         token_ != Constants.NATIVE
             ? IDepositFacet(_bridge).lockDeposit(starkKey_, token_, amount_, lockHash_)
-            : IDepositFacet(_bridge).lockNativeDeposit{value: amount_}(starkKey_, lockHash_);
+            : IDepositFacet(_bridge).lockNativeDeposit{ value: amount_ }(starkKey_, lockHash_);
 
         // Assert
         IDepositFacet.Deposit memory deposit_ = IDepositFacet(_bridge).getDeposit(lockHash_);

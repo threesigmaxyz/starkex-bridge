@@ -116,8 +116,8 @@ library CompactMerkleProof {
         StackEntry[] memory stack_ = new StackEntry[](maxProofDepth_);
         uint256 stackLen_;
         StackEntry memory lastEntry_ = decodeNode(proof_[0], hex"", false);
-        ProofIter memory proofIter_ = ProofIter({proof: proof_, offset: 1});
-        ItemsIter memory itemsIter_ = ItemsIter({items: items_, offset: 0});
+        ProofIter memory proofIter_ = ProofIter({ proof: proof_, offset: 1 });
+        ItemsIter memory itemsIter_ = ItemsIter({ items: items_, offset: 0 });
         bytes memory childRef_;
         Step step_;
         bytes memory childPrefix_;
