@@ -142,7 +142,6 @@ fn test_generate_proof<L: TrieLayout>(
 		let mut root = Default::default();
 		{
 			let mut trie = <TrieDBMut<L>>::new(&mut db, &mut root);
-            trie.insert(key, Some("")).unwrap();
 			for (key, value) in entries.iter() {
 				trie.insert(key, value).unwrap();
 			}
