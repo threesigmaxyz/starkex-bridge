@@ -47,7 +47,7 @@ contract CompactMerkleProofTest is Test {
      *            the rust verifier against the solidity verifier. The results are appended to a file.
      *            The keys and values in `keysValues_` are sorted in the rust generator.
      */
-    function testVsRustImplementation(bytes[] calldata keysValues_, bytes memory keysToProveMask_) public {
+    function testVsRustImplementation_SkipCI(bytes[] calldata keysValues_, bytes memory keysToProveMask_) public {
         bytes[] memory keys_ = new bytes[](keysValues_.length);
         bytes[] memory values_ = new bytes[](keysValues_.length);
 
