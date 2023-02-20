@@ -105,8 +105,11 @@ library CompactMerkleProof {
      * @param items_ The items to verify.
      * @return True if the proof is valid, false otherwise.
      */
-    function verifyProof(bytes32 root_, bytes[] memory proof_, Item[] memory items_, uint256 maxProofDepth_
-    ) public pure returns (bool) {
+    function verifyProof(bytes32 root_, bytes[] memory proof_, Item[] memory items_, uint256 maxProofDepth_)
+        public
+        pure
+        returns (bool)
+    {
         if (proof_.length == 0) revert EmptyProofError();
         if (items_.length == 0) revert ZeroItemsError();
 
@@ -252,9 +255,10 @@ library CompactMerkleProof {
 
         if (!contains(keyAsNibbles_, entry_.key, prefixLen_)) return (ValueMatch.NotFound, "");
 
-        if (prefixPlusPartialLen == keyAsNibbles_.length) 
+        if (prefixPlusPartialLen == keyAsNibbles_.length) {
             return (entry_.value.length == 0 ? ValueMatch.Branch : ValueMatch.NotOmitted, "");
-        
+        }
+
         uint8 index = uint8(keyAsNibbles_[prefixPlusPartialLen]);
         if (!entry_.children[index].exist) return (ValueMatch.NotFound, "");
 
