@@ -191,7 +191,7 @@ contract DepositFacet is OnlyRegisteredToken, OnlyStarkExOperator, OnlyOwner, ID
         return depositStorage().depositExpirationTimeout;
     }
 
-    function validateAndAddDeposit(uint256 starkKey_, address token_, uint256 amount_, uint256 lockHash_) internal {
+    function _validateAndAddDeposit(uint256 starkKey_, address token_, uint256 amount_, uint256 lockHash_) internal {
         if (!HelpersECDSA.isOnCurve(starkKey_) || starkKey_ > Constants.K_MODULUS) revert InvalidStarkKeyError();
         if (amount_ == 0) revert ZeroAmountError();
         if (lockHash_ == 0) revert InvalidDepositLockError();
