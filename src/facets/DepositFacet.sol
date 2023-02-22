@@ -61,7 +61,7 @@ contract DepositFacet is OnlyRegisteredToken, OnlyStarkExOperator, OnlyOwner, ID
 
     /// @inheritdoc IDepositFacet
     function lockNativeDeposit(uint256 starkKey_, uint256 lockHash_) external payable override {
-        validateAndAddDeposit(starkKey_, Constants.NATIVE, msg.value, lockHash_);
+        _validateAndAddDeposit(starkKey_, Constants.NATIVE, msg.value, lockHash_);
         // The native is transferred to the contract, no need to call any transfer function like lockDeposit.
     }
 
@@ -71,7 +71,7 @@ contract DepositFacet is OnlyRegisteredToken, OnlyStarkExOperator, OnlyOwner, ID
         override
         onlyRegisteredToken(token_)
     {
-        validateAndAddDeposit(starkKey_, token_, amount_, lockHash_);
+        _validateAndAddDeposit(starkKey_, token_, amount_, lockHash_);
 
         // Transfer deposited funds to the contract.
         HelpersERC20.transferFrom(token_, msg.sender, address(this), amount_);
