@@ -48,9 +48,8 @@ contract IntegrationTest is LzFixture {
         vm.startPrank(_owner());
         _timelock = new TimelockController(48 hours, proposers_, executors_, address(0));
 
-        bytes memory acceptRoleCalldata_ = abi.encodeWithSelector(
-            IAccessControlFacet.acceptRole.selector, LibAccessControl.OWNER_ROLE, address(_timelock)
-        );
+        bytes memory acceptRoleCalldata_ =
+            abi.encodeWithSelector(IAccessControlFacet.acceptRole.selector, LibAccessControl.OWNER_ROLE);
 
         // Set the timelock as the pending owner of the bridge.
         IAccessControlFacet(_bridge).setPendingRole(LibAccessControl.OWNER_ROLE, address(_timelock));
