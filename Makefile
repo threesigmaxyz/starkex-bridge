@@ -61,10 +61,10 @@ anvil :;
 
 # This is the private key of account from the mnemonic from the "make anvil" command
 deploy-anvil :;
-	@forge script script/DeployBridgeAndReceptor.s.sol:DeployBridgeAndReceptorModuleScript --rpc-url http://localhost:8545 --broadcast && \
+	@forge script script/DeployBridgeReceptorTimelock.s.sol:DeployBridgeReceptorTimelockModuleScript --rpc-url http://localhost:8545 --broadcast && \
 	forge script script/DeployTransmitter.s.sol:DeployTransmitterModuleScript --rpc-url http://localhost:8545 --broadcast && \
 	forge script script/ConfigureReceptor.s.sol:ConfigureReceptorModuleScript --rpc-url http://localhost:8545 --broadcast 
-
+  
 # Deploy the contract to remote network and verify the code
 deploy-network :;
 	@export FOUNDRY_PROFILE=deploy && \
