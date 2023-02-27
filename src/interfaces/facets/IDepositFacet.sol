@@ -93,10 +93,15 @@ interface IDepositFacet {
      * @notice Claim multiple deposits if the hashes of the transfers were included in the Merkle Tree.
      * @param lockHashes_ The hashes of the transfers.
      * @param proof_ The Merkle proof proving that the transfers are in the Merkle Tree.
+     * @param maxProofDepth_ The maximum depth of the proof.
      * @param recipient_ The recipient of the deposits.
      */
-    function claimDeposits(CompactMerkleProof.Item[] memory lockHashes_, bytes[] memory proof_, address recipient_)
-        external;
+    function claimDeposits(
+        CompactMerkleProof.Item[] memory lockHashes_,
+        bytes[] memory proof_,
+        uint256 maxProofDepth_,
+        address recipient_
+    ) external;
 
     /**
      * @notice Reclaims a deposit if enough time has passed and the request failed.

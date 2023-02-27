@@ -61,7 +61,7 @@ contract DepositFacet is OnlyRegisteredToken, OnlyStarkExOperator, OnlyOwner, ID
 
     /// @inheritdoc IDepositFacet
     function lockNativeDeposit(uint256 starkKey_, uint256 lockHash_) external payable override {
-        validateAndAddDeposit(starkKey_, Constants.NATIVE, msg.value, lockHash_);
+        _validateAndAddDeposit(starkKey_, Constants.NATIVE, msg.value, lockHash_);
         // The native is transferred to the contract, no need to call any transfer function like lockDeposit.
     }
 
@@ -71,7 +71,7 @@ contract DepositFacet is OnlyRegisteredToken, OnlyStarkExOperator, OnlyOwner, ID
         override
         onlyRegisteredToken(token_)
     {
-        validateAndAddDeposit(starkKey_, token_, amount_, lockHash_);
+        _validateAndAddDeposit(starkKey_, token_, amount_, lockHash_);
 
         // Transfer deposited funds to the contract.
         HelpersERC20.transferFrom(token_, msg.sender, address(this), amount_);
@@ -109,15 +109,16 @@ contract DepositFacet is OnlyRegisteredToken, OnlyStarkExOperator, OnlyOwner, ID
     }
 
     /// @inheritdoc IDepositFacet
-    function claimDeposits(CompactMerkleProof.Item[] memory lockHashes_, bytes[] memory proof_, address recipient_)
-        external
-        override
-        onlyStarkExOperator
-    {
+    function claimDeposits(
+        CompactMerkleProof.Item[] memory lockHashes_,
+        bytes[] memory proof_,
+        uint256 maxProofDepth_,
+        address recipient_
+    ) external override onlyStarkExOperator {
         if (recipient_ == address(0)) revert ZeroAddressRecipientError();
 
         // Validate MPT compact proof.
-        CompactMerkleProof.verifyProof(bytes32(LibState.getOrderRoot()), proof_, lockHashes_);
+        CompactMerkleProof.verifyProof(bytes32(LibState.getOrderRoot()), proof_, lockHashes_, maxProofDepth_);
 
         DepositStorage storage ds = depositStorage();
         Deposit memory deposit_;
@@ -190,7 +191,7 @@ contract DepositFacet is OnlyRegisteredToken, OnlyStarkExOperator, OnlyOwner, ID
         return depositStorage().depositExpirationTimeout;
     }
 
-    function validateAndAddDeposit(uint256 starkKey_, address token_, uint256 amount_, uint256 lockHash_) internal {
+    function _validateAndAddDeposit(uint256 starkKey_, address token_, uint256 amount_, uint256 lockHash_) internal {
         if (!HelpersECDSA.isOnCurve(starkKey_) || starkKey_ > Constants.K_MODULUS) revert InvalidStarkKeyError();
         if (amount_ == 0) revert ZeroAmountError();
         if (lockHash_ == 0) revert InvalidDepositLockError();

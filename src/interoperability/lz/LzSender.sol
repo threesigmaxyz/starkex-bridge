@@ -30,7 +30,7 @@ abstract contract LzSender is ILzSender, LzBase {
         bytes memory trustedRemote = trustedRemoteLookup[dstChainId_];
         if (trustedRemote.length == 0) revert RemoteChainNotTrustedError();
 
-        lzEndpoint.send{value: nativeFee_}(
+        lzEndpoint.send{ value: nativeFee_ }(
             dstChainId_, trustedRemote, payload_, refundAddress_, zeroPaymentAddress_, adapterParams_
         );
     }

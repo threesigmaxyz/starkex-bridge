@@ -104,7 +104,7 @@ contract LzEndpointMock is ILayerZeroEndpoint {
             baseGas: 100,
             gasPerByte: 1
         });
-        protocolFeeConfig = ProtocolFeeConfig({zroFee: 1e18, nativeBP: 1000}); // BP 0.1
+        protocolFeeConfig = ProtocolFeeConfig({ zroFee: 1e18, nativeBP: 1000 }); // BP 0.1
         oracleFee = 1e16;
         defaultAdapterParams = LzLib.buildDefaultAdapterParams(200_000);
     }
@@ -139,7 +139,7 @@ contract LzEndpointMock is ILayerZeroEndpoint {
         // refund if they send too much
         uint256 amount = msg.value - nativeFee;
         if (amount > 0) {
-            (bool success,) = _refundAddress.call{value: amount}("");
+            (bool success,) = _refundAddress.call{ value: amount }("");
             require(success, "LayerZeroMock: failed to refund");
         }
 
@@ -148,7 +148,7 @@ contract LzEndpointMock is ILayerZeroEndpoint {
         (, uint256 extraGas, uint256 dstNativeAmt, address payable dstNativeAddr) =
             LzLib.decodeAdapterParams(adapterParams);
         if (dstNativeAmt > 0) {
-            (bool success,) = dstNativeAddr.call{value: dstNativeAmt}("");
+            (bool success,) = dstNativeAddr.call{ value: dstNativeAmt }("");
             if (!success) {
                 emit ValueTransferFailed(dstNativeAddr, dstNativeAmt);
             }
@@ -199,7 +199,7 @@ contract LzEndpointMock is ILayerZeroEndpoint {
             // ensure the next msgs that go through are no longer blocked
             nextMsgBlocked = false;
         } else {
-            try ILayerZeroReceiver(_dstAddress).lzReceive{gas: _gasLimit}(_srcChainId, _path, _nonce, _payload) { }
+            try ILayerZeroReceiver(_dstAddress).lzReceive{ gas: _gasLimit }(_srcChainId, _path, _nonce, _payload) { }
             catch (bytes memory reason) {
                 storedPayload[_srcChainId][_path] =
                     StoredPayload(uint64(_payload.length), _dstAddress, keccak256(_payload));

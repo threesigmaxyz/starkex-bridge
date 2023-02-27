@@ -418,7 +418,7 @@ contract WithdrawalFacetTest is BaseFixture {
         vm.prank(_operator());
         token_ != Constants.NATIVE
             ? IWithdrawalFacet(_bridge).lockWithdrawal(starkKey_, token_, amount_, lockHash_, recipient_)
-            : IWithdrawalFacet(_bridge).lockNativeWithdrawal{value: amount_}(starkKey_, lockHash_, recipient_);
+            : IWithdrawalFacet(_bridge).lockNativeWithdrawal{ value: amount_ }(starkKey_, lockHash_, recipient_);
 
         // Assert
         // A withdrawal request was created.

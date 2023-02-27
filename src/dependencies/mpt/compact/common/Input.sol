@@ -17,7 +17,7 @@ library Input {
      * @return Data struct.
      */
     function from(bytes memory data_) internal pure returns (Data memory) {
-        return Data({offset: 0, raw: data_});
+        return Data({ offset: 0, raw: data_ });
     }
 
     /**

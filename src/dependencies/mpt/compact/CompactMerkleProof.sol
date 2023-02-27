@@ -48,7 +48,8 @@ library CompactMerkleProof {
         bytes value; // The value associated with this trie node.
         Node.NodeHandle[16] children; // The child references to use in reconstructing the trie nodes.
         uint8 childIndex; // The child index is in [0, NIBBLE_LENGTH],
-        bool isInline; // The trie node data less 32-byte is an inline node
+        bool isInline; // If the trie node data has less than 32 bytes, it is an inline node.
+        bool visited; // If the trie node has been visited. Avoids duplicate keys.
     }
 
     struct ProofIter {
@@ -81,6 +82,7 @@ library CompactMerkleProof {
 
     error EmptyProofError();
     error ZeroItemsError();
+    error DuplicatedKeysError();
     error ExtraneousProofError();
     error InvalidRootSizeError();
     error MustBeBranchError();
@@ -89,7 +91,7 @@ library CompactMerkleProof {
     error ExtraneousHashReferenceError();
     error IncompleteProofError();
     error NoValueInLeafError();
-    error ValueInNotFoundError();
+    error NotFoundError();
     error ExtraneousValueError();
     error InvalidNodeKindError();
 
@@ -103,15 +105,19 @@ library CompactMerkleProof {
      * @param items_ The items to verify.
      * @return True if the proof is valid, false otherwise.
      */
-    function verifyProof(bytes32 root_, bytes[] memory proof_, Item[] memory items_) public pure returns (bool) {
+    function verifyProof(bytes32 root_, bytes[] memory proof_, Item[] memory items_, uint256 maxProofDepth_)
+        public
+        pure
+        returns (bool)
+    {
         if (proof_.length == 0) revert EmptyProofError();
         if (items_.length == 0) revert ZeroItemsError();
 
-        StackEntry[] memory stack_ = new StackEntry[](proof_.length);
+        StackEntry[] memory stack_ = new StackEntry[](maxProofDepth_);
         uint256 stackLen_;
         StackEntry memory lastEntry_ = decodeNode(proof_[0], hex"", false);
-        ProofIter memory proofIter_ = ProofIter({proof: proof_, offset: 1});
-        ItemsIter memory itemsIter_ = ItemsIter({items: items_, offset: 0});
+        ProofIter memory proofIter_ = ProofIter({ proof: proof_, offset: 1 });
+        ItemsIter memory itemsIter_ = ItemsIter({ items: items_, offset: 0 });
         bytes memory childRef_;
         Step step_;
         bytes memory childPrefix_;
@@ -125,7 +131,7 @@ library CompactMerkleProof {
             }
             // step == Step.UnwindStack
             nodeData_ = encodeNode(lastEntry_);
-            if (lastEntry_.isInline && nodeData_.length > 32) revert("invalid child reference");
+            if (lastEntry_.isInline && nodeData_.length > 32) revert InvalidChildReferenceError();
 
             lastEntry_.isInline ? childRef_ = nodeData_ : childRef_ = Hash.hash(nodeData_);
 
@@ -210,10 +216,12 @@ library CompactMerkleProof {
             (vm_, childPrefix_) = matchKeyToNode(keyAsNibbles_, entry_.prefix.length, entry_);
 
             if (vm_ == ValueMatch.Leaf && item_.value.length == 0) revert NoValueInLeafError();
-            if (vm_ == ValueMatch.NotFound && item_.value.length > 0) revert ValueInNotFoundError();
+            if (vm_ == ValueMatch.NotFound) revert NotFoundError();
             if (vm_ == ValueMatch.NotOmitted) revert ExtraneousValueError();
             if (vm_ == ValueMatch.IsChild) return (Step.Descend, childPrefix_);
-            if (vm_ != ValueMatch.NotFound) entry_.value = item_.value;
+            if (entry_.visited) revert DuplicatedKeysError();
+            entry_.visited = true;
+            entry_.value = item_.value;
 
             itemsIter_.offset++;
         }

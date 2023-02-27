@@ -290,7 +290,7 @@ contract DepositFacetTest is BaseFixture {
 
         // Act + Assert
         vm.prank(_operator());
-        IDepositFacet(_bridge).claimDeposits(items_, proof_, recipient_);
+        IDepositFacet(_bridge).claimDeposits(items_, proof_, proof_.length, recipient_);
     }
 
     function test_claimDeposits_DepositNotFoundError() public {
@@ -321,7 +321,7 @@ contract DepositFacetTest is BaseFixture {
 
         // Act + Assert
         vm.prank(_operator());
-        IDepositFacet(_bridge).claimDeposits(items_, proof_, _recipient());
+        IDepositFacet(_bridge).claimDeposits(items_, proof_, proof_.length, _recipient());
     }
 
     function test_claimDeposits_InvalidLockHashError() public {
@@ -336,7 +336,7 @@ contract DepositFacetTest is BaseFixture {
 
         // Act + Assert
         vm.prank(_operator());
-        IDepositFacet(_bridge).claimDeposits(items_, proof_, _recipient());
+        IDepositFacet(_bridge).claimDeposits(items_, proof_, proof_.length, _recipient());
     }
 
     //==============================================================================//
@@ -434,7 +434,7 @@ contract DepositFacetTest is BaseFixture {
         vm.prank(user_);
         token_ != Constants.NATIVE
             ? IDepositFacet(_bridge).lockDeposit(starkKey_, token_, amount_, lockHash_)
-            : IDepositFacet(_bridge).lockNativeDeposit{value: amount_}(starkKey_, lockHash_);
+            : IDepositFacet(_bridge).lockNativeDeposit{ value: amount_ }(starkKey_, lockHash_);
 
         // Assert
         IDepositFacet.Deposit memory deposit_ = IDepositFacet(_bridge).getDeposit(lockHash_);
@@ -508,7 +508,7 @@ contract DepositFacetTest is BaseFixture {
             emit LogClaimDeposit(uint256(bytes32(keys_[i_])), recipient_);
         }
         vm.prank(_operator());
-        IDepositFacet(_bridge).claimDeposits(items_, proof_, recipient_);
+        IDepositFacet(_bridge).claimDeposits(items_, proof_, proof_.length, recipient_);
 
         // Assert
         for (uint256 i_ = 0; i_ < keys_.length; i_++) {

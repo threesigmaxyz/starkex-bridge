@@ -152,7 +152,7 @@ contract IntegrationTest is LzFixture {
 
         // Act + Assert
         vm.prank(_keeper());
-        _transmitter.keep{value: 1 ether}(chainId_, payable(_keeper()));
+        _transmitter.keep{ value: 1 ether }(chainId_, payable(_keeper()));
 
         _setOrderRoot(bridge_, address(receptor_), orderRoot_);
     }
@@ -187,7 +187,7 @@ contract IntegrationTest is LzFixture {
 
         // Act + Assert
         vm.prank(_keeper());
-        _transmitter.batchKeep{value: 0.5 ether}(dstChainIds_, nativeFees_, payable(_keeper()));
+        _transmitter.batchKeep{ value: 0.5 ether }(dstChainIds_, nativeFees_, payable(_keeper()));
 
         // Assert
         _setOrderRoot(_bridgeSideChain1, address(_receptorSideChain1), orderRoot_);

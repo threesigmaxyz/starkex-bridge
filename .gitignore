@@ -4,6 +4,7 @@
 **/cache
 **/bin
 broadcast/
+**/target
 
 # files
 script/data/*
@@ -12,3 +13,4 @@ script/data/*
 *.log
 .DS_Store
 lcov.info
+*.lock

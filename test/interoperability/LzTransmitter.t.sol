@@ -163,7 +163,7 @@ contract LzTransmitterTest is Test {
         }
 
         // Act + Assert
-        _transmitter.batchKeep{value: totalValue}(dstChainIds_, nativeFees_, payable(_keeper()));
+        _transmitter.batchKeep{ value: totalValue }(dstChainIds_, nativeFees_, payable(_keeper()));
     }
 
     function test_batchKeep_StaleUpdateError(uint256 sequenceNumber_, uint256 orderRoot_) public {
@@ -205,7 +205,7 @@ contract LzTransmitterTest is Test {
         );
 
         // Act + Assert
-        _transmitter.batchKeep{value: totalValue}(dstChainIds_, nativeFees_, payable(_keeper()));
+        _transmitter.batchKeep{ value: totalValue }(dstChainIds_, nativeFees_, payable(_keeper()));
     }
 
     function test_batchKeep_InvalidEtherSentError() public {
@@ -226,7 +226,7 @@ contract LzTransmitterTest is Test {
         vm.expectRevert(abi.encodeWithSelector(ILzTransmitter.InvalidEtherSentError.selector));
 
         // Act + Assert
-        _transmitter.batchKeep{value: totalValue - 1}(dstChainIds_, nativeFees_, payable(_keeper()));
+        _transmitter.batchKeep{ value: totalValue - 1 }(dstChainIds_, nativeFees_, payable(_keeper()));
     }
 
     //==============================================================================//
@@ -314,7 +314,7 @@ contract LzTransmitterTest is Test {
 
         // Act + Assert
         vm.prank(_keeper());
-        _transmitter.keep{value: nativeFee_}(dstChainId_, payable(_keeper()));
+        _transmitter.keep{ value: nativeFee_ }(dstChainId_, payable(_keeper()));
     }
 
     function _mock_starkEx_getSequenceNumber(uint256 returnedSequenceNumber_) internal {

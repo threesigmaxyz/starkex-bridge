@@ -40,7 +40,7 @@ contract BaseFixture is Test {
 
         // Deploy _token
         vm.prank(_tokenDeployer());
-        _token = (new MockERC20){salt: "USDC"}("USD Coin", "USDC", 6); // 0xa33e385d3ab4a55cc949115bb5cb57fb16143d4b
+        _token = (new MockERC20){ salt: "USDC" }("USD Coin", "USDC", 6); // 0xa33e385d3ab4a55cc949115bb5cb57fb16143d4b
 
         _token.mint(_user(), USER_TOKENS);
 

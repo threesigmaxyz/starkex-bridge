@@ -12,7 +12,7 @@ library HelpersTransferNativeOrERC20 {
         if (token_ != Constants.NATIVE) {
             HelpersERC20.transfer(token_, receiver_, amount_);
         } else {
-            (bool success, bytes memory reason) = receiver_.call{value: amount_}("");
+            (bool success, bytes memory reason) = receiver_.call{ value: amount_ }("");
             if (!success) revert NativeTransferFailedError(string(reason));
         }
     }
