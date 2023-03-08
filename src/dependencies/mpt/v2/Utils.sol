@@ -1,6 +1,6 @@
 pragma solidity >=0.5.0;
 
-import { D } from "src/dependencies/mpt/v2/Data.sol";
+import { D } from ".//Data.sol";
 
 library Utils {
     /// Returns a label containing the longest common prefix of `check` and `label`

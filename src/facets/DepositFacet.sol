@@ -2,7 +2,6 @@
 pragma solidity ^0.8.0;
 
 import { LibMPT as MerklePatriciaTree } from "src/dependencies/mpt/v2/LibMPT.sol";
-import { CompactMerkleProof } from "src/dependencies/mpt/compact/CompactMerkleProof.sol";
 import { HelpersECDSA } from "src/helpers/HelpersECDSA.sol";
 
 import { HelpersERC20 } from "src/helpers/HelpersERC20.sol";
@@ -110,21 +109,24 @@ contract DepositFacet is OnlyRegisteredToken, OnlyStarkExOperator, OnlyOwner, ID
 
     /// @inheritdoc IDepositFacet
     function claimDeposits(
-        CompactMerkleProof.Item[] memory lockHashes_,
-        bytes[] memory proof_,
-        uint256 maxProofDepth_,
+        bytes32[] memory lockHashes_,
+        bytes32[] memory values_,
+        bytes32[] memory proof_,
+        uint8[] memory prefixesLengths_,
         address recipient_
     ) external override onlyStarkExOperator {
         if (recipient_ == address(0)) revert ZeroAddressRecipientError();
 
         // Validate MPT compact proof.
-        CompactMerkleProof.verifyProof(bytes32(LibState.getOrderRoot()), proof_, lockHashes_, maxProofDepth_);
+        MerklePatriciaTree.verifyCompactProof(
+            bytes32(LibState.getOrderRoot()), lockHashes_, values_, prefixesLengths_, proof_
+        );
 
         DepositStorage storage ds = depositStorage();
         Deposit memory deposit_;
         uint256 lockHash_;
-        for (uint256 i_ = 0; i_ < lockHashes_.length;) {
-            lockHash_ = uint256(bytes32(lockHashes_[i_].key));
+        for (uint256 i_; i_ < lockHashes_.length;) {
+            lockHash_ = uint256(lockHashes_[i_]);
 
             // Validate
             if (lockHash_ == 0) revert InvalidDepositLockError();
