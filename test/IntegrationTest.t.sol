@@ -2,6 +2,7 @@
 pragma solidity ^0.8.0;
 
 import { PatriciaTree } from "src/dependencies/mpt/v2/PatriciaTree.sol";
+import { TimelockController } from "@openzeppelin/governance/TimelockController.sol";
 import { Ownable } from "@openzeppelin/access/Ownable.sol";
 import { LzEndpointMock } from "test/mocks/lz/LzEndpointMock.sol";
 import { HelpersECDSA } from "src/helpers/HelpersECDSA.sol";
@@ -9,12 +10,16 @@ import { HelpersECDSA } from "src/helpers/HelpersECDSA.sol";
 import { MockERC20 } from "test/mocks/MockERC20.sol";
 import { Constants } from "src/constants/Constants.sol";
 import { LzFixture } from "test/fixtures/LzFixture.sol";
+import { IAccessControlFacet } from "src/interfaces/facets/IAccessControlFacet.sol";
 import { IStateFacet } from "src/interfaces/facets/IStateFacet.sol";
 import { IDepositFacet } from "src/interfaces/facets/IDepositFacet.sol";
 import { ILzReceptor } from "src/interfaces/interoperability/ILzReceptor.sol";
 import { IStarkEx } from "src/interfaces/interoperability/IStarkEx.sol";
+import { LibAccessControl } from "src/libraries/LibAccessControl.sol";
 
 contract IntegrationTest is LzFixture {
+    TimelockController private _timelock;
+
     //==============================================================================//
     //=== Events                                                                 ===//
     //==============================================================================//
@@ -30,6 +35,39 @@ contract IntegrationTest is LzFixture {
     // DepositFacet.
     event LogLockDeposit(uint256 indexed lockHash, uint256 indexed starkKey, address indexed token, uint256 amount);
     event LogClaimDeposit(uint256 indexed lockHash, address indexed recipient);
+
+    function test_TimeLockController() public {
+        // Only owner can propose and cancel actions.
+        address[] memory proposers_ = new address[](1);
+        proposers_[0] = _owner();
+
+        // Anyone can execute actions.
+        address[] memory executors_ = new address[](1);
+        executors_[0] = address(0);
+
+        vm.startPrank(_owner());
+        _timelock = new TimelockController(48 hours, proposers_, executors_, address(0));
+
+        bytes memory acceptRoleCalldata_ =
+            abi.encodeWithSelector(IAccessControlFacet.acceptRole.selector, LibAccessControl.OWNER_ROLE);
+
+        // Set the timelock as the pending owner of the bridge.
+        IAccessControlFacet(_bridge).setPendingRole(LibAccessControl.OWNER_ROLE, address(_timelock));
+
+        // Schedule the timelock to accept the owner role.
+        _timelock.schedule(_bridge, 0, acceptRoleCalldata_, 0, 0, 48 hours);
+
+        // Advance the time by 48 hours.
+        vm.warp(block.timestamp + 48 hours);
+
+        // Execute the scheduled action.
+        _timelock.execute(_bridge, 0, acceptRoleCalldata_, 0, 0);
+
+        vm.stopPrank();
+
+        // Check that the timelock is now the owner of the bridge.
+        assertEq(IAccessControlFacet(_bridge).getRole(LibAccessControl.OWNER_ROLE), address(_timelock));
+    }
 
     //==============================================================================//
     //=== deposit Tests                                                          ===//
