@@ -56,7 +56,7 @@ contract CelerReceptor is ICelerReceptor, CelerBase {
 
         (uint256 orderRoot_, bytes memory intendedRecipient_) = abi.decode(message_, (uint256, bytes));
 
-        // Check that the contract which is processing is the intendedRecipient
+        // Check that the contract which is processing is the intendedRecipient.
         if (keccak256(intendedRecipient_) != keccak256(abi.encodePacked(address(this)))) {
             revert NotIntendedRecipientError();
         }

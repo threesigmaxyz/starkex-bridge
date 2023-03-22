@@ -124,6 +124,31 @@ contract CelerTransmitterTest is Test {
         _transmitter.keep(MOCK_CHAIN_ID, payable(_keeper()));
     }
 
+    function test_keep_RemoteChainNotTrustedError(uint256 sequenceNumber_, uint256 orderRoot_, uint256 nativeFee_)
+        public
+    {
+        vm.assume(sequenceNumber_ > 0);
+
+        // Arrange
+        vm.deal(_keeper(), nativeFee_);
+        // And
+        bytes memory path_;
+        vm.prank(_owner());
+        ICelerBase(_transmitter).setTrustedRemote(MOCK_CHAIN_ID, path_);
+        // And
+        vm.expectRevert(abi.encodeWithSelector(ICelerBase.RemoteChainNotTrustedError.selector));
+        // And
+        _mock_starkEx_getSequenceNumber(sequenceNumber_);
+        // And
+        _mock_starkEx_getOrderRoot(orderRoot_);
+        // And
+        _mock_celer_send(MOCK_CHAIN_ID, orderRoot_, 0);
+
+        // Act + Assert
+        vm.prank(_keeper());
+        _transmitter.keep{ value: nativeFee_ }(MOCK_CHAIN_ID, payable(_keeper()));
+    }
+
     //==============================================================================//
     //=== batchKeep Tests                                                        ===//
     //==============================================================================//
@@ -228,6 +253,49 @@ contract CelerTransmitterTest is Test {
 
         // Act + Assert
         _transmitter.batchKeep{ value: totalValue - 1 }(dstChainIds_, nativeFees_, payable(_keeper()));
+    }
+
+    function test_batchKeep_RemoteChainNotTrustedError(uint256 sequenceNumber_, uint256 orderRoot_) public {
+        vm.assume(sequenceNumber_ > 0);
+
+        // Arrange
+        uint256 totalValue = 1 ether;
+        vm.deal(_keeper(), totalValue);
+        // And
+        uint16[] memory dstChainIds_ = new uint16[](3);
+        dstChainIds_[0] = MOCK_CHAIN_ID;
+        dstChainIds_[1] = MOCK_CHAIN_ID + 1;
+        dstChainIds_[2] = MOCK_CHAIN_ID + 2;
+        // And
+        uint256[] memory nativeFees_ = new uint256[](3);
+        nativeFees_[0] = 0.2 ether;
+        nativeFees_[1] = 0.3 ether;
+        nativeFees_[2] = 0.5 ether;
+        // And
+        for (uint256 i = 1; i < dstChainIds_.length; i++) {
+            // dstChainIds_[0] is already trusted
+            _setTrustedRemote(_owner(), _receptor, address(_transmitter), dstChainIds_[i]);
+        }
+        // And
+        _mock_starkEx_getSequenceNumber(sequenceNumber_);
+        // And
+        _mock_starkEx_getOrderRoot(orderRoot_);
+        // And
+        for (uint256 i_ = 0; i_ < dstChainIds_.length; i_++) {
+            _mock_celer_send(dstChainIds_[i_], orderRoot_, nativeFees_[i_]);
+        }
+        // And
+        bytes memory path_;
+        vm.startPrank(_owner());
+        ICelerBase(_transmitter).setTrustedRemote(MOCK_CHAIN_ID, path_);
+        ICelerBase(_transmitter).setTrustedRemote(MOCK_CHAIN_ID + 1, path_);
+        ICelerBase(_transmitter).setTrustedRemote(MOCK_CHAIN_ID + 2, path_);
+        vm.stopPrank();
+        // And
+        vm.expectRevert(abi.encodeWithSelector(ICelerBase.RemoteChainNotTrustedError.selector));
+
+        // Act + Assert
+        _transmitter.batchKeep{ value: totalValue }(dstChainIds_, nativeFees_, payable(_keeper()));
     }
 
     //==============================================================================//

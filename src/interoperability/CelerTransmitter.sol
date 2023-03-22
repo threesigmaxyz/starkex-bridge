@@ -34,7 +34,6 @@ contract CelerTransmitter is ICelerTransmitter, CelerBase {
 
     /// @inheritdoc ICelerTransmitter
     function keep(uint16 dstChainId_, address payable) external payable override {
-        // refundAddress???
         uint256 sequenceNumber_ = _starkEx.getSequenceNumber();
         _updateSequenceNumber(dstChainId_, sequenceNumber_);
         bytes memory orderRoot_ = getPayload();
@@ -48,7 +47,6 @@ contract CelerTransmitter is ICelerTransmitter, CelerBase {
         payable
         override
     {
-        // refundAddress???
         uint256 etherSent_;
         for (uint256 i_ = 0; i_ < nativeFees_.length;) {
             etherSent_ += nativeFees_[i_];
@@ -71,7 +69,6 @@ contract CelerTransmitter is ICelerTransmitter, CelerBase {
     }
 
     function _send(uint16 dstChainId_, bytes memory orderRoot_, uint256 sequenceNumber_, uint256 nativeFee_) internal {
-        // refundAddress???
         bytes memory trustedRemote_ = trustedRemoteLookup[dstChainId_];
         if (trustedRemote_.length == 0) revert RemoteChainNotTrustedError();
 
