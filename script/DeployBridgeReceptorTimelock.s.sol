@@ -15,6 +15,8 @@ import { IAccessControlFacet } from "src/interfaces/facets/IAccessControlFacet.s
 
 import { LzReceptor } from "src/interoperability/LzReceptor.sol";
 
+import { WormholeReceptor } from "src/interoperability/WormholeReceptor.sol";
+
 import { TimelockController } from "@openzeppelin/governance/TimelockController.sol";
 
 import { DataIO } from "script/data/DataIO.sol";
@@ -25,9 +27,12 @@ contract DeployBridgeReceptorTimelockModuleScript is Script, DataIO {
     address private _tokenAdmin;
     address private _bridge;
     address private _lzEndpoint;
+    address private _wormhole;
+    address private _wormholeRelayer;
     address private _timelockController;
 
-    LzReceptor private _receptor;
+    LzReceptor private _lzReceptor;
+    WormholeReceptor private _wormholeReceptor;
 
     uint256 private TIMELOCK_MINIMUM_DELAY;
 
@@ -36,6 +41,8 @@ contract DeployBridgeReceptorTimelockModuleScript is Script, DataIO {
         _operator = vm.envAddress("STARKEX_OPERATOR");
         _tokenAdmin = vm.envAddress("TOKEN_ADMIN");
         _lzEndpoint = vm.envAddress("LAYER_ZERO_ENDPOINT");
+        _wormhole = vm.envAddress("WORMHOLE");
+        _wormholeRelayer = vm.envAddress("WORMHOLE_RELAYER");
         TIMELOCK_MINIMUM_DELAY = vm.envUint("TIMELOCK_MINIMUM_DELAY");
     }
 
@@ -47,9 +54,13 @@ contract DeployBridgeReceptorTimelockModuleScript is Script, DataIO {
         _bridge = LibDeployBridge.deployBridge(_owner);
         _writeData("bridge", vm.toString(abi.encodePacked((_bridge))));
 
-        // Deploy recepetor.
-        _receptor = new LzReceptor(_lzEndpoint, _bridge);
-        _writeData("receptor", vm.toString(address(_receptor)));
+        // Deploy lz receptor.
+        _lzReceptor = new LzReceptor(_lzEndpoint, _bridge);
+        _writeData("lzReceptor", vm.toString(address(_lzReceptor)));
+
+        // Deploy wormhole receptor.
+        _wormholeReceptor = new WormholeReceptor(_wormhole, _wormholeRelayer, _bridge);
+        _writeData("wormholeReceptor", vm.toString(address(_wormholeReceptor)));
 
         // Deploy timelockController contract with zero minimum delay.
         _timelockController = _deployTimelockController_WithZeroMinimumDelay(_owner);
@@ -58,11 +69,13 @@ contract DeployBridgeReceptorTimelockModuleScript is Script, DataIO {
         // Set pending roles.
         IAccessControlFacet(_bridge).setPendingRole(LibAccessControl.STARKEX_OPERATOR_ROLE, _operator);
         IAccessControlFacet(_bridge).setPendingRole(LibAccessControl.TOKEN_ADMIN_ROLE, _tokenAdmin);
-        IAccessControlFacet(_bridge).setPendingRole(LibAccessControl.INTEROPERABILITY_CONTRACT_ROLE, address(_receptor));
+        IAccessControlFacet(_bridge).setPendingRole(
+            LibAccessControl.INTEROPERABILITY_CONTRACT_ROLE, address(_lzReceptor)
+        );
         IAccessControlFacet(_bridge).setPendingRole(LibAccessControl.OWNER_ROLE, _timelockController);
 
         // Accept interoperability role.
-        _receptor.acceptBridgeRole();
+        _lzReceptor.acceptBridgeRole();
 
         // Make the timelockController accept the bridge owner role.
         _timelockControllerAcceptBridgeRole();
