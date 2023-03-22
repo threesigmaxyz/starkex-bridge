@@ -159,7 +159,7 @@ contract WormholeReceptorTest is Test {
         vmMessage.payload = abi.encode(orderRoot_, abi.encodePacked(address(_receptor)));
         vmMessage.hash = hash_;
         vmMessage.emitterChainId = MOCK_CHAIN_ID;
-        vmMessage.emitterAddress = bytes32(abi.encodePacked(address(_receptor)));
+        vmMessage.emitterAddress = bytes32(abi.encodePacked(_transmitter));
 
         bytes[] memory whMessages_ = new bytes[](1);
         whMessages_[0] = abi.encode(1);
@@ -181,7 +181,7 @@ contract WormholeReceptorTest is Test {
         vmMessage.payload = abi.encode(orderRoot_, abi.encodePacked(address(_receptor)));
         vmMessage.hash = hash_;
         vmMessage.emitterChainId = MOCK_CHAIN_ID;
-        vmMessage.emitterAddress = bytes32(abi.encodePacked(address(_receptor)));
+        vmMessage.emitterAddress = bytes32(abi.encodePacked(_transmitter));
 
         bytes[] memory whMessages_ = new bytes[](1);
         whMessages_[0] = abi.encode(1);
@@ -206,7 +206,7 @@ contract WormholeReceptorTest is Test {
         vmMessage.payload = abi.encode(orderRoot_, abi.encodePacked(address(_receptor)));
         vmMessage.hash = hash_;
         vmMessage.emitterChainId = MOCK_CHAIN_ID;
-        vmMessage.emitterAddress = bytes32(abi.encodePacked(address(_receptor)));
+        vmMessage.emitterAddress = bytes32(abi.encodePacked(_transmitter));
 
         bytes[] memory whMessages_ = new bytes[](1);
         whMessages_[0] = abi.encode(1);
@@ -256,7 +256,7 @@ contract WormholeReceptorTest is Test {
         vmMessage.payload = abi.encode(orderRoot_, abi.encodePacked(address(_receptor)));
         vmMessage.hash = hash_;
         vmMessage.emitterChainId = MOCK_CHAIN_ID;
-        vmMessage.emitterAddress = bytes32(abi.encodePacked(address(_receptor)));
+        vmMessage.emitterAddress = bytes32(abi.encodePacked(_transmitter));
 
         bytes[] memory whMessages_ = new bytes[](1);
         whMessages_[0] = abi.encode(1);
@@ -284,7 +284,7 @@ contract WormholeReceptorTest is Test {
         vmMessage.payload = abi.encode(orderRoot_, abi.encodePacked(_wormhole));
         vmMessage.hash = hash_;
         vmMessage.emitterChainId = MOCK_CHAIN_ID;
-        vmMessage.emitterAddress = bytes32(abi.encodePacked(address(_receptor)));
+        vmMessage.emitterAddress = bytes32(abi.encodePacked(_transmitter));
 
         bytes[] memory whMessages_ = new bytes[](1);
         whMessages_[0] = abi.encode(1);
@@ -323,9 +323,9 @@ contract WormholeReceptorTest is Test {
         assertEq(address(WormholeReceptor(receptor_).wormhole()), wormhole_);
     }
 
-    function _setTrustedRemote(address owner_, address, address receptor_) internal {
+    function _setTrustedRemote(address owner_, address transmitter_, address receptor_) internal {
         // Arrange
-        bytes memory path_ = abi.encodePacked(receptor_);
+        bytes memory path_ = abi.encodePacked(transmitter_);
         vm.expectEmit(true, true, false, true, receptor_);
         emit LogSetTrustedRemote(MOCK_CHAIN_ID, path_);
 

@@ -25,7 +25,6 @@ contract WormholeTransmitter is IWormholeTransmitter, WormholeBase {
         if (starkExAddress_ == address(0)) revert ZeroStarkExAddressError();
 
         _starkEx = IStarkEx(starkExAddress_);
-        //_relayProvider = relayer.getDefaultRelayProvider();
 
         emit LogSetStarkExAddress(starkExAddress_);
     }
