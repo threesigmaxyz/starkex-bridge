@@ -3,42 +3,32 @@ pragma solidity ^0.8.0;
 
 interface ILzReceptor {
     /**
-     * @notice Emitted when the bridge address is set.
-     * @param bridge The bridge address.
-     */
-    event LogSetBridge(address indexed bridge);
-
-    /**
-     * @notice Emitted when an outdated root is received (lz messages sent in the wrong order).
-     * @param orderRoot The order root.
-     * @param nonce The nonce of the message.
-     */
-    event LogOutdatedRootReceived(uint256 indexed orderRoot, uint64 indexed nonce);
-
-    /**
-     * @notice Emitted when the order root of the bridge is updated.
-     * @param orderRoot The order root.
-     */
-    event LogOrderRootUpdate(uint256 indexed orderRoot);
-
-    /**
      * @notice Emitted when an order root is received.
-     * @param orderRoot The order root.
+     * @param payload The payload.
      */
-    event LogRootReceived(uint256 indexed orderRoot);
+    event LogRootReceived(bytes indexed payload);
+
+    /**
+     * @notice Emitted when the address of the multi bridge receiver is set.
+     * @param multiBridgeReceiver The new address.
+     */
+    event LogSetMultiBridgeAddress(address indexed multiBridgeReceiver);
 
     /// @notice Emitted when the interoperability role in the bridge is accepted.
     event LogBridgeRoleAccepted();
 
-    error ZeroBridgeAddressError();
     error ZeroLzEndpointAddressError();
-
-    /// @notice Accepts the pending bridge role.
-    function acceptBridgeRole() external;
+    error ZeroMultiBridgeAddressError();
 
     /**
-     * @notice The owner sets the root of the order tree.
-     *         This adds another layer of security, stopping layerZero from sending any message.
+     * @notice Set the multiBridgeReceptor address.
+     * @param multiBridgeReceiver_ The new address.
      */
-    function setOrderRoot() external;
+    function setMultiBridgeAddress(address multiBridgeReceiver_) external;
+
+    /**
+     * @notice Get the multiBridgeReceptor address.
+     * @return The address.
+     */
+    function getMultiBridgeAddress() external view returns (address);
 }

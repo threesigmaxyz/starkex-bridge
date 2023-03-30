@@ -12,6 +12,7 @@ import { LzReceptor } from "src/interoperability/LzReceptor.sol";
 import { LibAccessControl } from "src/libraries/LibAccessControl.sol";
 import { IAccessControlFacet } from "src/interfaces/facets/IAccessControlFacet.sol";
 import { IStateFacet } from "src/interfaces/facets/IStateFacet.sol";
+import { IMultiBridgeReceptor } from "src/interfaces/interoperability/IMultiBridgeReceptor.sol";
 
 contract LzReceptorTest is Test {
     uint16 private constant MOCK_CHAIN_ID = 1337;
@@ -21,11 +22,11 @@ contract LzReceptorTest is Test {
     address private _bridge = vm.addr(2);
     address private _transmitter = vm.addr(3);
 
-    event LogSetBridge(address indexed bridge);
+    event LogSetMultiBridgeAddress(address indexed bridge);
     event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
     event LogSetTrustedRemote(uint16 indexed remoteChainId, bytes indexed path);
     event LogBridgeRoleAccepted();
-    event LogRootReceived(uint256 indexed orderRoot);
+    event LogRootReceived(bytes indexed payload);
     event LogOutdatedRootReceived(uint256 indexed orderRoot, uint64 indexed nonce);
     event LogOrderRootUpdate(uint256 indexed orderRoot);
     event LogMessageFailed(
@@ -68,51 +69,51 @@ contract LzReceptorTest is Test {
         new LzReceptor(lzEndpoint_, _bridge);
     }
 
-    function test_constructor_ZeroBridgeAddressError() public {
+    function test_constructor_ZeroMultiBridgeAddressError() public {
         // Arrange
         address bridge_ = address(0);
-        vm.expectRevert(abi.encodeWithSelector(ILzReceptor.ZeroBridgeAddressError.selector));
+        vm.expectRevert(abi.encodeWithSelector(ILzReceptor.ZeroMultiBridgeAddressError.selector));
 
         // Act + Assert
         new LzReceptor(_lzEndpoint, bridge_);
     }
 
     //==============================================================================//
-    //=== acceptBridgeRole Tests                                                 ===//
+    //=== setMultiBridgeAddress Tests                                            ===//
     //==============================================================================//
 
-    function test_acceptBridgeRole_ok() public {
+    function test_setMultiBridgeAddress_ok(address bridge_) public {
         // Arrange
-        vm.mockCall(
-            _bridge,
-            abi.encodeWithSelector(IAccessControlFacet.acceptRole.selector),
-            abi.encode(LibAccessControl.INTEROPERABILITY_CONTRACT_ROLE)
-        );
+        vm.assume(bridge_ > address(0));
+        // And
+        vm.expectEmit(true, false, false, true, address(_receptor));
+        emit LogSetMultiBridgeAddress(bridge_);
 
         // Act + Assert
-        _acceptBridgeRole(address(_receptor));
+        vm.prank(_owner());
+        _receptor.setMultiBridgeAddress(bridge_);
+        assertEq(_receptor.getMultiBridgeAddress(), bridge_);
     }
 
-    //==============================================================================//
-    //=== setOrderRoot Tests                                                     ===//
-    //==============================================================================//
-
-    function test_setOrderRoot_ok() public {
+    function test_setMultiBridgeAddress_ZeroMultiBridgeAddressError() public {
         // Arrange
-        uint256 orderRoot_ = 0;
-        vm.mockCall(_bridge, abi.encodeWithSelector(IStateFacet.setOrderRoot.selector), abi.encode(orderRoot_));
+        address bridge_ = address(0);
+        vm.expectRevert(abi.encodeWithSelector(ILzReceptor.ZeroMultiBridgeAddressError.selector));
 
         // Act + Assert
-        _setOrderRoot(_owner(), address(_receptor), orderRoot_);
+        vm.prank(_owner());
+        _receptor.setMultiBridgeAddress(bridge_);
     }
 
-    function test_setOrderRoot_onlyOwner() public {
+    function test_setMultiBridgeAddress_onlyOwner() public {
         // Arrange
+        address bridge_ = address(1);
+        // And
         vm.expectRevert("Ownable: caller is not the owner");
 
         // Act + Assert
         vm.prank(_intruder());
-        _receptor.setOrderRoot();
+        _receptor.setMultiBridgeAddress(bridge_);
     }
 
     //==============================================================================//
@@ -145,20 +146,6 @@ contract LzReceptorTest is Test {
 
         // Act + Assert
         _lzReceive(address(_receptor), _lzEndpoint, MOCK_CHAIN_ID, path_, nonce_, orderRoot_);
-    }
-
-    function test_nonBlockingLzReceive_LogOutdatedRootReceived() public {
-        // Arrange
-        uint256 orderRoot_ = 0;
-        uint64 nonce_ = 0;
-        bytes memory path_ = abi.encodePacked(_transmitter, address(_receptor));
-        bytes memory payload_ = abi.encode(orderRoot_);
-        vm.expectEmit(true, true, false, true, address(_receptor));
-        emit LogOutdatedRootReceived(orderRoot_, nonce_);
-
-        // Act + Assert
-        vm.prank(_lzEndpoint);
-        LzReceptor(_receptor).lzReceive(MOCK_CHAIN_ID, path_, nonce_, payload_);
     }
 
     function test_nonBlockingLzReceive_RemoteChainNotSecureError(uint16 srcChaindId_, bytes memory path_) public {
@@ -211,7 +198,7 @@ contract LzReceptorTest is Test {
         vm.expectEmit(true, true, false, true);
         emit OwnershipTransferred(address(0), owner_);
         vm.expectEmit(true, false, false, true);
-        emit LogSetBridge(bridge_);
+        emit LogSetMultiBridgeAddress(bridge_);
 
         // Act + Assert
         vm.prank(owner_);
@@ -231,24 +218,6 @@ contract LzReceptorTest is Test {
         assertEq(ILzBase(receptor_).isTrustedRemote(MOCK_CHAIN_ID, path_), true);
     }
 
-    function _acceptBridgeRole(address receptor_) internal {
-        // Arrange
-        vm.expectEmit(false, false, false, true, receptor_);
-        emit LogBridgeRoleAccepted();
-
-        // Act + Assert
-        ILzReceptor(receptor_).acceptBridgeRole();
-    }
-
-    function _setOrderRoot(address owner_, address receptor_, uint256 orderRoot_) internal {
-        // Arrange
-        vm.expectEmit(true, false, false, true, receptor_);
-        emit LogOrderRootUpdate(orderRoot_);
-
-        vm.prank(owner_);
-        ILzReceptor(receptor_).setOrderRoot();
-    }
-
     function _lzReceive(
         address receptor_,
         address lzEndpoint_,
@@ -258,9 +227,15 @@ contract LzReceptorTest is Test {
         uint256 orderRoot_
     ) internal {
         // Arrange
-        bytes memory payload_ = abi.encode(orderRoot_);
+        bytes memory payload_ = abi.encode(abi.encode(orderRoot_), nonce_);
         vm.expectEmit(true, false, false, true, receptor_);
-        emit LogRootReceived(orderRoot_);
+        emit LogRootReceived(payload_);
+        // And
+        vm.mockCall(
+            _bridge,
+            abi.encodeWithSelector(IMultiBridgeReceptor.receiveRoot.selector, payload_, srcChaindId_),
+            abi.encode("")
+        );
 
         // Act + Assert
         vm.prank(lzEndpoint_);

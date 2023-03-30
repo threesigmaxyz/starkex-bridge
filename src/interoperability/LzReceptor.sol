@@ -6,53 +6,46 @@ import { LibAccessControl } from "src/libraries/LibAccessControl.sol";
 import { IAccessControlFacet } from "src/interfaces/facets/IAccessControlFacet.sol";
 import { IStateFacet } from "src/interfaces/facets/IStateFacet.sol";
 import { ILzReceptor } from "src/interfaces/interoperability/ILzReceptor.sol";
+import { IMultiBridgeReceptor } from "src/interfaces/interoperability/IMultiBridgeReceptor.sol";
 
 contract LzReceptor is ILzReceptor, NonblockingLzReceiver {
-    /// @notice Address of the _bridge.
-    address private immutable _bridge;
-
     /// @notice Last nonce received. Useful to ignore outdated received roots.
     uint256 private _lastNonce;
 
-    uint256 private _orderRoot;
+    /// @notice Address of the multiBridgeReceiver contract.
+    address private _multiBridgeReceiver;
 
-    constructor(address lzEndpoint_, address bridge_) NonblockingLzReceiver(lzEndpoint_) {
+    constructor(address lzEndpoint_, address multiBridgeReceiver_) NonblockingLzReceiver(lzEndpoint_) {
         if (lzEndpoint_ == address(0)) revert ZeroLzEndpointAddressError();
-        if (bridge_ == address(0)) revert ZeroBridgeAddressError();
+        if (multiBridgeReceiver_ == address(0)) revert ZeroMultiBridgeAddressError();
 
-        _bridge = bridge_;
-        emit LogSetBridge(bridge_);
+        _multiBridgeReceiver = multiBridgeReceiver_;
+
+        emit LogSetMultiBridgeAddress(multiBridgeReceiver_);
     }
 
     /// @inheritdoc ILzReceptor
-    function acceptBridgeRole() public override {
-        IAccessControlFacet(_bridge).acceptRole(LibAccessControl.INTEROPERABILITY_CONTRACT_ROLE);
-        emit LogBridgeRoleAccepted();
+    function setMultiBridgeAddress(address multiBridgeReceiver_) external override onlyOwner {
+        if (multiBridgeReceiver_ == address(0)) revert ZeroMultiBridgeAddressError();
+
+        _multiBridgeReceiver = multiBridgeReceiver_;
+
+        emit LogSetMultiBridgeAddress(multiBridgeReceiver_);
     }
 
     /// @inheritdoc ILzReceptor
-    function setOrderRoot() external override onlyOwner {
-        uint256 orderRoot_ = _orderRoot;
-        IStateFacet(_bridge).setOrderRoot(orderRoot_);
-        emit LogOrderRootUpdate(orderRoot_);
+    function getMultiBridgeAddress() external view override returns (address) {
+        return _multiBridgeReceiver;
     }
 
     /**
-     * @notice Receives the root update.
-     * @param nonce_ The nonce of the message.
+     * @notice Receives the root update and sends to the multiBridgeReceptor.
+     * @param srcChainId_ The id of the source chain.
      * @param payload_ Contains the roots.
      */
-    function _nonblockingLzReceive(uint16, bytes memory, uint64 nonce_, bytes memory payload_) internal override {
-        (uint256 orderRoot_) = abi.decode(payload_, (uint256));
+    function _nonblockingLzReceive(uint16 srcChainId_, bytes memory, uint64, bytes memory payload_) internal override {
+        emit LogRootReceived(payload_);
 
-        /// Return because the most recent order tree contains all the old info.
-        if (nonce_ <= _lastNonce) {
-            emit LogOutdatedRootReceived(orderRoot_, nonce_);
-            return;
-        }
-        _lastNonce = nonce_;
-
-        _orderRoot = orderRoot_;
-        emit LogRootReceived(orderRoot_);
+        IMultiBridgeReceptor(_multiBridgeReceiver).receiveRoot(payload_, srcChainId_);
     }
 }
