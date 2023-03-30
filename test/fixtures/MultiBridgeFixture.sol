@@ -12,11 +12,14 @@ import { LibAccessControl } from "src/libraries/LibAccessControl.sol";
 import { LzReceptor } from "src/interoperability/LzReceptor.sol";
 import { LzTransmitter } from "src/interoperability/LzTransmitter.sol";
 
+import { MultiBridgeReceptor } from "src/interoperability/MultiBridgeReceptor.sol";
+import { MultiBridgeTransmitter } from "src/interoperability/MultiBridgeTransmitter.sol";
+
 import { IStarkEx } from "src/interfaces/interoperability/IStarkEx.sol";
 
 import { LibDeployBridge } from "common/LibDeployBridge.sol";
 
-contract LzFixture is BaseFixture {
+contract MultiBridgeFixture is BaseFixture {
     //==============================================================================//
     //=== Constants                                                              ===//
     //==============================================================================//
@@ -36,9 +39,14 @@ contract LzFixture is BaseFixture {
     LzEndpointMock _lzEndpoint;
     LzEndpointMock _lzEndpointSideChain1;
     LzEndpointMock _lzEndpointSideChain2;
-    LzTransmitter _transmitter;
-    LzReceptor _receptorSideChain1;
-    LzReceptor _receptorSideChain2;
+    LzTransmitter _lzTransmitter;
+    LzReceptor _lzReceptorSideChain1;
+    LzReceptor _lzReceptorSideChain2;
+
+    MultiBridgeTransmitter _transmitter;
+    MultiBridgeReceptor _receptorSideChain1;
+    MultiBridgeReceptor _receptorSideChain2;
+
     address _bridgeSideChain1;
     address _bridgeSideChain2;
 
@@ -61,17 +69,13 @@ contract LzFixture is BaseFixture {
         // Deploy bridges to side chains.
         _bridgeSideChain2 = LibDeployBridge.deployBridge(_owner());
 
-        // Deploy mocked Layer Zero endpoint.
-        _lzEndpoint = new LzEndpointMock(MOCK_CHAIN_ID);
-        _lzEndpointSideChain1 = new LzEndpointMock(MOCK_CHAIN_ID_SIDECHAIN_1);
-        _lzEndpointSideChain2 = new LzEndpointMock(MOCK_CHAIN_ID_SIDECHAIN_2);
+        // Deploy Multi-Bridge transmitter and receptor interoperability contracts.
+        _transmitter = new MultiBridgeTransmitter(STARKEX_ADDRESS);
+        _receptorSideChain1 = new MultiBridgeReceptor(_bridgeSideChain1);
+        _receptorSideChain2 = new MultiBridgeReceptor(_bridgeSideChain2);
 
-        // Deploy _transmitter interoperability contract.
-        _transmitter = new LzTransmitter(address(_lzEndpoint), STARKEX_ADDRESS);
-
-        // Deploy _receptor interoperability contract
-        _receptorSideChain1 = new LzReceptor(address(_lzEndpointSideChain1), _bridgeSideChain1);
-        _receptorSideChain2 = new LzReceptor(address(_lzEndpointSideChain2), _bridgeSideChain2);
+        _receptorSideChain1.updateThreshold(50);
+        _receptorSideChain2.updateThreshold(50);
 
         _setPendingRoles(_bridgeSideChain1, address(_receptorSideChain1));
         _setPendingRoles(_bridgeSideChain2, address(_receptorSideChain2));
@@ -84,7 +88,27 @@ contract LzFixture is BaseFixture {
         _receptorSideChain1.acceptBridgeRole();
         _receptorSideChain2.acceptBridgeRole();
 
+        // Deploy Layer Zero and add to Multi-Bridge.
+        _deploy_LayerZero(10);
+    }
+
+    function _deploy_LayerZero(uint32 weight_) internal {
         vm.startPrank(_owner());
+
+        // Deploy mocked Layer Zero endpoint.
+        _lzEndpoint = new LzEndpointMock(MOCK_CHAIN_ID);
+        _lzEndpointSideChain1 = new LzEndpointMock(MOCK_CHAIN_ID_SIDECHAIN_1);
+        _lzEndpointSideChain2 = new LzEndpointMock(MOCK_CHAIN_ID_SIDECHAIN_2);
+
+        // Deploy Layer Zero transmitter and receptor interoperability contracts.
+        _lzTransmitter = new LzTransmitter(address(_lzEndpoint));
+        _lzReceptorSideChain1 = new LzReceptor(address(_lzEndpointSideChain1), address(_receptorSideChain1));
+        _lzReceptorSideChain2 = new LzReceptor(address(_lzEndpointSideChain2), address(_receptorSideChain2));
+
+        // Set Layer Zero as a bridge in Multi-Bridge contracts.
+        _transmitter.addBridge(address(_lzTransmitter));
+        _receptorSideChain1.updateBridgeWeight(address(_lzReceptorSideChain1), weight_);
+        _receptorSideChain2.updateBridgeWeight(address(_lzReceptorSideChain2), weight_);
 
         // Register interoperability contracts on Layer Zero.
         _connectTransmitterReceptor(
@@ -92,16 +116,16 @@ contract LzFixture is BaseFixture {
             _lzEndpointSideChain1,
             MOCK_CHAIN_ID,
             MOCK_CHAIN_ID_SIDECHAIN_1,
-            _receptorSideChain1,
-            _transmitter
+            _lzReceptorSideChain1,
+            _lzTransmitter
         );
         _connectTransmitterReceptor(
             _lzEndpoint,
             _lzEndpointSideChain2,
             MOCK_CHAIN_ID,
             MOCK_CHAIN_ID_SIDECHAIN_2,
-            _receptorSideChain2,
-            _transmitter
+            _lzReceptorSideChain2,
+            _lzTransmitter
         );
 
         vm.stopPrank();

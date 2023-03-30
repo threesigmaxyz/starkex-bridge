@@ -9,15 +9,15 @@ import { HelpersECDSA } from "src/helpers/HelpersECDSA.sol";
 
 import { MockERC20 } from "test/mocks/MockERC20.sol";
 import { Constants } from "src/constants/Constants.sol";
-import { LzFixture } from "test/fixtures/LzFixture.sol";
+import { MultiBridgeFixture } from "test/fixtures/MultiBridgeFixture.sol";
 import { IAccessControlFacet } from "src/interfaces/facets/IAccessControlFacet.sol";
 import { IStateFacet } from "src/interfaces/facets/IStateFacet.sol";
 import { IDepositFacet } from "src/interfaces/facets/IDepositFacet.sol";
-import { ILzReceptor } from "src/interfaces/interoperability/ILzReceptor.sol";
+import { IMultiBridgeReceptor } from "src/interfaces/interoperability/IMultiBridgeReceptor.sol";
 import { IStarkEx } from "src/interfaces/interoperability/IStarkEx.sol";
 import { LibAccessControl } from "src/libraries/LibAccessControl.sol";
 
-contract IntegrationTest is LzFixture {
+contract IntegrationTest is MultiBridgeFixture {
     TimelockController private _timelock;
 
     //==============================================================================//
@@ -25,10 +25,13 @@ contract IntegrationTest is LzFixture {
     //==============================================================================//
 
     // Transmitter.
-    event LogNewOrderRootSent(uint16 indexed dstChainId, uint256 indexed sequenceNumber, bytes indexed orderRoot);
+    event LogMultiBridgeMsgSend(uint16 indexed dstChainId, uint256 indexed sequenceNumber, bytes indexed payload);
+    event LogMultiBridgeMsgBatchSend(
+        uint16[] indexed dstChainId, uint256 indexed sequenceNumber, bytes indexed payload
+    );
 
     // Receptor.
-    event LogRootReceived(uint256 indexed orderRoot);
+    event LogRootMsgExecuted(uint256 indexed orderRoot, uint256 indexed sequenceNumber);
     event LogOutdatedRootReceived(uint256 indexed orderRoot, uint64 indexed nonce);
     event LogOrderRootUpdate(uint256 indexed orderRoot);
 
@@ -83,24 +86,24 @@ contract IntegrationTest is LzFixture {
     }
 
     //==============================================================================//
-    //=== keep Tests                                                             ===//
+    //=== send Tests                                                             ===//
     //==============================================================================//
 
-    function test_full_keep_ok(uint256 orderRoot_, uint256 sequenceNumber_) public {
+    function test_full_send_ok(uint256 orderRoot_, uint256 sequenceNumber_) public {
         vm.assume(sequenceNumber_ > 0);
 
-        _keep_and_setRoot(MOCK_CHAIN_ID_SIDECHAIN_1, orderRoot_, sequenceNumber_);
-        _keep_and_setRoot(MOCK_CHAIN_ID_SIDECHAIN_2, orderRoot_, sequenceNumber_);
+        _send_and_setRoot(MOCK_CHAIN_ID_SIDECHAIN_1, orderRoot_, sequenceNumber_);
+        _send_and_setRoot(MOCK_CHAIN_ID_SIDECHAIN_2, orderRoot_, sequenceNumber_);
     }
 
     //==============================================================================//
-    //=== batchKeep Tests                                                        ===//
+    //=== sendBatch Tests                                                        ===//
     //==============================================================================//
 
-    function test_full_batchKeep_ok(uint256 orderRoot_, uint256 sequenceNumber_) public {
+    function test_full_sendBatch_ok(uint256 orderRoot_, uint256 sequenceNumber_) public {
         vm.assume(sequenceNumber_ > 0);
 
-        _batchKeep_and_setRoots(orderRoot_, sequenceNumber_);
+        _sendBatch_and_setRoots(orderRoot_, sequenceNumber_);
     }
 
     //==============================================================================//
@@ -157,7 +160,7 @@ contract IntegrationTest is LzFixture {
         (uint256 branchMask_, bytes32[] memory siblings_) = mpt_.getProof(abi.encode(lockHash_));
         uint256 orderRoot_ = uint256(mpt_.root());
         // And
-        _keep_and_setRoot(chainId_, orderRoot_, 1);
+        _send_and_setRoot(chainId_, orderRoot_, 1);
 
         // Act + Assert
         vm.expectEmit(true, true, false, true);
@@ -172,52 +175,49 @@ contract IntegrationTest is LzFixture {
         assertEq(IDepositFacet(bridge_).getPendingDeposits(token_), initialPendingDeposits_ - amount_);
     }
 
-    function _keep_and_setRoot(uint16 chainId_, uint256 orderRoot_, uint256 sequenceNumber_) private {
+    function _send_and_setRoot(uint16 chainId_, uint256 orderRoot_, uint256 sequenceNumber_) private {
         // Arrange
         vm.deal(_keeper(), 100 ether);
         // And
-        (address bridge_, ILzReceptor receptor_) = _getBridgeAndReceptorFromChainId(chainId_);
+        (address bridge_, IMultiBridgeReceptor receptor_) = _getBridgeAndReceptorFromChainId(chainId_);
         // And
         _mock_starkEx_getOrderRoot(orderRoot_);
         // And
         _mock_starkEx_getSequenceNumber(sequenceNumber_);
         // And
-        vm.expectEmit(true, false, false, true, address(receptor_));
-        emit LogRootReceived(orderRoot_);
+        vm.expectEmit(true, true, false, true, address(receptor_));
+        emit LogRootMsgExecuted(orderRoot_, sequenceNumber_);
         // And
         vm.expectEmit(true, true, true, true, address(_transmitter));
-        emit LogNewOrderRootSent(chainId_, sequenceNumber_, abi.encode(orderRoot_));
+        emit LogMultiBridgeMsgSend(chainId_, sequenceNumber_, abi.encode(orderRoot_));
 
         // Act + Assert
         vm.prank(_keeper());
-        _transmitter.keep{ value: 1 ether }(chainId_, payable(_keeper()));
+        _transmitter.send{ value: 1 ether }(chainId_, payable(_keeper()));
 
         _setOrderRoot(bridge_, address(receptor_), orderRoot_);
     }
 
-    function _batchKeep_and_setRoots(uint256 orderRoot_, uint256 sequenceNumber_) private {
+    function _sendBatch_and_setRoots(uint256 orderRoot_, uint256 sequenceNumber_) private {
         // Arrange
         vm.deal(_keeper(), 100 ether);
+        // And
+        uint16[] memory dstChainIds_ = new uint16[](2);
+        dstChainIds_[0] = MOCK_CHAIN_ID_SIDECHAIN_1;
+        dstChainIds_[1] = MOCK_CHAIN_ID_SIDECHAIN_2;
         // And
         _mock_starkEx_getOrderRoot(orderRoot_);
         // And
         _mock_starkEx_getSequenceNumber(sequenceNumber_);
         // And
-        vm.expectEmit(true, false, false, true, address(_receptorSideChain1));
-        emit LogRootReceived(orderRoot_);
+        vm.expectEmit(true, true, false, true, address(_receptorSideChain1));
+        emit LogRootMsgExecuted(orderRoot_, sequenceNumber_);
+        // And
+        vm.expectEmit(true, true, false, true, address(_receptorSideChain2));
+        emit LogRootMsgExecuted(orderRoot_, sequenceNumber_);
         // And
         vm.expectEmit(true, true, true, true, address(_transmitter));
-        emit LogNewOrderRootSent(MOCK_CHAIN_ID_SIDECHAIN_1, sequenceNumber_, abi.encode(orderRoot_));
-        // And
-        vm.expectEmit(true, false, false, true, address(_receptorSideChain2));
-        emit LogRootReceived(orderRoot_);
-        // And
-        vm.expectEmit(true, true, true, true, address(_transmitter));
-        emit LogNewOrderRootSent(MOCK_CHAIN_ID_SIDECHAIN_2, sequenceNumber_, abi.encode(orderRoot_));
-        // And
-        uint16[] memory dstChainIds_ = new uint16[](2);
-        dstChainIds_[0] = MOCK_CHAIN_ID_SIDECHAIN_1;
-        dstChainIds_[1] = MOCK_CHAIN_ID_SIDECHAIN_2;
+        emit LogMultiBridgeMsgBatchSend(dstChainIds_, sequenceNumber_, abi.encode(orderRoot_));
         // And
         uint256[] memory nativeFees_ = new uint256[](2);
         nativeFees_[0] = 0.2 ether;
@@ -225,7 +225,7 @@ contract IntegrationTest is LzFixture {
 
         // Act + Assert
         vm.prank(_keeper());
-        _transmitter.batchKeep{ value: 0.5 ether }(dstChainIds_, nativeFees_, payable(_keeper()));
+        _transmitter.sendBatch{ value: 0.5 ether }(dstChainIds_, payable(_keeper()));
 
         // Assert
         _setOrderRoot(_bridgeSideChain1, address(_receptorSideChain1), orderRoot_);
@@ -239,7 +239,7 @@ contract IntegrationTest is LzFixture {
         emit LogOrderRootUpdate(orderRoot_);
         // Act
         vm.prank(_owner());
-        ILzReceptor(receptor_).setOrderRoot();
+        IMultiBridgeReceptor(receptor_).setOrderRoot();
         // Assert
         assertEq(IStateFacet(bridge_).getOrderRoot(), orderRoot_);
     }
@@ -257,7 +257,7 @@ contract IntegrationTest is LzFixture {
     function _getBridgeAndReceptorFromChainId(uint16 chainId_)
         internal
         view
-        returns (address bridge_, ILzReceptor receptor_)
+        returns (address bridge_, IMultiBridgeReceptor receptor_)
     {
         if (chainId_ == MOCK_CHAIN_ID_SIDECHAIN_1) {
             bridge_ = _bridgeSideChain1;

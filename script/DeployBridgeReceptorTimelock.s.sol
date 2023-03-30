@@ -13,6 +13,8 @@ import { LibAccessControl } from "src/libraries/LibAccessControl.sol";
 
 import { IAccessControlFacet } from "src/interfaces/facets/IAccessControlFacet.sol";
 
+import { MultiBridgeReceptor } from "src/interoperability/MultiBridgeReceptor.sol";
+
 import { LzReceptor } from "src/interoperability/LzReceptor.sol";
 
 import { TimelockController } from "@openzeppelin/governance/TimelockController.sol";
@@ -27,7 +29,8 @@ contract DeployBridgeReceptorTimelockModuleScript is Script, DataIO {
     address private _lzEndpoint;
     address private _timelockController;
 
-    LzReceptor private _receptor;
+    LzReceptor private _lzReceptor;
+    MultiBridgeReceptor private _multiBridgeReceptor;
 
     uint256 private TIMELOCK_MINIMUM_DELAY;
 
@@ -47,9 +50,13 @@ contract DeployBridgeReceptorTimelockModuleScript is Script, DataIO {
         _bridge = LibDeployBridge.deployBridge(_owner);
         _writeData("bridge", vm.toString(abi.encodePacked((_bridge))));
 
-        // Deploy recepetor.
-        _receptor = new LzReceptor(_lzEndpoint, _bridge);
-        _writeData("receptor", vm.toString(address(_receptor)));
+        // Deploy multi-bridge receptor.
+        _multiBridgeReceptor = new MultiBridgeReceptor(_bridge);
+        _writeData("multiBridgeReceptor", vm.toString(address(_multiBridgeReceptor)));
+
+        // Deploy lz receptor.
+        _lzReceptor = new LzReceptor(_lzEndpoint, address(_multiBridgeReceptor));
+        _writeData("lzReceptor", vm.toString(address(_lzReceptor)));
 
         // Deploy timelockController contract with zero minimum delay.
         _timelockController = _deployTimelockController_WithZeroMinimumDelay(_owner);
@@ -58,11 +65,13 @@ contract DeployBridgeReceptorTimelockModuleScript is Script, DataIO {
         // Set pending roles.
         IAccessControlFacet(_bridge).setPendingRole(LibAccessControl.STARKEX_OPERATOR_ROLE, _operator);
         IAccessControlFacet(_bridge).setPendingRole(LibAccessControl.TOKEN_ADMIN_ROLE, _tokenAdmin);
-        IAccessControlFacet(_bridge).setPendingRole(LibAccessControl.INTEROPERABILITY_CONTRACT_ROLE, address(_receptor));
+        IAccessControlFacet(_bridge).setPendingRole(
+            LibAccessControl.INTEROPERABILITY_CONTRACT_ROLE, address(_multiBridgeReceptor)
+        );
         IAccessControlFacet(_bridge).setPendingRole(LibAccessControl.OWNER_ROLE, _timelockController);
 
         // Accept interoperability role.
-        _receptor.acceptBridgeRole();
+        _multiBridgeReceptor.acceptBridgeRole();
 
         // Make the timelockController accept the bridge owner role.
         _timelockControllerAcceptBridgeRole();
