@@ -14,6 +14,7 @@ import { ITokenRegisterFacet } from "src/interfaces/facets/ITokenRegisterFacet.s
 import { IWithdrawalFacet } from "src/interfaces/facets/IWithdrawalFacet.sol";
 import { IStateFacet } from "src/interfaces/facets/IStateFacet.sol";
 import { IERC165Facet } from "src/interfaces/facets/IERC165Facet.sol";
+import { IStakerFacet } from "src/interfaces/facets/IStakerFacet.sol";
 import { IDiamondLoupe } from "src/interfaces/facets/IDiamondLoupe.sol";
 
 import { AccessControlFacet } from "src/facets/AccessControlFacet.sol";
@@ -23,6 +24,7 @@ import { TokenRegisterFacet } from "src/facets/TokenRegisterFacet.sol";
 import { WithdrawalFacet } from "src/facets/WithdrawalFacet.sol";
 import { StateFacet } from "src/facets/StateFacet.sol";
 import { ERC165Facet } from "src/facets/ERC165Facet.sol";
+import { StakerFacet } from "src/facets/StakerFacet.sol";
 import { DiamondLoupeFacet } from "src/facets/DiamondLoupeFacet.sol";
 
 library LibDeployBridge {
@@ -34,6 +36,7 @@ library LibDeployBridge {
         address withdrawal;
         address state;
         address erc165;
+        address staker;
         address diamondLoupe;
     }
 
@@ -54,6 +57,7 @@ library LibDeployBridge {
         facets_.withdrawal = address(new WithdrawalFacet());
         facets_.state = address(new StateFacet());
         facets_.erc165 = address(new ERC165Facet());
+        facets_.staker = address(new StakerFacet());
         facets_.diamondLoupe = address(new DiamondLoupeFacet());
         return facets_;
     }
@@ -88,6 +92,19 @@ library LibDeployBridge {
             IWithdrawalFacet.setWithdrawalExpirationTimeout.selector, Constants.WITHDRAWAL_ONCHAIN_EXPIRATION_TIMEOUT
         );
         IDiamondCut(bridge_).diamondCut(withdrawalCut_, facets_.withdrawal, withdrawalInitializer);
+
+        /// @dev Cut the staker facet alone to initialize it.
+        IDiamondCut.FacetCut[] memory stakerCut_ = new IDiamondCut.FacetCut[](1);
+        /// Ataker facet.
+        stakerCut_[0] = IDiamondCut.FacetCut({
+            facetAddress: facets_.staker,
+            action: action_,
+            functionSelectors: getStakerFacetFunctionSelectors()
+        });
+        bytes memory stakerInitializer = abi.encodeWithSelector(
+            IStakerFacet.setTransmitter.selector, Constants.TRANSMITTER
+        );
+        IDiamondCut(bridge_).diamondCut(stakerCut_, facets_.staker, stakerInitializer);
 
         /// @dev cut access control, token register, state and ERC165 facets.
         IDiamondCut.FacetCut[] memory cut_ = new IDiamondCut.FacetCut[](5);
@@ -161,6 +178,16 @@ library LibDeployBridge {
         withdrawalFacetSelectors_[6] = IWithdrawalFacet.getPendingWithdrawals.selector;
         withdrawalFacetSelectors_[7] = IWithdrawalFacet.getWithdrawalExpirationTimeout.selector;
         return withdrawalFacetSelectors_;
+    }
+
+    function getStakerFacetFunctionSelectors() internal pure returns (bytes4[] memory) {
+        bytes4[] memory stakerFacetSelectors_ = new bytes4[](5);
+        stakerFacetSelectors_[0] = IStakerFacet.setTransmitter.selector;
+        stakerFacetSelectors_[1] = IStakerFacet.registerNativeStaker.selector;
+        stakerFacetSelectors_[2] = IStakerFacet.registerStaker.selector;
+        stakerFacetSelectors_[3] = IStakerFacet.getTransmitter.selector;
+        stakerFacetSelectors_[4] = IStakerFacet.getStakerInfo.selector;
+        return stakerFacetSelectors_;
     }
 
     function getAccessControlFacetFunctionSelectors() internal pure returns (bytes4[] memory) {
