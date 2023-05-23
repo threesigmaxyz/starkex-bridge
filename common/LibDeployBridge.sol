@@ -14,6 +14,7 @@ import { ITokenRegisterFacet } from "src/interfaces/facets/ITokenRegisterFacet.s
 import { IWithdrawalFacet } from "src/interfaces/facets/IWithdrawalFacet.sol";
 import { IStateFacet } from "src/interfaces/facets/IStateFacet.sol";
 import { IERC165Facet } from "src/interfaces/facets/IERC165Facet.sol";
+import { INFTFacet } from "src/interfaces/facets/INFTFacet.sol";
 import { IDiamondLoupe } from "src/interfaces/facets/IDiamondLoupe.sol";
 
 import { AccessControlFacet } from "src/facets/AccessControlFacet.sol";
@@ -23,6 +24,7 @@ import { TokenRegisterFacet } from "src/facets/TokenRegisterFacet.sol";
 import { WithdrawalFacet } from "src/facets/WithdrawalFacet.sol";
 import { StateFacet } from "src/facets/StateFacet.sol";
 import { ERC165Facet } from "src/facets/ERC165Facet.sol";
+import { NFTFacet } from "src/facets/NFTFacet.sol";
 import { DiamondLoupeFacet } from "src/facets/DiamondLoupeFacet.sol";
 
 library LibDeployBridge {
@@ -34,6 +36,7 @@ library LibDeployBridge {
         address withdrawal;
         address state;
         address erc165;
+        address nft;
         address diamondLoupe;
     }
 
@@ -54,6 +57,7 @@ library LibDeployBridge {
         facets_.withdrawal = address(new WithdrawalFacet());
         facets_.state = address(new StateFacet());
         facets_.erc165 = address(new ERC165Facet());
+        facets_.nft = address(new NFTFacet());
         facets_.diamondLoupe = address(new DiamondLoupeFacet());
         return facets_;
     }
@@ -88,6 +92,19 @@ library LibDeployBridge {
             IWithdrawalFacet.setWithdrawalExpirationTimeout.selector, Constants.WITHDRAWAL_ONCHAIN_EXPIRATION_TIMEOUT
         );
         IDiamondCut(bridge_).diamondCut(withdrawalCut_, facets_.withdrawal, withdrawalInitializer);
+
+        /// @dev Cut the NFT facet alone to initialize it.
+        IDiamondCut.FacetCut[] memory nftCut_ = new IDiamondCut.FacetCut[](1);
+        /// NFT facet.
+        nftCut_[0] = IDiamondCut.FacetCut({
+            facetAddress: facets_.nft,
+            action: action_,
+            functionSelectors: getNFTFacetFunctionSelectors()
+        });
+        bytes memory nftInitializer = abi.encodeWithSelector(
+            INFTFacet.setExpirationTimeout.selector, Constants.DEPOSIT_ONCHAIN_EXPIRATION_TIMEOUT
+        );
+        IDiamondCut(bridge_).diamondCut(nftCut_, facets_.nft, nftInitializer);
 
         /// @dev cut access control, token register, state and ERC165 facets.
         IDiamondCut.FacetCut[] memory cut_ = new IDiamondCut.FacetCut[](5);
@@ -190,6 +207,20 @@ library LibDeployBridge {
         erc165FacetSelectors_[0] = IERC165Facet.supportsInterface.selector;
         erc165FacetSelectors_[1] = IERC165Facet.setSupportedInterface.selector;
         return erc165FacetSelectors_;
+    }
+
+    function getNFTFacetFunctionSelectors() internal pure returns (bytes4[] memory) {
+        bytes4[] memory nftFacetSelectors_ = new bytes4[](9);
+        nftFacetSelectors_[0] = INFTFacet.setExpirationTimeout.selector;
+        nftFacetSelectors_[1] = INFTFacet.depositNFT.selector;
+        nftFacetSelectors_[2] = INFTFacet.reClaimNFT.selector;
+        nftFacetSelectors_[3] = INFTFacet.unlockNFTBurn.selector;
+        nftFacetSelectors_[4] = INFTFacet.setRecipientNFT.selector;
+        nftFacetSelectors_[5] = INFTFacet.unlockNFTWithdraw.selector;
+        nftFacetSelectors_[6] = INFTFacet.withdrawNFT.selector;
+        nftFacetSelectors_[7] = INFTFacet.getDepositedNFT.selector;
+        nftFacetSelectors_[8] = INFTFacet.getExpirationTimeout.selector;
+        return nftFacetSelectors_;
     }
 
     function getDiamondLoupeFacetFunctionSelectors() internal pure returns (bytes4[] memory) {

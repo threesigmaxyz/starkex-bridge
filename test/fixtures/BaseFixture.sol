@@ -7,6 +7,7 @@ import { IERC165 } from "@openzeppelin/interfaces/IERC165.sol";
 import { Constants } from "src/constants/Constants.sol";
 
 import { MockERC20 } from "test/mocks/MockERC20.sol";
+import { MockERC721 } from "test/mocks/MockERC721.sol";
 
 import { BridgeDiamond } from "src/BridgeDiamond.sol";
 
@@ -23,6 +24,7 @@ contract BaseFixture is Test {
 
     address _bridge;
     MockERC20 _token;
+    MockERC721 _token721;
 
     function setUp() public virtual {
         _setLabels();
@@ -44,12 +46,22 @@ contract BaseFixture is Test {
 
         _token.mint(_user(), USER_TOKENS);
 
+        // Deploy _token721
+        vm.prank(_tokenDeployer());
+        _token721 = (new MockERC721){ salt: "Example" }("Example", "Ex");
+
+        _token721.safeMint(_user(), 0);
+        _token721.safeMint(_user(), 1);
+        _token721.safeMint(_user(), 2);
+
         // Deal native to user
         vm.deal(_user(), USER_NATIVE);
 
-        // Register _token in _bridge
+        // Register _token and _token721 in _bridge
         vm.prank(_tokenAdmin());
         ITokenRegisterFacet(_bridge).setTokenRegister(address(_token), true);
+        vm.prank(_tokenAdmin());
+        ITokenRegisterFacet(_bridge).setTokenRegister(address(_token721), true);
     }
 
     function _setPendingRoles(address bridge_, address interoperabilityContract_) internal {
